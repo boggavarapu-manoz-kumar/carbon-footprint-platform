@@ -208,7 +208,7 @@ class ActivityLogServiceImplTest {
             assertThatThrownBy(() -> activityLogService.deleteActivityLog(1L, USER_EMAIL))
                     .isInstanceOf(ResourceNotFoundException.class);
 
-            verify(activityLogRepository, never()).delete(any());
+            verify(activityLogRepository, never()).delete(any(ActivityLog.class));
         }
     }
 }
