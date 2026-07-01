@@ -1,0 +1,159 @@
+-- ---------------------------------------------------------
+-- 1. IAM (Identity & Access Management)
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS organizations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    industry VARCHAR(50),
+    subscription_tier ENUM('FREE', 'PRO', 'ENTERPRISE') DEFAULT 'FREE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS teams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    org_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    org_id BIGINT NULL COMMENT 'Null means B2C individual user',
+    team_id BIGINT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('USER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN') DEFAULT 'USER',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE SET NULL,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
+    INDEX idx_users_email (email),
+    INDEX idx_users_org (org_id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- 2. Tracking & ESG Engine
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS emission_factors (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    category ENUM('TRANSPORT', 'ENERGY', 'DIET', 'SHOPPING') NOT NULL,
+    activity_type VARCHAR(50) NOT NULL UNIQUE,
+    factor_value DECIMAL(12, 6) NOT NULL,
+    unit VARCHAR(20) NOT NULL,
+    region VARCHAR(50) DEFAULT 'GLOBAL' COMMENT 'Localization for accurate factors',
+    source VARCHAR(255),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_ef_category (category)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    activity_type VARCHAR(50) NOT NULL,
+    activity_date DATE NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
+    unit VARCHAR(20) NOT NULL,
+    carbon_emission DECIMAL(12, 4) NOT NULL COMMENT 'Calculated in kgCO2e',
+    metadata JSON COMMENT 'Flexible storage for extra context (e.g., flight route)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_activity_user_date (user_id, activity_date) 
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- 3. Carbon Offsets
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS offset_projects (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    cost_per_ton DECIMAL(10, 2) NOT NULL,
+    total_capacity_tons DECIMAL(12, 2) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_offsets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    project_id BIGINT NOT NULL,
+    tons_offset DECIMAL(10, 2) NOT NULL,
+    amount_paid DECIMAL(10, 2) NOT NULL,
+    purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES offset_projects(id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- 4. Engagement (Goals & Badges)
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS goals (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    target_emission DECIMAL(10, 2) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status ENUM('IN_PROGRESS', 'ACHIEVED', 'FAILED') DEFAULT 'IN_PROGRESS',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS badges (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    tier ENUM('BRONZE', 'SILVER', 'GOLD', 'PLATINUM') DEFAULT 'BRONZE',
+    image_url VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_badges (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    badge_id BIGINT NOT NULL,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_user_badge (user_id, badge_id)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- 5. Notifications & Security
+-- ---------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    type ENUM('GOAL_ALERT', 'BADGE_EARNED', 'SYSTEM_UPDATE') NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_notifications_user_unread (user_id, is_read)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NULL COMMENT 'Null for system actions',
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id BIGINT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_audit_entity (entity_type, entity_id)
+) ENGINE=InnoDB;
