@@ -2,10 +2,14 @@ package com.carbonfootprint.dto;
 
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserUpdateDto {
 
     @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")

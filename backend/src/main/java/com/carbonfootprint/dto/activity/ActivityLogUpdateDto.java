@@ -2,14 +2,18 @@ package com.carbonfootprint.dto.activity;
 
 import com.carbonfootprint.entity.ActivityCategory;
 import jakarta.validation.constraints.DecimalMin;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ActivityLogUpdateDto {
     ActivityCategory category;
     String activityType;
