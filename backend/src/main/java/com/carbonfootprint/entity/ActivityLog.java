@@ -33,7 +33,7 @@ public class ActivityLog implements Serializable {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, columnDefinition = "varchar(50)")
     private ActivityCategory category;
 
     @Column(name = "activity_type", nullable = false, length = 100)

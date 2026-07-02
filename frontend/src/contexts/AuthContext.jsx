@@ -18,13 +18,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
-    try {
-      const data = await AuthService.login(credentials);
-      setIsAuthenticated(true);
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const data = await AuthService.login(credentials);
+    setIsAuthenticated(true);
+    return data;
   };
 
   const logout = () => {
@@ -39,4 +35,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

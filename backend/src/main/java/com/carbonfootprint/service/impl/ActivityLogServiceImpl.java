@@ -42,7 +42,12 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         
         ActivityLog activityLog = mapper.toEntity(createDto);
         activityLog.setUser(user);
-        activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()));
+        
+        if (createDto.getCategory() == ActivityCategory.SECURITY) {
+            activityLog.setEmissionValue(java.math.BigDecimal.ZERO);
+        } else {
+            activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()));
+        }
         
         return mapper.toDto(activityLogRepository.save(activityLog));
     }
@@ -120,11 +125,15 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         if (updateDto.getLogDate() != null) { activityLog.setLogDate(updateDto.getLogDate()); updated = true; }
 
         if (needsRecalculation) {
-            activityLog.setEmissionValue(calculationService.calculateEmission(
-                activityLog.getActivityType(), 
-                activityLog.getQuantity(), 
-                activityLog.getUnit()
-            ));
+            if (activityLog.getCategory() == ActivityCategory.SECURITY) {
+                activityLog.setEmissionValue(java.math.BigDecimal.ZERO);
+            } else {
+                activityLog.setEmissionValue(calculationService.calculateEmission(
+                    activityLog.getActivityType(), 
+                    activityLog.getQuantity(), 
+                    activityLog.getUnit()
+                ));
+            }
         }
 
         if (updated) {
