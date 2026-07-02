@@ -48,6 +48,9 @@ public class User implements UserDetails, Serializable {
     @ToString.Exclude
     private List<Token> tokens;
 
+    @Column(name = "last_password_reset_request")
+    private LocalDateTime lastPasswordResetRequest;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

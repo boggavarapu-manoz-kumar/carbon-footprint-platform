@@ -19,7 +19,7 @@ const Register = () => {
       setAuthError('');
       setLoading(true);
       // Remove confirmPassword before sending to API
-      const { confirmPassword, ...userData } = data;
+      const { confirmPassword: _confirmPassword, ...userData } = data;
       await AuthService.register(userData);
       navigate('/login');
     } catch (err) {

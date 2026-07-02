@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             final String authHeader = request.getHeader("Authorization");
             final String jwt;
-            final String userEmail;
+            String userEmail = null;
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 filterChain.doFilter(request, response);
@@ -44,7 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             jwt = authHeader.substring(7);
-            userEmail = jwtService.extractUsername(jwt);
+            
+            try {
+                userEmail = jwtService.extractUsername(jwt);
+            } catch (Exception e) {
+                // Ignore expired or invalid tokens. 
+                // The SecurityContext will remain null, and Spring Security will 
+                // naturally block access to protected endpoints (401) or allow 
+                // access to permitAll endpoints (like /register).
+            }
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);

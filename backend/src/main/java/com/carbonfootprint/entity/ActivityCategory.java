@@ -4,5 +4,6 @@ public enum ActivityCategory {
     TRANSPORT,
     ELECTRICITY,
     FOOD,
-    SHOPPING
+    SHOPPING,
+    SECURITY
 }
