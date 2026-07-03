@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
-  Container, Box, Typography, TextField, Button, Link, Paper, Alert 
+  Container, Box, Typography, TextField, Button, Link, Paper, Alert, Divider 
 } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -88,6 +89,18 @@ const Login = () => {
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+            
+            <Divider sx={{ my: 2 }}>OR</Divider>
+            
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={() => { window.location.href = "http://localhost:8081/oauth2/authorization/google"; }}
+              sx={{ mb: 2, py: 1.2, color: 'text.primary', borderColor: 'grey.400' }}
+            >
+              Sign in with Google
             </Button>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
               <Link component={RouterLink} to="/forgot-password" variant="body2">

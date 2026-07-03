@@ -55,6 +55,10 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email already registered: " + request.getEmail());
         }
 
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
+
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
@@ -215,13 +219,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to hash token", e);
         }

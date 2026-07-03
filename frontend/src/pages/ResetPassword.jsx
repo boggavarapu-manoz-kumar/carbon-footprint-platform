@@ -115,28 +115,65 @@ const ResetPassword = () => {
             </Typography>
 
             {errorMsg ? (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ width: '100%', textAlign: 'center' }}>
-                <ErrorOutlineIcon color="error" sx={{ fontSize: 64, mb: 2 }} />
-                <Typography variant="h6" color="error" gutterBottom>
-                  Link Invalid or Expired
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} style={{ width: '100%', textAlign: 'center' }}>
+                <Box sx={{ 
+                  mb: 3, 
+                  display: 'inline-flex', 
+                  p: 2, 
+                  borderRadius: '50%', 
+                  backgroundColor: 'error.lighter',
+                  color: 'error.main'
+                }}>
+                  <ErrorOutlineIcon sx={{ fontSize: 48 }} />
+                </Box>
+                <Typography variant="h5" color="textPrimary" gutterBottom fontWeight="600">
+                  Link Expired
                 </Typography>
-                <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-                  {errorMsg}
+                <Typography variant="body1" color="textSecondary" sx={{ mb: 4, px: 2 }}>
+                  For your security, password reset links expire after 3 minutes. Please request a new link to continue resetting your password.
                 </Typography>
-                <Button
-                  component={RouterLink}
-                  to="/forgot-password"
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  sx={{ py: 1.5, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
-                >
-                  Request New Link
-                </Button>
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                  <Link component={RouterLink} to="/login" variant="body2" color="primary" sx={{ fontWeight: 600, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                    {"Back to Sign In"}
-                  </Link>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Button
+                    component={RouterLink}
+                    to="/forgot-password"
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    sx={{ 
+                      py: 1.5, 
+                      borderRadius: 2, 
+                      textTransform: 'none', 
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)',
+                      '&:hover': {
+                        boxShadow: '0 6px 20px rgba(0,118,255,0.23)'
+                      }
+                    }}
+                  >
+                    Request New Link
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/login"
+                    fullWidth
+                    variant="outlined"
+                    color="inherit"
+                    sx={{ 
+                      py: 1.5, 
+                      borderRadius: 2, 
+                      textTransform: 'none', 
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      borderColor: 'divider',
+                      '&:hover': {
+                        borderColor: 'text.primary',
+                        backgroundColor: 'transparent'
+                      }
+                    }}
+                  >
+                    Back to Sign In
+                  </Button>
                 </Box>
               </motion.div>
             ) : successMsg ? (

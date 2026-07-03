@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
-  Container, Box, Typography, TextField, Button, Link, Paper, Alert 
+  Container, Box, Typography, TextField, Button, Link, Paper, Alert, Divider 
 } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
 import AuthService from '../services/AuthService';
 
 const Register = () => {
@@ -18,9 +19,8 @@ const Register = () => {
     try {
       setAuthError('');
       setLoading(true);
-      // Remove confirmPassword before sending to API
-      const { confirmPassword: _confirmPassword, ...userData } = data;
-      await AuthService.register(userData);
+      // Send all data including confirmPassword to match the strict backend JSON contract
+      await AuthService.register(data);
       navigate('/login');
     } catch (err) {
       setAuthError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -123,6 +123,18 @@ const Register = () => {
               disabled={loading}
             >
               {loading ? 'Creating Account...' : 'Sign Up'}
+            </Button>
+
+            <Divider sx={{ my: 2 }}>OR</Divider>
+            
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={() => { window.location.href = "http://localhost:8081/oauth2/authorization/google"; }}
+              sx={{ mb: 2, py: 1.2, color: 'text.primary', borderColor: 'grey.400' }}
+            >
+              Continue with Google
             </Button>
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <Link component={RouterLink} to="/login" variant="body2">

@@ -20,13 +20,24 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: manozkumarboggavarapu@gmail.com
-    password: jnufvrvcmkgedehc
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+            client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
 
 server:
   port: 8081
@@ -36,5 +47,7 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:7c222fb2927d828af22f592134e8932480637c0d79ce9e57973c98341908}
+    secret: ${JWT_SECRET:8f4c3a2b1d9e7f6a5c4b3a2d1e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9}
     expiration-ms: ${JWT_EXPIRATION:86400000}
+
+
