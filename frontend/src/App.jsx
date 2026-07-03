@@ -11,13 +11,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import OAuth2Redirect from './pages/OAuth2Redirect';
 
-// A simple placeholder dashboard for Milestone 1
-const Dashboard = () => (
-  <div style={{ padding: '2rem', textAlign: 'center' }}>
-    <h1>Dashboard</h1>
-    <p>Welcome to the Carbon Footprint Platform!</p>
-  </div>
-);
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
