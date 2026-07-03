@@ -24,6 +24,8 @@ public class ActivityLogCreateDto {
     String activityType;
 
     @NotNull(message = "Quantity is required")
+    @jakarta.validation.constraints.DecimalMin(value = "0.0", inclusive = false, message = "Quantity must be greater than zero")
+    @jakarta.validation.constraints.DecimalMax(value = "999999.99", message = "Quantity is suspiciously large")
     BigDecimal quantity;
 
     @NotBlank(message = "Unit is required")

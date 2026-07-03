@@ -35,7 +35,7 @@ public class User implements UserDetails, Serializable {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     @ToString.Exclude
     private String password;
 
@@ -43,6 +43,17 @@ public class User implements UserDetails, Serializable {
     @Column(nullable = false)
     @Builder.Default
     private Role role = Role.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AuthProvider provider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(name = "profile_picture_url", length = 1000)
+    private String profilePictureUrl;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
