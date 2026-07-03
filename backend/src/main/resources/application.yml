@@ -19,7 +19,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: manozkumarboggavarapu@gmail.com
+    username: carbon.footprint.platform@gmail.com
     password: ${MAIL_PASSWORD}
     properties:
       mail:
