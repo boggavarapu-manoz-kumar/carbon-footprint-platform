@@ -30,11 +30,13 @@ class AuthControllerTest {
 
     @MockBean private AuthService authService;
     @MockBean private JwtService jwtService;
+    @MockBean private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    @MockBean private com.carbonfootprint.repository.TokenRepository tokenRepository;
 
     @Test
     @DisplayName("POST /api/v1/auth/register - Success")
     void register() throws Exception {
-        UserCreateDto request = UserCreateDto.builder().email("test@test.com").password("pass").fullName("name").build();
+        UserCreateDto request = UserCreateDto.builder().email("test@test.com").password("Pass@123").confirmPassword("Pass@123").fullName("name").build();
         AuthenticationResponse response = AuthenticationResponse.builder().accessToken("token").build();
 
         when(authService.register(any(UserCreateDto.class))).thenReturn(response);

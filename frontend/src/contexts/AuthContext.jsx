@@ -5,13 +5,24 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchUser = async () => {
+    const userData = await AuthService.getCurrentUser();
+    setUser(userData);
+  };
 
   useEffect(() => {
     // Check initial auth state on mount
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const isAuth = AuthService.isAuthenticated();
       setIsAuthenticated(isAuth);
+      if (isAuth) {
+        await fetchUser();
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     };
     checkAuth();
@@ -20,16 +31,18 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     const data = await AuthService.login(credentials);
     setIsAuthenticated(true);
+    await fetchUser();
     return data;
   };
 
-  const logout = () => {
-    AuthService.logout();
+  const logout = async () => {
+    await AuthService.logout();
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

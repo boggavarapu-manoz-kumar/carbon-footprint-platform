@@ -2,6 +2,8 @@ package com.carbonfootprint.service;
 
 import java.math.BigDecimal;
 
+import com.carbonfootprint.dto.activity.CalculationResponseDto;
+
 public interface EmissionCalculationService {
-    BigDecimal calculateEmission(String activityType, BigDecimal quantity, String unit);
+    CalculationResponseDto calculateEmission(String activityType, BigDecimal quantity, String unit);
 }

@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto createUser(final UserCreateDto createDto) {
         log.debug("Creating new user with email: {}", createDto.getEmail());
-        
+
         if (userRepository.existsByEmail(createDto.getEmail())) {
             log.warn("Email already registered: {}", createDto.getEmail());
             throw new BadRequestException("Email already registered: " + createDto.getEmail());
@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userMapper.toEntity(createDto);
         User savedUser = userRepository.save(user);
-        
+
         log.info("User created successfully with ID: {}", savedUser.getId());
         return userMapper.toDto(savedUser);
     }
@@ -73,12 +73,28 @@ public class UserServiceImpl implements UserService {
         User user = findUserById(id);
 
         boolean updated = false;
-        if (updateDto.getFullName() != null && !updateDto.getFullName().trim().isEmpty()) {
-            user.setFullName(updateDto.getFullName().trim());
+        if (updateDto.getFirstName() != null && !updateDto.getFirstName().trim().isEmpty()) {
+            user.setFirstName(updateDto.getFirstName().trim());
+            updated = true;
+        }
+        if (updateDto.getLastName() != null && !updateDto.getLastName().trim().isEmpty()) {
+            user.setLastName(updateDto.getLastName().trim());
+            updated = true;
+        }
+        if (updateDto.getUsername() != null && !updateDto.getUsername().trim().isEmpty()) {
+            user.setUsername(updateDto.getUsername().trim());
             updated = true;
         }
         if (updateDto.getPassword() != null && !updateDto.getPassword().trim().isEmpty()) {
             user.setPassword(updateDto.getPassword().trim());
+            updated = true;
+        }
+        if (updateDto.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(updateDto.getProfilePictureUrl().trim());
+            updated = true;
+        }
+        if (updateDto.getSustainabilityPreferences() != null) {
+            user.setSustainabilityPreferences(updateDto.getSustainabilityPreferences().trim());
             updated = true;
         }
 
@@ -86,7 +102,7 @@ public class UserServiceImpl implements UserService {
             user = userRepository.save(user);
             log.info("User updated successfully with ID: {}", id);
         }
-        
+
         return userMapper.toDto(user);
     }
 

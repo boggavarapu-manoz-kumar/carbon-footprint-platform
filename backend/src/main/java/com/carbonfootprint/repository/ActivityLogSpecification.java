@@ -13,9 +13,15 @@ public class ActivityLogSpecification {
                 criteriaBuilder.equal(root.get("user").get("id"), userId);
     }
 
-    public static Specification<ActivityLog> hasCategory(ActivityCategory category) {
-        return (root, query, criteriaBuilder) ->
-                category == null ? null : criteriaBuilder.equal(root.get("category"), category);
+    public static Specification<ActivityLog> hasCategoryCode(String categoryCode) {
+        return (root, query, criteriaBuilder) -> {
+            if (categoryCode == null || categoryCode.trim().isEmpty()) {
+                return null;
+            }
+            return criteriaBuilder.equal(
+                    root.get("activityType").get("subCategory").get("category").get("code"), 
+                    categoryCode);
+        };
     }
 
     public static Specification<ActivityLog> isBetweenDates(LocalDate startDate, LocalDate endDate) {

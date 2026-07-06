@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, CircularProgress, Typography, Container, Alert } from '@mui/material';
+import { Box, CircularProgress, Typography, Container } from '@mui/material';
 
 const OAuth2Redirect = () => {
   const navigate = useNavigate();

@@ -11,7 +11,7 @@ public class EmissionFactorMapper {
     public EmissionFactor toEntity(EmissionFactorCreateDto dto) {
         if (dto == null) return null;
         return EmissionFactor.builder()
-                .activityType(dto.getActivityType())
+                // activityType must be set in the service layer
                 .factorValue(dto.getFactorValue())
                 .unit(dto.getUnit())
                 .source(dto.getSource())
@@ -22,7 +22,7 @@ public class EmissionFactorMapper {
         if (entity == null) return null;
         return EmissionFactorDto.builder()
                 .id(entity.getId())
-                .activityType(entity.getActivityType())
+                .activityType(entity.getActivityType() != null ? entity.getActivityType().getCode() : null)
                 .factorValue(entity.getFactorValue())
                 .unit(entity.getUnit())
                 .source(entity.getSource())

@@ -11,11 +11,10 @@ public class ActivityLogMapper {
     public ActivityLog toEntity(ActivityLogCreateDto dto) {
         if (dto == null) return null;
         return ActivityLog.builder()
-                .category(dto.getCategory())
-                .activityType(dto.getActivityType())
+                .dynamicInputs(dto.getDynamicInputs())
+                // activityType must be set in the service layer where the repository is accessed
                 .quantity(dto.getQuantity())
                 .unit(dto.getUnit())
-                
                 .logDate(dto.getLogDate())
                 .build();
     }
@@ -25,8 +24,8 @@ public class ActivityLogMapper {
         return ActivityLogDto.builder()
                 .id(entity.getId())
                 .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .category(entity.getCategory())
-                .activityType(entity.getActivityType())
+                .dynamicInputs(entity.getDynamicInputs())
+                .activityType(entity.getActivityType() != null ? entity.getActivityType().getCode() : null)
                 .quantity(entity.getQuantity())
                 .unit(entity.getUnit())
                 .emissionValue(entity.getEmissionValue())

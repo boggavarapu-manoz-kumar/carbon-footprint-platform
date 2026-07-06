@@ -3,9 +3,13 @@ import api from '../api/axiosConfig';
 const AuthService = {
   login: async (credentials) => {
     const response = await api.post('/v1/auth/authenticate', credentials);
-    const token = response.data?.data?.accessToken || response.data?.data?.token;
-    if (token) {
-      localStorage.setItem('token', token);
+    const accessToken = response.data?.data?.accessToken;
+    const refreshToken = response.data?.data?.refreshToken;
+    if (accessToken) {
+      localStorage.setItem('token', accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
     }
     return response.data.data;
   },
@@ -15,8 +19,15 @@ const AuthService = {
     return response.data.data;
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
+  logout: async () => {
+    try {
+      await api.post('/v1/auth/logout');
+    } catch (e) {
+      console.error('Logout error:', e);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+    }
   },
 
   forgotPassword: async (email) => {
@@ -38,28 +49,32 @@ const AuthService = {
     return !!localStorage.getItem('token');
   },
 
-  getCurrentUser: () => {
+  refreshToken: async (token) => {
+    const response = await api.post('/v1/auth/refresh-token', { refreshToken: token });
+    const accessToken = response.data?.data?.accessToken;
+    const newRefreshToken = response.data?.data?.refreshToken;
+    if (accessToken) {
+      localStorage.setItem('token', accessToken);
+    }
+    if (newRefreshToken) {
+      localStorage.setItem('refreshToken', newRefreshToken);
+    }
+    return response.data.data;
+  },
+
+  getCurrentUser: async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-      // Decode JWT payload (base64)
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      
-      const decoded = JSON.parse(jsonPayload);
-      const email = decoded.sub || '';
-      // Extract a friendly name from the email (e.g., john.doe@email.com -> John Doe)
-      const namePart = email.split('@')[0];
-      const name = namePart.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-      
-      return { email, name };
+      const response = await api.get('/v1/users/profile');
+      return response.data.data;
     } catch (error) {
-      console.error("Error decoding token:", error);
+      console.error("Error fetching user profile:", error);
       return null;
     }
+  },
+
+  updateProfile: async (profileData) => {
+    const response = await api.put('/v1/users/profile', profileData);
+    return response.data.data;
   }
 };
 

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class ActivityLogDto {
     Long id;
     Long userId;
-    ActivityCategory category;
+    String dynamicInputs;
     String activityType;
     BigDecimal quantity;
     String unit;

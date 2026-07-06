@@ -15,7 +15,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ActivityLogUpdateDto {
-    ActivityCategory category;
+    private String dynamicInputs;
     String activityType;
     
     BigDecimal quantity;

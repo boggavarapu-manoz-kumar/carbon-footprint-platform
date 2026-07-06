@@ -11,9 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "emission_factors", indexes = {
-    @Index(name = "idx_ef_activity_type", columnList = "activity_type", unique = true)
-})
+@Table(name = "emission_factors")
 @Getter
 @Setter
 @ToString
@@ -26,8 +24,12 @@ public class EmissionFactor implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "activity_type", nullable = false, unique = true, length = 100)
-    private String activityType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "activity_type_id", nullable = false)
+    private ActivityType activityType;
+
+    @Column(length = 50)
+    private String region;
 
     @Column(name = "factor_value", nullable = false, precision = 12, scale = 6)
     private BigDecimal factorValue;
@@ -37,6 +39,12 @@ public class EmissionFactor implements Serializable {
 
     @Column(length = 255)
     private String source;
+    
+    @Column(name = "valid_from")
+    private LocalDateTime validFrom;
+
+    @Column(name = "valid_to")
+    private LocalDateTime validTo;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

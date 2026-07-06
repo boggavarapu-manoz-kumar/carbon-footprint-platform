@@ -18,6 +18,7 @@
         <jjwt.version>0.12.5</jjwt.version>
         <lombok.version>1.18.38</lombok.version>
         <byte-buddy.version>1.14.19</byte-buddy.version>
+        <mockito.version>5.12.0</mockito.version>
     </properties>
     <dependencies>
         <dependency>

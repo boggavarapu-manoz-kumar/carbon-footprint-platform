@@ -48,9 +48,22 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         } else {
             log.info("Registering new user via OAuth2: {}", email);
+            String firstName = "Unknown";
+            String lastName = "Unknown";
+            if (name != null) {
+                String[] parts = name.split(" ", 2);
+                firstName = parts[0];
+                if (parts.length > 1) {
+                    lastName = parts[1];
+                }
+            }
+            String username = email.split("@")[0].replaceAll("[^a-zA-Z0-9_.]", "") + "_" + System.currentTimeMillis() % 1000;
+
             user = User.builder()
                     .email(email)
-                    .fullName(name != null ? name : "Unknown")
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .username(username)
                     .profilePictureUrl(picture)
                     .provider(AuthProvider.GOOGLE)
                     .providerId(providerId)

@@ -61,6 +61,23 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(updatedUser, "User updated successfully"));
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUserProfile() {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("REST request to get User Profile for: {}", email);
+        UserDto user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<UserDto>> updateCurrentUserProfile(@Valid @RequestBody UserUpdateDto updateDto) {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("REST request to update User Profile for: {}", email);
+        UserDto user = userService.getUserByEmail(email);
+        UserDto updatedUser = userService.updateUser(user.getId(), updateDto);
+        return ResponseEntity.ok(ApiResponse.success(updatedUser, "Profile updated successfully"));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         log.info("REST request to delete User by ID: {}", id);
