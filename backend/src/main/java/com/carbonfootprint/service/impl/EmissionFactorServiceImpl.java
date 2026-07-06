@@ -3,10 +3,12 @@ package com.carbonfootprint.service.impl;
 import com.carbonfootprint.dto.emission.EmissionFactorCreateDto;
 import com.carbonfootprint.dto.emission.EmissionFactorDto;
 import com.carbonfootprint.dto.emission.EmissionFactorUpdateDto;
+import com.carbonfootprint.entity.ActivityType;
 import com.carbonfootprint.entity.EmissionFactor;
 import com.carbonfootprint.exception.BadRequestException;
 import com.carbonfootprint.exception.ResourceNotFoundException;
 import com.carbonfootprint.mapper.EmissionFactorMapper;
+import com.carbonfootprint.repository.ActivityTypeRepository;
 import com.carbonfootprint.repository.EmissionFactorRepository;
 import com.carbonfootprint.service.EmissionFactorService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmissionFactorServiceImpl implements EmissionFactorService {
 
     private final EmissionFactorRepository repository;
+    private final ActivityTypeRepository activityTypeRepository;
     private final EmissionFactorMapper mapper;
 
     @Override
@@ -29,11 +32,15 @@ public class EmissionFactorServiceImpl implements EmissionFactorService {
     public EmissionFactorDto createEmissionFactor(final EmissionFactorCreateDto createDto) {
         log.info("Creating emission factor for: {}", createDto.getActivityType());
         
-        if (repository.existsByActivityTypeIgnoreCase(createDto.getActivityType())) {
+        if (repository.existsByActivityTypeCode(createDto.getActivityType())) {
             throw new BadRequestException("Emission factor for activity type already exists: " + createDto.getActivityType());
         }
         
+        ActivityType type = activityTypeRepository.findByCode(createDto.getActivityType())
+            .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", createDto.getActivityType()));
+        
         EmissionFactor entity = mapper.toEntity(createDto);
+        entity.setActivityType(type);
         return mapper.toDto(repository.save(entity));
     }
 
@@ -48,7 +55,7 @@ public class EmissionFactorServiceImpl implements EmissionFactorService {
     @Override
     @Transactional(readOnly = true)
     public EmissionFactorDto getEmissionFactorByType(final String activityType) {
-        EmissionFactor entity = repository.findByActivityTypeIgnoreCase(activityType)
+        EmissionFactor entity = repository.findByActivityTypeCode(activityType)
                 .orElseThrow(() -> new ResourceNotFoundException("EmissionFactor not found"));
         return mapper.toDto(entity);
     }
@@ -69,11 +76,13 @@ public class EmissionFactorServiceImpl implements EmissionFactorService {
 
         boolean updated = false;
         if (updateDto.getActivityType() != null && !updateDto.getActivityType().trim().isEmpty()) {
-            if (!entity.getActivityType().equalsIgnoreCase(updateDto.getActivityType()) &&
-                repository.existsByActivityTypeIgnoreCase(updateDto.getActivityType())) {
+            if (!entity.getActivityType().getCode().equalsIgnoreCase(updateDto.getActivityType()) &&
+                repository.existsByActivityTypeCode(updateDto.getActivityType())) {
                 throw new BadRequestException("Emission factor for activity type already exists: " + updateDto.getActivityType());
             }
-            entity.setActivityType(updateDto.getActivityType().trim());
+            ActivityType type = activityTypeRepository.findByCode(updateDto.getActivityType().trim())
+                .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", updateDto.getActivityType().trim()));
+            entity.setActivityType(type);
             updated = true;
         }
         

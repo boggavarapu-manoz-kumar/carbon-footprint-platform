@@ -50,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResponse register(UserCreateDto request) {
         log.info("Registering new user: {}", request.getEmail());
-        
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("Email already registered: " + request.getEmail());
         }
@@ -66,16 +66,16 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        
-        String jwtToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-        
+
+        String jwtToken = jwtService.generateToken(savedUser);
+        String refreshToken = jwtService.generateRefreshToken(savedUser);
+
         saveUserToken(savedUser, jwtToken);
-        
+
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
-                .user(userMapper.toDto(user))
+                .user(userMapper.toDto(savedUser))
                 .build();
     }
 
@@ -83,23 +83,21 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         log.info("Authenticating user: {}", request.getEmail());
-        
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
-        
+                        request.getPassword()));
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
-                
+
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
-        
+
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
-        
+
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
@@ -120,8 +118,9 @@ public class AuthServiceImpl implements AuthService {
 
     private void revokeAllUserTokens(User user) {
         var validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
-        if (validUserTokens.isEmpty()) return;
-        
+        if (validUserTokens.isEmpty())
+            return;
+
         validUserTokens.forEach(token -> {
             token.setExpired(true);
             token.setRevoked(true);
@@ -135,31 +134,32 @@ public class AuthServiceImpl implements AuthService {
         log.info("Processing password reset request for: {}", email);
         userRepository.findByEmail(email).ifPresent(user -> {
             // Rate Limiting (3 minutes)
-            if (user.getLastPasswordResetRequest() != null && 
-                ChronoUnit.MINUTES.between(user.getLastPasswordResetRequest(), LocalDateTime.now(java.time.ZoneOffset.UTC)) < 3) {
+            if (user.getLastPasswordResetRequest() != null &&
+                    ChronoUnit.MINUTES.between(user.getLastPasswordResetRequest(),
+                            LocalDateTime.now(java.time.ZoneOffset.UTC)) < 3) {
                 log.warn("Rate limit exceeded for password reset request: {}", email);
                 throw new TooManyRequestsException("Please wait 3 minutes before requesting another reset link.");
             }
-            
+
             passwordResetTokenRepository.deleteByUser(user);
             passwordResetTokenRepository.flush();
-            
+
             String rawToken = UUID.randomUUID().toString();
             String hashedToken = hashToken(rawToken);
-            
+
             PasswordResetToken token = PasswordResetToken.builder()
                     .token(hashedToken)
                     .user(user)
                     .expiryDate(LocalDateTime.now(java.time.ZoneOffset.UTC).plusMinutes(3))
                     .build();
             passwordResetTokenRepository.save(token);
-            
+
             user.setLastPasswordResetRequest(LocalDateTime.now(java.time.ZoneOffset.UTC));
             userRepository.save(user);
-            
+
             // Log security event
             logActivity(user.getEmail(), "PASSWORD_RESET_REQUESTED", "User requested a password reset link.");
-            
+
             emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
         });
     }
@@ -168,14 +168,14 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public void validatePasswordResetToken(String token) {
         String hashedToken = hashToken(token);
-        
+
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(hashedToken)
                 .orElseThrow(() -> new BadRequestException("Invalid or missing password reset token."));
-                
+
         if (resetToken.isUsed()) {
             throw new BadRequestException("This password reset link has already been used.");
         }
-        
+
         if (resetToken.isExpired()) {
             throw new BadRequestException("This password reset link has expired.");
         }
@@ -186,35 +186,57 @@ public class AuthServiceImpl implements AuthService {
     public void resetPassword(String token, String newPassword) {
         log.info("Processing password reset for token");
         String hashedToken = hashToken(token);
-        
+
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(hashedToken)
                 .orElseThrow(() -> new BadRequestException("Invalid or missing token"));
-                
+
         if (resetToken.isUsed()) {
             throw new BadRequestException("This password reset link has already been used. Please request a new one.");
         }
-        
+
         if (resetToken.isExpired()) {
             throw new BadRequestException("This password reset link has expired. Please request a new one.");
         }
-        
+
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
-        
+
         // Reset the rate limit timer on success
         user.setLastPasswordResetRequest(null);
         userRepository.save(user);
-        
+
         // Mark token as used instead of deleting it
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
-        
+
         revokeAllUserTokens(user);
-        
+
         // Log security event
         logActivity(user.getEmail(), "PASSWORD_RESET_COMPLETED", "User successfully reset their password.");
     }
-    
+
+    @Override
+    @Transactional
+    public AuthenticationResponse refreshToken(String refreshToken) {
+        log.info("Processing token refresh");
+        String userEmail = jwtService.extractUsername(refreshToken);
+        if (userEmail != null) {
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new BadRequestException("User not found"));
+            if (jwtService.isTokenValid(refreshToken, user)) {
+                String accessToken = jwtService.generateToken(user);
+                // Keep the same refresh token, just issue a new access token
+                revokeAllUserTokens(user);
+                saveUserToken(user, accessToken);
+                return AuthenticationResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .build();
+            }
+        }
+        throw new BadRequestException("Invalid or expired refresh token");
+    }
+
     private String hashToken(String token) {
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
@@ -224,18 +246,8 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Failed to hash token", e);
         }
     }
-    
+
     private void logActivity(String email, String action, String description) {
-        try {
-            activityLogService.createActivityLog(email, ActivityLogCreateDto.builder()
-                .category(ActivityCategory.SECURITY)
-                .activityType(action + ": " + description)
-                .quantity(java.math.BigDecimal.ZERO)
-                .unit("N/A")
-                .logDate(java.time.LocalDate.now())
-                .build());
-        } catch (Exception e) {
-            log.error("Failed to log activity: {}", e.getMessage());
-        }
+        log.info("SECURITY EVENT - User: {}, Action: {}, Description: {}", email, action, description);
     }
 }

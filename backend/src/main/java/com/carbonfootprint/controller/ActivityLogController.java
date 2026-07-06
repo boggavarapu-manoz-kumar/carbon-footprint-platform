@@ -33,6 +33,14 @@ public class ActivityLogController {
 
     private final ActivityLogService activityLogService;
 
+    @PostMapping("/calculate")
+    public ResponseEntity<ApiResponse<com.carbonfootprint.dto.activity.CalculationResponseDto>> calculateEmission(
+            @Valid @RequestBody com.carbonfootprint.dto.activity.CalculationRequestDto requestDto) {
+        log.info("Calculating emission for activity: {}", requestDto.getActivityType());
+        com.carbonfootprint.dto.activity.CalculationResponseDto responseDto = activityLogService.calculateEmission(requestDto);
+        return ResponseEntity.ok(ApiResponse.success(responseDto));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<ActivityLogDto>> createActivityLog(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -62,7 +70,7 @@ public class ActivityLogController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ActivityLogDto>>> searchActivityLogs(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) ActivityCategory category,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(sort = "logDate") Pageable pageable) {

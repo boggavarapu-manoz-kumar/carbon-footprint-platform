@@ -33,6 +33,8 @@ class UserControllerTest {
 
     @MockBean private UserService userService;
     @MockBean private JwtService jwtService;
+    @MockBean private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    @MockBean private com.carbonfootprint.repository.TokenRepository tokenRepository;
 
     private UserDto userDto;
     private UserCreateDto createDto;
@@ -40,7 +42,7 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         userDto = UserDto.builder().id(1L).email("test@example.com").fullName("Test User").build();
-        createDto = UserCreateDto.builder().email("test@example.com").password("Pass@123").fullName("Test User").build();
+        createDto = UserCreateDto.builder().email("test@example.com").password("Pass@123").confirmPassword("Pass@123").fullName("Test User").build();
     }
 
     @Test

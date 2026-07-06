@@ -3,13 +3,14 @@ package com.carbonfootprint.service.impl;
 import com.carbonfootprint.dto.activity.ActivityLogCreateDto;
 import com.carbonfootprint.dto.activity.ActivityLogDto;
 import com.carbonfootprint.dto.activity.ActivityLogUpdateDto;
-import com.carbonfootprint.entity.ActivityCategory;
 import com.carbonfootprint.entity.ActivityLog;
+import com.carbonfootprint.entity.ActivityType;
 import com.carbonfootprint.entity.User;
 import com.carbonfootprint.exception.ResourceNotFoundException;
 import com.carbonfootprint.mapper.ActivityLogMapper;
 import com.carbonfootprint.repository.ActivityLogRepository;
 import com.carbonfootprint.repository.ActivityLogSpecification;
+import com.carbonfootprint.repository.ActivityTypeRepository;
 import com.carbonfootprint.repository.UserRepository;
 import com.carbonfootprint.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class ActivityLogServiceImpl implements ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
+    private final ActivityTypeRepository activityTypeRepository;
     private final UserRepository userRepository;
     private final ActivityLogMapper mapper;
     private final com.carbonfootprint.service.EmissionCalculationService calculationService;
@@ -40,14 +42,14 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         log.info("Creating activity log for user: {}", userEmail);
         User user = getUserByEmail(userEmail);
         
+        ActivityType type = activityTypeRepository.findByCode(createDto.getActivityType())
+                .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", createDto.getActivityType()));
+        
         ActivityLog activityLog = mapper.toEntity(createDto);
         activityLog.setUser(user);
+        activityLog.setActivityType(type);
         
-        if (createDto.getCategory() == ActivityCategory.SECURITY) {
-            activityLog.setEmissionValue(java.math.BigDecimal.ZERO);
-        } else {
-            activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()));
-        }
+        activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()).getEmission());
         
         return mapper.toDto(activityLogRepository.save(activityLog));
     }
@@ -59,14 +61,22 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         User user = getUserByEmail(userEmail);
         
         List<ActivityLog> logsToSave = createDtos.stream().map(dto -> {
-            ActivityLog log = mapper.toEntity(dto);
-            log.setUser(user);
-            log.setEmissionValue(calculationService.calculateEmission(dto.getActivityType(), dto.getQuantity(), dto.getUnit()));
-            return log;
+            ActivityType type = activityTypeRepository.findByCode(dto.getActivityType())
+                    .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", dto.getActivityType()));
+            ActivityLog logItem = mapper.toEntity(dto);
+            logItem.setUser(user);
+            logItem.setActivityType(type);
+            logItem.setEmissionValue(calculationService.calculateEmission(dto.getActivityType(), dto.getQuantity(), dto.getUnit()).getEmission());
+            return logItem;
         }).collect(Collectors.toList());
         
         List<ActivityLog> savedLogs = activityLogRepository.saveAll(logsToSave);
         return savedLogs.stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public com.carbonfootprint.dto.activity.CalculationResponseDto calculateEmission(com.carbonfootprint.dto.activity.CalculationRequestDto requestDto) {
+        return calculationService.calculateEmission(requestDto.getActivityType(), requestDto.getQuantity(), requestDto.getUnit());
     }
 
     @Override
@@ -80,7 +90,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     @Transactional(readOnly = true)
     public Page<ActivityLogDto> searchActivityLogs(
             final String userEmail, 
-            final ActivityCategory category, 
+            final String categoryCode, 
             final LocalDate startDate, 
             final LocalDate endDate, 
             final Pageable pageable) {
@@ -90,7 +100,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         
         Specification<ActivityLog> spec = Specification
                 .where(ActivityLogSpecification.belongsToUser(user.getId()))
-                .and(ActivityLogSpecification.hasCategory(category))
+                .and(ActivityLogSpecification.hasCategoryCode(categoryCode))
                 .and(ActivityLogSpecification.isBetweenDates(startDate, endDate));
 
         return activityLogRepository.findAll(spec, pageable).map(mapper::toDto);
@@ -105,10 +115,10 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         boolean updated = false;
         boolean needsRecalculation = false;
         
-        if (updateDto.getCategory() != null) { activityLog.setCategory(updateDto.getCategory()); updated = true; }
-        
         if (updateDto.getActivityType() != null && !updateDto.getActivityType().trim().isEmpty()) { 
-            activityLog.setActivityType(updateDto.getActivityType().trim()); 
+            ActivityType type = activityTypeRepository.findByCode(updateDto.getActivityType().trim())
+                    .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", updateDto.getActivityType().trim()));
+            activityLog.setActivityType(type); 
             updated = true; 
             needsRecalculation = true;
         }
@@ -125,15 +135,11 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         if (updateDto.getLogDate() != null) { activityLog.setLogDate(updateDto.getLogDate()); updated = true; }
 
         if (needsRecalculation) {
-            if (activityLog.getCategory() == ActivityCategory.SECURITY) {
-                activityLog.setEmissionValue(java.math.BigDecimal.ZERO);
-            } else {
-                activityLog.setEmissionValue(calculationService.calculateEmission(
-                    activityLog.getActivityType(), 
-                    activityLog.getQuantity(), 
-                    activityLog.getUnit()
-                ));
-            }
+            activityLog.setEmissionValue(calculationService.calculateEmission(
+                activityLog.getActivityType().getCode(), 
+                activityLog.getQuantity(), 
+                activityLog.getUnit()
+            ).getEmission());
         }
 
         if (updated) {

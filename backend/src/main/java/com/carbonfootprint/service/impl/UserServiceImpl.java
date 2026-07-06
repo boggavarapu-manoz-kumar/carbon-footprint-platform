@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto createUser(final UserCreateDto createDto) {
         log.debug("Creating new user with email: {}", createDto.getEmail());
-        
+
         if (userRepository.existsByEmail(createDto.getEmail())) {
             log.warn("Email already registered: {}", createDto.getEmail());
             throw new BadRequestException("Email already registered: " + createDto.getEmail());
@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userMapper.toEntity(createDto);
         User savedUser = userRepository.save(user);
-        
+
         log.info("User created successfully with ID: {}", savedUser.getId());
         return userMapper.toDto(savedUser);
     }
@@ -81,12 +81,20 @@ public class UserServiceImpl implements UserService {
             user.setPassword(updateDto.getPassword().trim());
             updated = true;
         }
+        if (updateDto.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(updateDto.getProfilePictureUrl().trim());
+            updated = true;
+        }
+        if (updateDto.getSustainabilityPreferences() != null) {
+            user.setSustainabilityPreferences(updateDto.getSustainabilityPreferences().trim());
+            updated = true;
+        }
 
         if (updated) {
             user = userRepository.save(user);
             log.info("User updated successfully with ID: {}", id);
         }
-        
+
         return userMapper.toDto(user);
     }
 

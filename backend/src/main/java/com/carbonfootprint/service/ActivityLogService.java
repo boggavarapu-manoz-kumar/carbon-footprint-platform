@@ -14,11 +14,13 @@ public interface ActivityLogService {
     ActivityLogDto createActivityLog(String userEmail, ActivityLogCreateDto createDto);
     List<ActivityLogDto> createActivityLogsBulk(String userEmail, List<ActivityLogCreateDto> createDtos);
     
+    com.carbonfootprint.dto.activity.CalculationResponseDto calculateEmission(com.carbonfootprint.dto.activity.CalculationRequestDto requestDto);
+    
     ActivityLogDto getActivityLogById(Long id, String userEmail);
     
     Page<ActivityLogDto> searchActivityLogs(
             String userEmail, 
-            ActivityCategory category, 
+            String categoryCode, 
             LocalDate startDate, 
             LocalDate endDate, 
             Pageable pageable);

@@ -1,42 +1,73 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
 import ProtectedRoute from './routes/ProtectedRoute';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import OAuth2Redirect from './pages/OAuth2Redirect';
+import AppLayout from './components/AppLayout';
+import { Toaster } from 'react-hot-toast';
 
-import Dashboard from './pages/Dashboard';
+// Lazy load components for performance optimization (Code Splitting)
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const OAuth2RedirectHandler = lazy(() => import('./pages/OAuth2RedirectHandler'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const LogActivity = lazy(() => import('./pages/LogActivity'));
+const LogElectricity = lazy(() => import('./pages/LogElectricity'));
+const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+// Global Loading Fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#FBFBFC]">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+  </div>
+);
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <Router>
       <AuthProvider>
-        <Router>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            className: 'text-sm font-medium text-slate-900 shadow-lg border border-slate-100',
+            duration: 4000,
+            style: {
+              background: '#fff',
+              color: '#0f172a',
+              borderRadius: '12px',
+            },
+            success: { iconTheme: { primary: '#059669', secondary: '#fff' } },
+          }}
+        />
+        <Suspense fallback={<PageLoader />}>
           <Routes>
+            {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
+            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/log-activity" element={<LogActivity />} />
+                <Route path="/log-electricity" element={<LogElectricity />} />
+                <Route path="/activity-history" element={<ActivityHistory />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
             </Route>
 
             {/* Default Route */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-        </Router>
+        </Suspense>
       </AuthProvider>
-    </ThemeProvider>
+    </Router>
   );
 }
 

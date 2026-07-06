@@ -26,39 +26,42 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> register(
-            @Valid @RequestBody UserCreateDto request
-    ) {
+            @Valid @RequestBody UserCreateDto request) {
         return ResponseEntity.ok(ApiResponse.success(authService.register(request), "Registration successful"));
     }
 
     @PostMapping("/authenticate")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> authenticate(
-            @Valid @RequestBody AuthenticationRequest request
-    ) {
+            @Valid @RequestBody AuthenticationRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.authenticate(request), "Authentication successful"));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
-            @Valid @RequestBody ForgotPasswordRequest request
-    ) {
+            @Valid @RequestBody ForgotPasswordRequest request) {
         authService.requestPasswordReset(request.getEmail());
-        return ResponseEntity.ok(ApiResponse.success(null, "If the email is registered, a password reset link has been sent."));
+        return ResponseEntity
+                .ok(ApiResponse.success(null, "If the email is registered, a password reset link has been sent."));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(
-            @Valid @RequestBody ResetPasswordRequest request
-    ) {
+            @Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success(null, "Password has been successfully reset."));
     }
 
     @GetMapping("/validate-reset-token")
     public ResponseEntity<ApiResponse<Void>> validateResetToken(
-            @RequestParam String token
-    ) {
+            @RequestParam String token) {
         authService.validatePasswordResetToken(token);
         return ResponseEntity.ok(ApiResponse.success(null, "Token is valid."));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> refreshToken(
+            @Valid @RequestBody com.carbonfootprint.dto.auth.RefreshTokenRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request.getRefreshToken()),
+                "Token refreshed successfully"));
     }
 }

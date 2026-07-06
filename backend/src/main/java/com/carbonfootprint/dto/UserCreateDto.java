@@ -26,10 +26,7 @@ public class UserCreateDto {
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 64, message = "Password must be between 8 and 64 characters")
-    @jakarta.validation.constraints.Pattern(
-            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$",
-            message = "Password must contain at least one digit, one lowercase, one uppercase, and one special character"
-    )
+    @jakarta.validation.constraints.Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$", message = "Password must contain at least one digit, one lowercase, one uppercase, and one special character")
     String password;
 
     @NotBlank(message = "Confirm Password is required")

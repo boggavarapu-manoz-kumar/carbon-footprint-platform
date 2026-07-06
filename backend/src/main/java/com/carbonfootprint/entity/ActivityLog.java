@@ -32,13 +32,14 @@ public class ActivityLog implements Serializable {
     @ToString.Exclude
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50, columnDefinition = "varchar(50)")
-    private ActivityCategory category;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "activity_type_id", nullable = false)
+    private ActivityType activityType;
 
-    @Column(name = "activity_type", nullable = false, length = 100)
-    private String activityType;
+    @Column(name = "dynamic_inputs", columnDefinition = "TEXT")
+    private String dynamicInputs; // JSON string
 
+    // Legacy fields (quantity/unit) can be kept for backward compatibility or simple activities
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal quantity;
 
