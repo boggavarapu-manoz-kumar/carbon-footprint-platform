@@ -45,9 +45,9 @@ class UserServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        user = User.builder().id(1L).email("test@example.com").fullName("Test User").build();
-        userDto = UserDto.builder().id(1L).email("test@example.com").fullName("Test User").build();
-        createDto = UserCreateDto.builder().email("test@example.com").fullName("Test User").password("Pass@1234").build();
+        user = User.builder().id(1L).email("test@example.com").firstName("Test").lastName("User").username("test_user").build();
+        userDto = UserDto.builder().id(1L).email("test@example.com").firstName("Test").lastName("User").username("test_user").build();
+        createDto = UserCreateDto.builder().email("test@example.com").firstName("Test").lastName("User").username("test_user").password("Pass@1234").build();
     }
 
     @Nested
@@ -137,7 +137,7 @@ class UserServiceImplTest {
 
             userService.updateUser(1L, updateDto);
 
-            assertThat(user.getFullName()).isEqualTo("New Name");
+            assertThat(user.getFirstName()).isEqualTo("New Name");
             verify(userRepository).save(user);
         }
 

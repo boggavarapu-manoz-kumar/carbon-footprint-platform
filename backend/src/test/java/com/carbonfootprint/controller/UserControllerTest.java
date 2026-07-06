@@ -41,8 +41,8 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userDto = UserDto.builder().id(1L).email("test@example.com").fullName("Test User").build();
-        createDto = UserCreateDto.builder().email("test@example.com").password("Pass@123").confirmPassword("Pass@123").fullName("Test User").build();
+        userDto = UserDto.builder().id(1L).email("test@example.com").firstName("Test").lastName("User").username("test_user").build();
+        createDto = UserCreateDto.builder().email("test@example.com").password("Pass@123").confirmPassword("Pass@123").firstName("Test").lastName("User").username("test_user").build();
     }
 
     @Test

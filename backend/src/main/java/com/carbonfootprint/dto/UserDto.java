@@ -1,17 +1,26 @@
 package com.carbonfootprint.dto;
 
-import com.carbonfootprint.entity.Role;
 import com.carbonfootprint.entity.AuthProvider;
+import com.carbonfootprint.entity.Role;
 import lombok.Builder;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserDto {
+
     private Long id;
-    private String fullName;
+    private String firstName;
+    private String lastName;
+    private String username;
+    private String mobileNumber;
+    private String gender;
     private String email;
     private Role role;
     private AuthProvider provider;

@@ -31,7 +31,7 @@ class UserMapperTest {
         User entity = mapper.toEntity(dto);
 
         assertThat(entity).isNotNull();
-        assertThat(entity.getFullName()).isEqualTo("Jane Doe");
+        assertThat(entity.getFirstName()).isEqualTo("Jane Doe");
         assertThat(entity.getEmail()).isEqualTo("jane@example.com");
     }
 
@@ -48,7 +48,7 @@ class UserMapperTest {
 
         assertThat(dto).isNotNull();
         assertThat(dto.getId()).isEqualTo(42L);
-        assertThat(dto.getFullName()).isEqualTo("John Doe");
+        assertThat(dto.getFirstName()).isEqualTo("John Doe");
         assertThat(dto.getEmail()).isEqualTo("john@example.com");
     }
 

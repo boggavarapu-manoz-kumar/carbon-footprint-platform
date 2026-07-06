@@ -52,7 +52,7 @@ const Navbar = ({ onOpenSidebar }) => {
           >
             <img
               className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 object-cover shadow-sm"
-              src={user?.profilePictureUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}&backgroundColor=e2e8f0`}
+              src={user?.profilePictureUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || user?.firstName || 'User'}&backgroundColor=e2e8f0`}
               alt="Avatar"
             />
           </button>
@@ -64,7 +64,7 @@ const Navbar = ({ onOpenSidebar }) => {
 
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-1 ring-1 ring-slate-900/5 z-40 transform origin-top-right transition-all">
                 <div className="px-4 py-3 border-b border-slate-100">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{user?.fullName || 'User'}</p>
+                  <p className="text-sm font-semibold text-slate-900 truncate">{(user?.firstName || 'User') + (user?.lastName ? ' ' + user?.lastName : '')}</p>
                   <p className="text-xs font-medium text-slate-500 truncate">{user?.email || ''}</p>
                 </div>
 

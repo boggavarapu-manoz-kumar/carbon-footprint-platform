@@ -23,37 +23,37 @@ const Dashboard = () => {
         const mappedStats = [
           { 
             name: 'Total Activities', 
-            value: statsData.totalActivities.toString(), 
+            value: (statsData?.totalActivities || 0).toString(), 
             change: 'Lifetime', 
             trend: 'up',
             icon: ActivityIcon
           },
           { 
             name: 'Total CO₂ Emissions', 
-            value: `${statsData.totalEmissions.toFixed(1)} kg`, 
+            value: `${(statsData?.totalEmissions || 0).toFixed(1)} kg`, 
             change: 'Lifetime',
             trend: 'up',
             icon: CloudIcon
           },
           { 
             name: 'Monthly Emissions', 
-            value: `${statsData.currentMonthEmissions.toFixed(1)} kg`, 
-            change: statsData.previousMonthEmissions > 0 
-              ? `${(((statsData.currentMonthEmissions - statsData.previousMonthEmissions) / statsData.previousMonthEmissions) * 100).toFixed(1)}% vs last month`
+            value: `${(statsData?.currentMonthEmissions || 0).toFixed(1)} kg`, 
+            change: (statsData?.previousMonthEmissions || 0) > 0 
+              ? `${((((statsData?.currentMonthEmissions || 0) - (statsData?.previousMonthEmissions || 0)) / (statsData?.previousMonthEmissions || 1)) * 100).toFixed(1)}% vs last month`
               : 'New month started',
-            trend: statsData.currentMonthEmissions > statsData.previousMonthEmissions ? 'up' : 'down',
+            trend: (statsData?.currentMonthEmissions || 0) >= (statsData?.previousMonthEmissions || 0) ? 'up' : 'down',
             icon: ChartIcon
           },
           { 
             name: 'Weekly Emissions', 
-            value: `${(statsData.weeklyEmissions || 0).toFixed(1)} kg`, 
+            value: `${(statsData?.weeklyEmissions || 0).toFixed(1)} kg`, 
             change: 'Past 7 days',
             trend: 'up',
             icon: CloudIcon
           },
           { 
             name: 'Sustainability Score', 
-            value: statsData.sustainabilityScore.toString(), 
+            value: (statsData?.sustainabilityScore || 0).toString(), 
             change: 'Top 20%',
             trend: 'up',
             icon: ShieldIcon
@@ -115,7 +115,7 @@ const Dashboard = () => {
         {/* Welcome & Quick Actions Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back, {user?.name || 'Manoj'}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back, {user?.firstName || 'Manoj'}</h1>
             <p className="mt-1 text-sm text-slate-500">Here's your carbon footprint overview for today.</p>
           </div>
           <div className="flex gap-3">

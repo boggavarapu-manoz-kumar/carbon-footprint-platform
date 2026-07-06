@@ -52,7 +52,7 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        createDto = UserCreateDto.builder().email("test@example.com").password("pass").confirmPassword("pass").fullName("Test User").build();
+        createDto = UserCreateDto.builder().email("test@example.com").password("pass").confirmPassword("pass").firstName("Test").lastName("User").username("test_user").build();
         user = User.builder().id(1L).email("test@example.com").build();
         userDto = UserDto.builder().id(1L).email("test@example.com").build();
     }

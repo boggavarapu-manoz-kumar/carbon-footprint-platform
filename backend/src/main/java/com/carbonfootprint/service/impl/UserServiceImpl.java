@@ -73,8 +73,16 @@ public class UserServiceImpl implements UserService {
         User user = findUserById(id);
 
         boolean updated = false;
-        if (updateDto.getFullName() != null && !updateDto.getFullName().trim().isEmpty()) {
-            user.setFullName(updateDto.getFullName().trim());
+        if (updateDto.getFirstName() != null && !updateDto.getFirstName().trim().isEmpty()) {
+            user.setFirstName(updateDto.getFirstName().trim());
+            updated = true;
+        }
+        if (updateDto.getLastName() != null && !updateDto.getLastName().trim().isEmpty()) {
+            user.setLastName(updateDto.getLastName().trim());
+            updated = true;
+        }
+        if (updateDto.getUsername() != null && !updateDto.getUsername().trim().isEmpty()) {
+            user.setUsername(updateDto.getUsername().trim());
             updated = true;
         }
         if (updateDto.getPassword() != null && !updateDto.getPassword().trim().isEmpty()) {

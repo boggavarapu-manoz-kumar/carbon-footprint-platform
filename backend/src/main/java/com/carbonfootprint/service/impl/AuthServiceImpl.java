@@ -59,10 +59,24 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Passwords do not match");
         }
 
+        String avatarUrl;
+        if ("MALE".equalsIgnoreCase(request.getGender())) {
+            avatarUrl = "https://api.dicebear.com/9.x/micah/svg?seed=" + request.getUsername() + "&backgroundColor=b6e3f4";
+        } else if ("FEMALE".equalsIgnoreCase(request.getGender())) {
+            avatarUrl = "https://api.dicebear.com/9.x/lorelei/svg?seed=" + request.getUsername() + "&backgroundColor=ffd5dc";
+        } else {
+            avatarUrl = "https://api.dicebear.com/9.x/bottts/svg?seed=" + request.getUsername() + "&backgroundColor=e2e8f0";
+        }
+
         User user = User.builder()
-                .fullName(request.getFullName())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .username(request.getUsername())
+                .mobileNumber(request.getMobileNumber())
+                .gender(request.getGender())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .profilePictureUrl(avatarUrl)
                 .build();
 
         User savedUser = userRepository.save(user);

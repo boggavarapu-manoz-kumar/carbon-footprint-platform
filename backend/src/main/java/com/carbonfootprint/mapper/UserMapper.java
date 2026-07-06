@@ -12,7 +12,11 @@ public class UserMapper {
         if (dto == null)
             return null;
         return User.builder()
-                .fullName(dto.getFullName())
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .username(dto.getUsername())
+                .mobileNumber(dto.getMobileNumber())
+                .gender(dto.getGender())
                 .email(dto.getEmail())
                 .password(dto.getPassword())
                 .build();
@@ -23,7 +27,11 @@ public class UserMapper {
             return null;
         return UserDto.builder()
                 .id(entity.getId())
-                .fullName(entity.getFullName())
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .username(entity.getProfileUsername()) // use getProfileUsername to avoid getting email from Spring Security's getUsername
+                .mobileNumber(entity.getMobileNumber())
+                .gender(entity.getGender())
                 .email(entity.getEmail())
                 .role(entity.getRole())
                 .provider(entity.getProvider())

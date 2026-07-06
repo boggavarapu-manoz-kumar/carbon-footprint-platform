@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import AuthService from '../services/AuthService';
+import { Mail, User, Phone, Lock, Hash } from 'lucide-react';
 
 const Register = () => {
   const { register, handleSubmit, formState: { errors }, watch } = useForm();
@@ -41,17 +42,15 @@ const Register = () => {
       <div className="fixed -bottom-8 left-20 w-64 h-64 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
 
       {/* Glassmorphism Card */}
-      <div className="relative w-full max-w-lg bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-8 z-10">
-
+      <div className="relative w-full max-w-2xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-8 z-10">
+        
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
+            <User className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Create an Account</h1>
-          <p className="text-sm text-text-secondary mt-2">Join us to reduce your carbon footprint</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create an Account</h1>
+          <p className="text-sm text-slate-500 mt-2">Join us to reduce your carbon footprint</p>
         </div>
 
         {/* Error Alert */}
@@ -67,58 +66,134 @@ const Register = () => {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
 
-          {/* Full Name Field */}
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-text-primary mb-1">
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              placeholder="John Doe"
-              className={`w-full px-4 py-2.5 bg-white/50 border ${errors.fullName ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
-              {...register('fullName', {
-                required: 'Full name is required',
-                minLength: { value: 2, message: 'Name must be at least 2 characters' }
-              })}
-            />
-            {errors.fullName && <p className="mt-1.5 text-xs text-red-500">{errors.fullName.message}</p>}
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* First Name Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="John"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.firstName ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  {...register('firstName', {
+                    required: 'First name is required',
+                    minLength: { value: 2, message: 'Must be at least 2 characters' }
+                  })}
+                />
+              </div>
+              {errors.firstName && <p className="mt-1.5 text-xs text-red-500">{errors.firstName.message}</p>}
+            </div>
 
-          {/* Email Field */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className={`w-full px-4 py-2.5 bg-white/50 border ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address"
-                }
-              })}
-            />
-            {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
-          </div>
+            {/* Last Name Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.lastName ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  {...register('lastName', {
+                    required: 'Last name is required',
+                    minLength: { value: 2, message: 'Must be at least 2 characters' }
+                  })}
+                />
+              </div>
+              {errors.lastName && <p className="mt-1.5 text-xs text-red-500">{errors.lastName.message}</p>}
+            </div>
 
-          {/* Password Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Username Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-400 font-semibold text-sm">@</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="john_doe"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.username ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  {...register('username', {
+                    required: 'Username is required',
+                    pattern: {
+                      value: /^[a-zA-Z0-9]([._](?![._])|[a-zA-Z0-9]){1,28}[a-zA-Z0-9]$/,
+                      message: "3-30 chars, alphanumeric, dots, underscores"
+                    }
+                  })}
+                />
+              </div>
+              {errors.username && <p className="mt-1.5 text-xs text-red-500">{errors.username.message}</p>}
+            </div>
+
+            {/* Mobile Number Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-4 w-4 text-slate-400" />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="+1 234 567 8900"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.mobileNumber ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  {...register('mobileNumber')}
+                />
+              </div>
+            </div>
+
+            {/* Gender Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Gender (for Avatar)</label>
+              <select
+                className={`w-full px-4 py-2.5 bg-white/50 border ${errors.gender ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all`}
+                {...register('gender')}
+              >
+                <option value="">Select Gender</option>
+                <option value="MALE">Male (Micah Avatar)</option>
+                <option value="FEMALE">Female (Lorelei Avatar)</option>
+                <option value="OTHER">Other / Prefer not to say (Bot Avatar)</option>
+              </select>
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-4 w-4 text-slate-400" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address"
+                    }
+                  })}
+                />
+              </div>
+              {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
+            </div>
+
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-slate-400" />
+                </div>
                 <input
-                  id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-2.5 bg-white/50 border ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
                   {...register('password', {
                     required: 'Password is required',
                     pattern: {
@@ -148,15 +223,15 @@ const Register = () => {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-primary mb-1">
-                Confirm Password
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-slate-400" />
+                </div>
                 <input
-                  id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-2.5 bg-white/50 border ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
                   {...register('confirmPassword', {
                     required: 'Please confirm your password',
                     validate: value => value === password || 'Passwords do not match'
@@ -182,7 +257,7 @@ const Register = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-2.5 px-4 bg-primary hover:bg-primary-light text-white font-medium rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full mt-2 py-3 px-4 bg-primary hover:bg-primary-light text-white font-medium rounded-lg shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {loading ? (
               <>
@@ -201,7 +276,7 @@ const Register = () => {
             <div className="w-full border-t border-gray-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white/70 text-text-secondary">Or continue with</span>
+            <span className="px-2 bg-white/70 text-slate-500">Or continue with</span>
           </div>
         </div>
 
@@ -209,7 +284,7 @@ const Register = () => {
         <button
           onClick={handleGoogleRegister}
           type="button"
-          className="w-full py-2.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 text-text-primary font-medium rounded-lg shadow-sm transition-all flex items-center justify-center"
+          className="w-full py-2.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 text-slate-700 font-medium rounded-lg shadow-sm transition-all flex items-center justify-center"
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -221,7 +296,7 @@ const Register = () => {
         </button>
 
         {/* Login Link */}
-        <p className="mt-8 text-center text-sm text-text-secondary">
+        <p className="mt-8 text-center text-sm text-slate-500">
           Already have an account?{' '}
           <RouterLink to="/login" className="font-medium text-primary hover:text-primary-light transition-colors">
             Sign in instead
@@ -234,4 +309,3 @@ const Register = () => {
 };
 
 export default Register;
-
