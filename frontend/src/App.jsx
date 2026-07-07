@@ -4,6 +4,17 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Lazy load components for performance optimization (Code Splitting)
 const Login = lazy(() => import('./pages/Login'));
@@ -16,6 +27,7 @@ const LogActivity = lazy(() => import('./pages/LogActivity'));
 const LogElectricity = lazy(() => import('./pages/LogElectricity'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Profile = lazy(() => import('./pages/Profile'));
+const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -26,8 +38,9 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
         <Toaster 
           position="top-right"
           toastOptions={{
@@ -58,6 +71,7 @@ function App() {
                 <Route path="/log-electricity" element={<LogElectricity />} />
                 <Route path="/activity-history" element={<ActivityHistory />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/complete-profile" element={<CompleteProfile />} />
               </Route>
             </Route>
 
@@ -66,8 +80,9 @@ function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
-      </AuthProvider>
-    </Router>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 

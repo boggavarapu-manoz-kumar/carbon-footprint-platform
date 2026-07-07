@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Replace with your actual backend URL if different
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const hostname = window.location.hostname;
+const baseURL = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
 
 const axiosInstance = axios.create({
   baseURL,
@@ -20,6 +20,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error("Axios request error:", error);
     return Promise.reject(error);
   }
 );
@@ -29,6 +30,12 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Do not intercept 401s for authentication routes, let the component handle the error
+    if (originalRequest.url?.includes('/auth/authenticate') || originalRequest.url?.includes('/auth/register')) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {

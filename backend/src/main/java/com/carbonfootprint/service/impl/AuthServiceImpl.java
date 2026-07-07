@@ -55,6 +55,10 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email already registered: " + request.getEmail());
         }
 
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BadRequestException("Username already taken: " + request.getUsername());
+        }
+
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Passwords do not match");
         }
@@ -96,15 +100,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        log.info("Authenticating user: {}", request.getEmail());
+        log.info("Authenticating user: {}", request.getLoginIdentifier());
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
+                        request.getLoginIdentifier(),
                         request.getPassword()));
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
+        User user = userRepository.findByUsernameOrEmail(request.getLoginIdentifier(), request.getLoginIdentifier())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "loginIdentifier", request.getLoginIdentifier()));
 
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -146,36 +150,37 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void requestPasswordReset(String email) {
         log.info("Processing password reset request for: {}", email);
-        userRepository.findByEmail(email).ifPresent(user -> {
-            // Rate Limiting (3 minutes)
-            if (user.getLastPasswordResetRequest() != null &&
-                    ChronoUnit.MINUTES.between(user.getLastPasswordResetRequest(),
-                            LocalDateTime.now(java.time.ZoneOffset.UTC)) < 3) {
-                log.warn("Rate limit exceeded for password reset request: {}", email);
-                throw new TooManyRequestsException("Please wait 3 minutes before requesting another reset link.");
-            }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("You don't have an account. Please go to register."));
 
-            passwordResetTokenRepository.deleteByUser(user);
-            passwordResetTokenRepository.flush();
+        // Rate Limiting (3 minutes)
+        if (user.getLastPasswordResetRequest() != null &&
+                ChronoUnit.MINUTES.between(user.getLastPasswordResetRequest(),
+                        LocalDateTime.now(java.time.ZoneOffset.UTC)) < 3) {
+            log.warn("Rate limit exceeded for password reset request: {}", email);
+            throw new TooManyRequestsException("Please wait 3 minutes before requesting another reset link.");
+        }
 
-            String rawToken = UUID.randomUUID().toString();
-            String hashedToken = hashToken(rawToken);
+        passwordResetTokenRepository.deleteByUser(user);
+        passwordResetTokenRepository.flush();
 
-            PasswordResetToken token = PasswordResetToken.builder()
-                    .token(hashedToken)
-                    .user(user)
-                    .expiryDate(LocalDateTime.now(java.time.ZoneOffset.UTC).plusMinutes(3))
-                    .build();
-            passwordResetTokenRepository.save(token);
+        String rawToken = UUID.randomUUID().toString();
+        String hashedToken = hashToken(rawToken);
 
-            user.setLastPasswordResetRequest(LocalDateTime.now(java.time.ZoneOffset.UTC));
-            userRepository.save(user);
+        PasswordResetToken token = PasswordResetToken.builder()
+                .token(hashedToken)
+                .user(user)
+                .expiryDate(LocalDateTime.now(java.time.ZoneOffset.UTC).plusMinutes(3))
+                .build();
+        passwordResetTokenRepository.save(token);
 
-            // Log security event
-            logActivity(user.getEmail(), "PASSWORD_RESET_REQUESTED", "User requested a password reset link.");
+        user.setLastPasswordResetRequest(LocalDateTime.now(java.time.ZoneOffset.UTC));
+        userRepository.save(user);
 
-            emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
-        });
+        // Log security event
+        logActivity(user.getEmail(), "PASSWORD_RESET_REQUESTED", "User requested a password reset link.");
+
+        emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
     }
 
     @Override

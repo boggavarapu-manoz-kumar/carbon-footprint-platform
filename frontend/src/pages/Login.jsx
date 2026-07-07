@@ -30,8 +30,9 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
-    const baseUrl = apiUrl.replace(/\/api$/, '') || 'http://localhost:8081';
+    const hostname = window.location.hostname;
+    const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
+    const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
     window.location.href = `${baseUrl}/oauth2/authorization/google`;
   };
 
@@ -69,25 +70,21 @@ const Login = () => {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
 
-          {/* Email Field */}
+          {/* Login Identifier Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1">
-              Email Address
+            <label htmlFor="loginIdentifier" className="block text-sm font-medium text-text-primary mb-1">
+              Email Address or Username
             </label>
             <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              className={`w-full px-4 py-2.5 bg-white/50 border ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address"
-                }
+              id="loginIdentifier"
+              type="text"
+              placeholder="you@example.com or username"
+              className={`w-full px-4 py-2.5 bg-white/50 border ${errors.loginIdentifier ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+              {...register('loginIdentifier', {
+                required: 'Email or Username is required'
               })}
             />
-            {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
+            {errors.loginIdentifier && <p className="mt-1.5 text-xs text-red-500">{errors.loginIdentifier.message}</p>}
           </div>
 
           {/* Password Field */}

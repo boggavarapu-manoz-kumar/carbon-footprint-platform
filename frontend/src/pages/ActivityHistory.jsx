@@ -3,6 +3,7 @@ import ActivityService from '../services/ActivityService';
 import toast from 'react-hot-toast';
 import ActivityModal from '../components/ActivityModal';
 import ErrorState from '../components/ErrorState';
+import { formatActivityType, getActivityIcon } from '../utils/formatters';
 
 const ActivityHistory = () => {
   const [activities, setActivities] = useState([]);
@@ -163,7 +164,12 @@ const ActivityHistory = () => {
                   filteredActivities.map((activity) => (
                     <tr key={activity.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">{activity.activityType}</div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                            {getActivityIcon(activity.activityType, activity.category)}
+                          </div>
+                          <div className="text-sm font-medium text-slate-900">{formatActivityType(activity.activityType)}</div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border

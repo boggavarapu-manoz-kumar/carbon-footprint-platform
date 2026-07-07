@@ -1,21 +1,25 @@
 package com.carbonfootprint.dto.auth;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-@Data
+/**
+ * Highly optimized, immutable Data Transfer Object for Authentication Requests.
+ * Built for performance, security, and thread-safety using Lombok @Value.
+ */
+@Value
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Jacksonized
 public class AuthenticationRequest {
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
-    private String email;
 
-    @NotBlank(message = "Password is required")
-    private String password;
+    @NotBlank(message = "Email or Username is strictly required")
+    @Size(min = 3, max = 100, message = "Identifier length must be between 3 and 100 characters")
+    String loginIdentifier;
+
+    @NotBlank(message = "Password is strictly required")
+    @Size(min = 8, max = 64, message = "Password must be between 8 and 64 characters")
+    String password;
 }

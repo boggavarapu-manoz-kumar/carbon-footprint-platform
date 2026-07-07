@@ -64,7 +64,7 @@ public class User implements UserDetails, Serializable {
     @Column(name = "provider_id")
     private String providerId;
 
-    @Column(name = "profile_picture_url", length = 1000)
+    @Column(name = "profile_picture_url", columnDefinition="LONGTEXT")
     private String profilePictureUrl;
 
     @Column(name = "sustainability_preferences", length = 500)
@@ -77,6 +77,9 @@ public class User implements UserDetails, Serializable {
     @Column(name = "last_password_reset_request")
     private LocalDateTime lastPasswordResetRequest;
 
+    @Column(name = "last_username_change_date")
+    private LocalDateTime lastUsernameChangeDate;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -87,7 +90,7 @@ public class User implements UserDetails, Serializable {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return role.getAuthorities();
     }
 
     @Override

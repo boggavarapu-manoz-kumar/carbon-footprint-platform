@@ -39,6 +39,7 @@ public class UserMapper {
                 .sustainabilityPreferences(entity.getSustainabilityPreferences())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .lastUsernameChangeDate(entity.getLastUsernameChangeDate())
                 .build();
     }
 }

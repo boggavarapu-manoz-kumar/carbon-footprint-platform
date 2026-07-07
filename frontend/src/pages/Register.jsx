@@ -1,25 +1,81 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import AuthService from '../services/AuthService';
-import { Mail, User, Phone, Lock, Hash } from 'lucide-react';
+import api from '../api/axiosConfig';
+import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { Mail, User, Phone, Lock, Hash, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import PhoneInput from 'react-phone-number-input';
 
 const Register = () => {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm();
+  const { register, handleSubmit, control, formState: { errors }, watch, setValue, clearErrors } = useForm({
+    mode: 'onChange'
+  });
   const navigate = useNavigate();
 
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
 
   const password = watch('password');
+  const username = watch('username');
+  const firstName = watch('firstName');
+  const lastName = watch('lastName');
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!username || username.length < 3 || errors.username) {
+        setUsernameAvailable(null);
+        if (suggestions.length > 0) setSuggestions([]);
+        return;
+      }
+      setCheckingUsername(true);
+      try {
+        const response = await api.get(`/v1/users/check-username?username=${username}`);
+        setUsernameAvailable(response.data.data); // data is boolean, true = available
+      } catch (e) {
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+    const timer = setTimeout(checkAvailability, 500);
+    return () => clearTimeout(timer);
+  }, [username, errors.username]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!firstName || firstName.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      try {
+        const response = await api.get(`/v1/users/suggest-username?firstName=${firstName}&lastName=${lastName || ''}`);
+        setSuggestions(response.data.data || []);
+      } catch (e) {
+        setSuggestions([]);
+      }
+    };
+    const timer = setTimeout(fetchSuggestions, 800);
+    return () => clearTimeout(timer);
+  }, [firstName, lastName]);
 
   const onSubmit = async (data) => {
+    if (usernameAvailable === false) {
+      setAuthError('Please choose an available username before registering.');
+      return;
+    }
     try {
       setAuthError('');
       setLoading(true);
       await AuthService.register(data);
+      toast.success('Registration successful! Please sign in.');
       navigate('/login');
     } catch (err) {
       setAuthError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -117,7 +173,7 @@ const Register = () => {
                 <input
                   type="text"
                   placeholder="john_doe"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.username ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
+                  className={`w-full pl-10 pr-10 py-2.5 bg-white/50 border ${errors.username || usernameAvailable === false ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
                   {...register('username', {
                     required: 'Username is required',
                     pattern: {
@@ -126,37 +182,75 @@ const Register = () => {
                     }
                   })}
                 />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  {checkingUsername && <Loader2 className="h-5 w-5 text-slate-400 animate-spin" />}
+                  {!checkingUsername && usernameAvailable === true && <CheckCircle2 className="h-5 w-5 text-green-500 drop-shadow-sm" />}
+                  {!checkingUsername && usernameAvailable === false && <XCircle className="h-5 w-5 text-red-500 drop-shadow-sm" />}
+                </div>
               </div>
-              {errors.username && <p className="mt-1.5 text-xs text-red-500">{errors.username.message}</p>}
+              {errors.username && <p className="mt-1.5 text-xs text-red-500 font-medium">{errors.username.message}</p>}
+              {!errors.username && usernameAvailable === false && (
+                <div className="mt-2 p-3 bg-red-50/80 border border-red-100 rounded-lg backdrop-blur-sm transition-all animate-fade-in-up">
+                  <p className="text-xs text-red-600 font-medium flex items-center">
+                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                    This username isn't available.
+                  </p>
+                  {suggestions.length > 0 && (
+                    <div className="mt-2.5">
+                      <p className="text-xs text-slate-500 mb-1.5 font-medium">Try one of these:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {suggestions.map(sugg => (
+                          <button
+                            key={sugg}
+                            type="button"
+                            onClick={() => {
+                              setValue('username', sugg, { shouldValidate: true });
+                              setUsernameAvailable(true);
+                              clearErrors('username');
+                            }}
+                            className="px-2.5 py-1 text-xs bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary hover:bg-primary/5 rounded-full transition-all shadow-sm font-medium"
+                          >
+                            {sugg}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Mobile Number Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-4 w-4 text-slate-400" />
-                </div>
-                <input
-                  type="tel"
-                  placeholder="+1 234 567 8900"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-white/50 border ${errors.mobileNumber ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all placeholder:text-gray-400`}
-                  {...register('mobileNumber')}
+                <Controller
+                  name="mobileNumber"
+                  control={control}
+                  render={({ field: { onChange, value } }) => (
+                    <PhoneInput
+                      international
+                      defaultCountry="US"
+                      value={value}
+                      onChange={onChange}
+                      className={`w-full bg-white/50 border ${errors.mobileNumber ? 'border-red-400 focus-within:ring-red-500' : 'border-gray-200 focus-within:border-primary focus-within:ring-primary/20'} rounded-lg focus-within:outline-none focus-within:ring-2 transition-all px-4 py-2.5 custom-phone-input`}
+                    />
+                  )}
                 />
               </div>
             </div>
 
             {/* Gender Field */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Gender (for Avatar)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
               <select
                 className={`w-full px-4 py-2.5 bg-white/50 border ${errors.gender ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:border-primary focus:ring-primary/20'} rounded-lg focus:outline-none focus:ring-2 transition-all`}
                 {...register('gender')}
               >
                 <option value="">Select Gender</option>
-                <option value="MALE">Male (Micah Avatar)</option>
-                <option value="FEMALE">Female (Lorelei Avatar)</option>
-                <option value="OTHER">Other / Prefer not to say (Bot Avatar)</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other / Prefer not to say</option>
               </select>
             </div>
 
@@ -197,7 +291,7 @@ const Register = () => {
                   {...register('password', {
                     required: 'Password is required',
                     pattern: {
-                      regexp: /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$/,
+                      value: /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$/,
                       message: 'Must contain uppercase, lowercase, number, and special character'
                     },
                     minLength: {

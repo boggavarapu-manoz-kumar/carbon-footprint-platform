@@ -28,4 +28,5 @@ public class UserDto {
     private String sustainabilityPreferences;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime lastUsernameChangeDate;
 }

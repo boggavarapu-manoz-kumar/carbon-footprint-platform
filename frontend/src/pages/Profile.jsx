@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import UserService from '../services/UserService';
+import { useProfile, useUpdateProfile } from '../hooks/useProfile';
+import api from '../api/axiosConfig';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
-import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf } from 'lucide-react';
+import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getAvatarUrl } from '../utils/formatters';
+import PhoneInput from 'react-phone-number-input';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+  const { data: fetchedProfile, isLoading: loading, error: fetchError } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
 
   const [profileData, setProfileData] = useState({
     id: null,
@@ -21,65 +26,96 @@ const Profile = () => {
     sustainabilityPreferences: '',
     createdAt: ''
   });
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  
+  const [originalUsername, setOriginalUsername] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    if (fetchedProfile) {
+      setProfileData({
+        id: fetchedProfile.id,
+        firstName: fetchedProfile.firstName || '',
+        lastName: fetchedProfile.lastName || '',
+        username: fetchedProfile.username || '',
+        mobileNumber: fetchedProfile.mobileNumber || '',
+        gender: fetchedProfile.gender || '',
+        email: fetchedProfile.email || '',
+        profilePictureUrl: fetchedProfile.profilePictureUrl || '',
+        sustainabilityPreferences: fetchedProfile.sustainabilityPreferences || '',
+        createdAt: fetchedProfile.createdAt || new Date().toISOString()
+      });
+      setOriginalUsername(fetchedProfile.username || '');
+    }
+  }, [fetchedProfile]);
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!profileData.username || profileData.username.length < 3 || profileData.username === originalUsername) {
+        setUsernameAvailable(null);
+        return;
+      }
+      setCheckingUsername(true);
       try {
-        setLoading(true);
-        if (user) {
-          const data = await UserService.getProfile();
-          setProfileData({
-            id: data.id,
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            username: data.username || '',
-            mobileNumber: data.mobileNumber || '',
-            gender: data.gender || '',
-            email: data.email || '',
-            profilePictureUrl: data.profilePictureUrl || `https://api.dicebear.com/9.x/bottts/svg?seed=${data.username || 'User'}&backgroundColor=e2e8f0`,
-            sustainabilityPreferences: data.sustainabilityPreferences || '',
-            createdAt: data.createdAt || new Date().toISOString()
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        setError('Failed to load profile data.');
+        const response = await api.get(`/v1/users/check-username?username=${profileData.username}`);
+        setUsernameAvailable(response.data.data); // data is boolean, true = available
+      } catch (e) {
+        setUsernameAvailable(null);
       } finally {
-        setLoading(false);
+        setCheckingUsername(false);
       }
     };
-
-    fetchProfile();
-  }, [user]);
+    const timer = setTimeout(checkAvailability, 500);
+    return () => clearTimeout(timer);
+  }, [profileData.username, originalUsername]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prev => ({ ...prev, [name]: value }));
+    setProfileData(prev => {
+      const newData = { ...prev, [name]: value };
+      // If gender changes, always regenerate the avatar to match the new gender
+      if (name === 'gender') {
+        newData.profilePictureUrl = getAvatarUrl(newData.username, value);
+      }
+      // If username changes, regenerate to get a new seed
+      if (name === 'username') {
+        newData.profilePictureUrl = getAvatarUrl(value, newData.gender);
+      }
+      return newData;
+    });
   };
 
   const handleSaveChanges = async (e) => {
     e.preventDefault();
-    try {
-      setSaving(true);
-      await UserService.updateProfile({
+    if (usernameAvailable === false) {
+      toast.error('Please choose an available username.');
+      return;
+    }
+    
+    updateProfileMutation.mutate(
+      {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         username: profileData.username,
         mobileNumber: profileData.mobileNumber,
         gender: profileData.gender,
-        sustainabilityPreferences: profileData.sustainabilityPreferences
-      });
-      toast.success('Profile updated successfully!');
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      toast.error('Failed to update profile. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+        sustainabilityPreferences: profileData.sustainabilityPreferences,
+        profilePictureUrl: profileData.profilePictureUrl
+      },
+      {
+        onSuccess: async () => {
+          setOriginalUsername(profileData.username);
+          setUsernameAvailable(null);
+          if (refreshUser) await refreshUser();
+          toast.success('Profile updated successfully!');
+        },
+        onError: (err) => {
+          console.error('Error updating profile:', err);
+          const errorMessage = err.response?.data?.message || 'Failed to update profile. Please try again.';
+          toast.error(errorMessage);
+        }
+      }
+    );
   };
 
   if (loading) {
@@ -90,12 +126,12 @@ const Profile = () => {
     );
   }
 
-  if (error) {
+  if (fetchError) {
     return (
       <div className="min-h-screen font-sans bg-slate-50 text-slate-900 pb-12 pt-8">
         <ErrorState
           title="Unable to load profile"
-          message={error}
+          message="Failed to load profile data."
           onRetry={() => window.location.reload()}
         />
       </div>
@@ -130,7 +166,7 @@ const Profile = () => {
               <div className="flex justify-center -mt-16 mb-4">
                 <img
                   className="h-32 w-32 rounded-full border-4 border-white shadow-lg object-cover bg-slate-100"
-                  src={profileData.profilePictureUrl}
+                  src={getAvatarUrl(profileData.username || profileData.firstName, profileData.gender)}
                   alt={`${profileData.firstName} Avatar`}
                 />
               </div>
@@ -223,27 +259,31 @@ const Profile = () => {
                         name="username"
                         value={profileData.username}
                         onChange={handleInputChange}
-                        className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+                        className={`pl-10 pr-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors ${usernameAvailable === false ? 'border-red-400 focus:ring-red-500' : ''}`}
                         placeholder="john_doe"
                         required
                       />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        {checkingUsername && <Loader2 className="h-4 w-4 text-emerald-600 animate-spin" />}
+                        {!checkingUsername && usernameAvailable === true && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                        {!checkingUsername && usernameAvailable === false && <XCircle className="h-4 w-4 text-red-500" />}
+                      </div>
                     </div>
+                    {usernameAvailable === false && (
+                      <p className="mt-1.5 text-xs text-red-500 font-medium">This username is already taken.</p>
+                    )}
                   </div>
 
                   {/* Mobile Number */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="tel"
-                        name="mobileNumber"
+                      <PhoneInput
+                        international
+                        defaultCountry="US"
                         value={profileData.mobileNumber}
-                        onChange={handleInputChange}
-                        className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
-                        placeholder="+1 (555) 000-0000"
+                        onChange={(value) => handleInputChange({ target: { name: 'mobileNumber', value: value || '' } })}
+                        className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus-within:ring-emerald-500 focus-within:border-emerald-500 sm:text-sm transition-colors custom-phone-input"
                       />
                     </div>
                   </div>
@@ -310,10 +350,10 @@ const Profile = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={updateProfileMutation.isPending || usernameAvailable === false}
                     className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-100 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
                   >
-                    {saving ? 'Saving Changes...' : 'Save Changes'}
+                    {updateProfileMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
                   </button>
                 </div>
               </form>
@@ -326,3 +366,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

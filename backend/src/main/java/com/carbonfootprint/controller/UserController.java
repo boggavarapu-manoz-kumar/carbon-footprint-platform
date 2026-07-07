@@ -84,4 +84,20 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"));
     }
+
+    @GetMapping("/check-username")
+    public ResponseEntity<ApiResponse<Boolean>> checkUsernameAvailability(@RequestParam String username) {
+        log.info("REST request to check username availability for: {}", username);
+        boolean available = userService.checkUsernameAvailability(username);
+        return ResponseEntity.ok(ApiResponse.success(available));
+    }
+
+    @GetMapping("/suggest-username")
+    public ResponseEntity<ApiResponse<java.util.List<String>>> suggestUsernames(
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName) {
+        log.info("REST request to suggest usernames for {} {}", firstName, lastName);
+        java.util.List<String> suggestions = userService.suggestUsernames(firstName, lastName);
+        return ResponseEntity.ok(ApiResponse.success(suggestions));
+    }
 }

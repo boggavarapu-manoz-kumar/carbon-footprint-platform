@@ -30,8 +30,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
         User user = oAuth2User.getUser();
 
-        // Generate JWT token
+        // Generate JWT token and refresh token
         String jwtToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
         
         // Revoke existing tokens and save new one
         revokeAllUserTokens(user);
@@ -39,7 +40,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // Redirect to frontend with token
         // In a real production app, this URL should be configured via application.yml
-        String redirectUrl = "http://localhost:5173/oauth2/redirect?token=" + jwtToken;
+        String redirectUrl = "http://localhost:5173/oauth2/redirect?token=" + jwtToken + "&refreshToken=" + refreshToken;
         
         log.info("OAuth2 login successful for user: {}. Redirecting to frontend.", user.getEmail());
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
