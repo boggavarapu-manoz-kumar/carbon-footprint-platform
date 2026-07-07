@@ -13,4 +13,7 @@ public interface UserService {
     Page<UserDto> getAllUsers(Pageable pageable);
     UserDto updateUser(Long id, UserUpdateDto updateDto);
     void deleteUser(Long id);
+    
+    boolean checkUsernameAvailability(String username);
+    java.util.List<String> suggestUsernames(String firstName, String lastName);
 }

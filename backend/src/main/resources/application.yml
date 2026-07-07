@@ -2,15 +2,24 @@ spring:
   application:
     name: carbon-footprint-platform
   datasource:
-    url: jdbc:mysql://localhost:3306/carbon_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/carbon_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
     username: root
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      pool-name: CarbonFootprintHikariPool
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false # Disabled for maximum throughput
+    open-in-view: false # Disabled to prevent N+1 memory leaks
     properties:
       hibernate:
         format_sql: true
@@ -41,6 +50,12 @@ spring:
 
 server:
   port: 8081
+  http2:
+    enabled: true
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
   error:
     include-message: always
     include-binding-errors: always
@@ -49,5 +64,13 @@ app:
   jwt:
     secret: ${JWT_SECRET:8f4c3a2b1d9e7f6a5c4b3a2d1e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9}
     expiration-ms: ${JWT_EXPIRATION:86400000}
+
+application:
+  security:
+    jwt:
+      secret-key: ${ADMIN_JWT_SECRET:8f4c3a2b1d9e7f6a5c4b3a2d1e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9}
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
 
 

@@ -82,9 +82,9 @@ class AuthServiceImplTest {
 
     @Test
     void authenticate_Success() {
-        AuthenticationRequest req = AuthenticationRequest.builder().email("test@example.com").password("pass").build();
+        AuthenticationRequest req = AuthenticationRequest.builder().loginIdentifier("test@example.com").password("pass").build();
         
-        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByUsernameOrEmail("test@example.com", "test@example.com")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn("jwtToken");
         when(jwtService.generateRefreshToken(user)).thenReturn("refreshToken");
         when(userMapper.toDto(user)).thenReturn(userDto);
@@ -98,8 +98,8 @@ class AuthServiceImplTest {
 
     @Test
     void authenticate_UserNotFound() {
-        AuthenticationRequest req = AuthenticationRequest.builder().email("notfound@example.com").password("pass").build();
-        when(userRepository.findByEmail("notfound@example.com")).thenReturn(Optional.empty());
+        AuthenticationRequest req = AuthenticationRequest.builder().loginIdentifier("notfound@example.com").password("pass").build();
+        when(userRepository.findByUsernameOrEmail("notfound@example.com", "notfound@example.com")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> authService.authenticate(req));
     }

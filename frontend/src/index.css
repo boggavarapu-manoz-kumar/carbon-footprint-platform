@@ -318,3 +318,19 @@ body {
 .badge-diet      { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .badge-shopping  { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
 .badge-default   { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
+/* ────────────────────────────────────────────
+   PHONE INPUT CUSTOMIZATION
+──────────────────────────────────────────── */
+.custom-phone-input .PhoneInputInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  padding-left: 10px;
+}
+.custom-phone-input .PhoneInputCountry {
+  border-right: 1px solid #e2e8f0;
+  padding-right: 10px;
+  margin-right: 5px;
+}
+

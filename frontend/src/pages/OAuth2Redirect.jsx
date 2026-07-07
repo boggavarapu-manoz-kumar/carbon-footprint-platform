@@ -10,10 +10,14 @@ const OAuth2Redirect = () => {
     // Extract token from URL
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
+    const refreshToken = params.get('refreshToken');
 
     if (token) {
-      // Save token to localStorage using the exact key 'token' that AuthService expects
+      // Save tokens to localStorage
       localStorage.setItem('token', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
       
       // Force a full page reload so AuthContext reads the new token on mount
       window.location.href = '/dashboard';

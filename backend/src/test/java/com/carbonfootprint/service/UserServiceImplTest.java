@@ -128,16 +128,17 @@ class UserServiceImplTest {
     class UpdateUser {
 
         @Test
-        @DisplayName("Should update fullName when provided")
+        @DisplayName("Should update name when provided")
         void updateUser_FullName_Success() {
-            UserUpdateDto updateDto = UserUpdateDto.builder().fullName("New Name").build();
+            UserUpdateDto updateDto = UserUpdateDto.builder().firstName("New").lastName("Name").build();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.save(user)).thenReturn(user);
             when(userMapper.toDto(user)).thenReturn(userDto);
 
             userService.updateUser(1L, updateDto);
 
-            assertThat(user.getFirstName()).isEqualTo("New Name");
+            assertThat(user.getFirstName()).isEqualTo("New");
+            assertThat(user.getLastName()).isEqualTo("Name");
             verify(userRepository).save(user);
         }
 
@@ -158,7 +159,7 @@ class UserServiceImplTest {
         void updateUser_NotFound() {
             when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> userService.updateUser(99L, UserUpdateDto.builder().fullName("X").build()))
+            assertThatThrownBy(() -> userService.updateUser(99L, UserUpdateDto.builder().firstName("X").build()))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }

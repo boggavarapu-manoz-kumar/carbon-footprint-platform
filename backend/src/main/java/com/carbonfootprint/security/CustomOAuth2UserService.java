@@ -64,6 +64,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .firstName(firstName)
                     .lastName(lastName)
                     .username(username)
+                    .mobileNumber("")
+                    .gender("")
                     .profilePictureUrl(picture)
                     .provider(AuthProvider.GOOGLE)
                     .providerId(providerId)

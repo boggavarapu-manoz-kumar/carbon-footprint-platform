@@ -15,9 +15,12 @@ const ForgotPassword = () => {
       setSuccessMsg('');
       setLoading(true);
       await AuthService.forgotPassword(data.email);
-      setSuccessMsg('If an account exists for ' + data.email + ', a password reset link has been sent.');
+      setSuccessMsg('A password reset link has been sent to your email.');
     } catch (err) {
-      setErrorMsg('Unable to process your request at this time. Please try again later.');
+      console.error("Forgot Password Error:", err);
+      const backendMessage = err.response?.data?.message;
+      const fallbackMessage = `Unable to process your request. ${err.message || 'Please try again.'}`;
+      setErrorMsg(backendMessage || fallbackMessage);
     } finally {
       setLoading(false);
     }
@@ -46,13 +49,15 @@ const ForgotPassword = () => {
 
         {/* Success Alert */}
         {successMsg && (
-          <div className="mb-6 p-4 bg-green-50/80 border border-green-200 text-green-700 text-sm rounded-lg flex items-start backdrop-blur-sm shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 shrink-0 text-green-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <h3 className="font-medium text-green-800">Email Sent</h3>
-              <p className="mt-1">{successMsg}</p>
+          <div className="mb-6 space-y-4">
+            <div className="p-4 bg-green-50/80 border border-green-200 text-green-700 text-sm rounded-lg flex items-start backdrop-blur-sm shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 shrink-0 text-green-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <h3 className="font-medium text-green-800">Email Sent</h3>
+                <p className="mt-1">{successMsg}</p>
+              </div>
             </div>
           </div>
         )}

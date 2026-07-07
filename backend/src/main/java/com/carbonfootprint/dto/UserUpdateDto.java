@@ -22,10 +22,15 @@ public class UserUpdateDto {
     @Size(min = 2, max = 100, message = "Last name must be between 2 and 100 characters")
     private String lastName;
 
+    @Size(max = 20, message = "Mobile number cannot exceed 20 characters")
+    private String mobileNumber;
+
     private String profilePictureUrl;
 
     @Size(max = 500, message = "Preferences cannot exceed 500 characters")
     private String sustainabilityPreferences;
+
+    private String gender;
 
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;

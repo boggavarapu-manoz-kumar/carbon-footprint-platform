@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../hooks/useProfile';
 import ActivityService from '../services/ActivityService';
 import ErrorState from '../components/ErrorState';
+import { formatActivityType, getActivityIcon } from '../utils/formatters';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { data: userProfile } = useProfile();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
@@ -115,7 +118,7 @@ const Dashboard = () => {
         {/* Welcome & Quick Actions Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back, {user?.firstName || 'Manoj'}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back, {userProfile?.firstName || user?.firstName || 'Manoj'}</h1>
             <p className="mt-1 text-sm text-slate-500">Here's your carbon footprint overview for today.</p>
           </div>
           <div className="flex gap-3">
@@ -181,17 +184,17 @@ const Dashboard = () => {
               recentActivities.map((activity) => (
                 <div key={activity.id} className="p-6 hover:bg-slate-50 transition-colors flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold uppercase">
-                      {(activity.category || activity.activityType).charAt(0)}
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                      {getActivityIcon(activity.activityType, activity.category)}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{activity.activityType}</p>
-                      <p className="text-xs text-slate-500">{activity.category || 'Activity'} • {activity.logDate}</p>
+                      <p className="text-sm font-bold text-slate-900">{formatActivityType(activity.activityType)}</p>
+                      <p className="text-xs font-medium text-slate-500">{activity.category ? formatActivityType(activity.category) : 'Activity'} • {new Date(activity.logDate).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">{activity.emissionValue.toFixed(2)} kg CO₂</p>
-                    <p className="text-xs text-slate-500">{activity.quantity} {activity.unit}</p>
+                    <p className="text-sm font-bold text-slate-900 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full inline-block">{activity.emissionValue.toFixed(2)} kg CO₂</p>
+                    <p className="text-xs text-slate-500 mt-1">{activity.quantity} {activity.unit}</p>
                   </div>
                 </div>
               ))

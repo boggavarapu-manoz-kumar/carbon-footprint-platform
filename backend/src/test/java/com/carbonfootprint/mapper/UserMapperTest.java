@@ -23,7 +23,7 @@ class UserMapperTest {
     @DisplayName("toEntity should correctly map all fields from CreateDto")
     void toEntity_Success_AllFieldsMapped() {
         UserCreateDto dto = UserCreateDto.builder()
-                .fullName("Jane Doe")
+                .firstName("Jane").lastName("Doe")
                 .email("jane@example.com")
                 .password("securePass123!")
                 .build();
@@ -31,7 +31,8 @@ class UserMapperTest {
         User entity = mapper.toEntity(dto);
 
         assertThat(entity).isNotNull();
-        assertThat(entity.getFirstName()).isEqualTo("Jane Doe");
+        assertThat(entity.getFirstName()).isEqualTo("Jane");
+        assertThat(entity.getLastName()).isEqualTo("Doe");
         assertThat(entity.getEmail()).isEqualTo("jane@example.com");
     }
 
@@ -40,7 +41,7 @@ class UserMapperTest {
     void toDto_Success_AllFieldsMapped() {
         User user = User.builder()
                 .id(42L)
-                .fullName("John Doe")
+                .firstName("John").lastName("Doe")
                 .email("john@example.com")
                 .build();
 
@@ -48,7 +49,8 @@ class UserMapperTest {
 
         assertThat(dto).isNotNull();
         assertThat(dto.getId()).isEqualTo(42L);
-        assertThat(dto.getFirstName()).isEqualTo("John Doe");
+        assertThat(dto.getFirstName()).isEqualTo("John");
+        assertThat(dto.getLastName()).isEqualTo("Doe");
         assertThat(dto.getEmail()).isEqualTo("john@example.com");
     }
 

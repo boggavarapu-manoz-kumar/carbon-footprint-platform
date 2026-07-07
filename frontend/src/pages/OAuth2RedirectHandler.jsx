@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -7,26 +7,27 @@ import AuthService from '../services/AuthService';
 const OAuth2RedirectHandler = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setIsAuthenticated, fetchUser } = useAuth();
+  const { handleOAuthLogin } = useAuth();
+  const processed = useRef(false);
 
   useEffect(() => {
     const handleRedirect = async () => {
+      if (processed.current) return;
+      processed.current = true;
+      
       const token = searchParams.get('token');
-      // The backend currently only returns the access token via query param
+      const refreshToken = searchParams.get('refreshToken');
       
       if (token) {
-        localStorage.setItem('token', token);
-        setIsAuthenticated(true);
-        
         try {
-          await fetchUser();
+          await handleOAuthLogin(token, refreshToken);
           toast.success('Successfully logged in with Google!');
           navigate('/dashboard', { replace: true });
         } catch (error) {
           console.error("Failed to fetch user after OAuth:", error);
           toast.error('Failed to load user profile. Please try again.');
           localStorage.removeItem('token');
-          setIsAuthenticated(false);
+          localStorage.removeItem('refreshToken');
           navigate('/login', { replace: true });
         }
       } else {
@@ -41,7 +42,7 @@ const OAuth2RedirectHandler = () => {
     };
 
     handleRedirect();
-  }, [searchParams, navigate, setIsAuthenticated, fetchUser]);
+  }, [searchParams, navigate, handleOAuthLogin]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FBFBFC]">

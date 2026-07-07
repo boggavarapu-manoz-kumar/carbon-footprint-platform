@@ -36,7 +36,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /api/v1/auth/register - Success")
     void register() throws Exception {
-        UserCreateDto request = UserCreateDto.builder().email("test@test.com").password("Pass@123").confirmPassword("Pass@123").fullName("name").build();
+        UserCreateDto request = UserCreateDto.builder().email("test@test.com").password("Pass@123").confirmPassword("Pass@123").firstName("name").lastName("last").username("test_user").build();
         AuthenticationResponse response = AuthenticationResponse.builder().accessToken("token").build();
 
         when(authService.register(any(UserCreateDto.class))).thenReturn(response);
@@ -51,14 +51,17 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /api/v1/auth/authenticate - Success")
     void authenticate() throws Exception {
-        AuthenticationRequest request = AuthenticationRequest.builder().email("test@test.com").password("pass").build();
+        AuthenticationRequest authRequest = AuthenticationRequest.builder()
+                .loginIdentifier("test@example.com")
+                .password("password123")
+                .build();
         AuthenticationResponse response = AuthenticationResponse.builder().accessToken("token").build();
 
         when(authService.authenticate(any(AuthenticationRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/auth/authenticate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").value("token"));
     }

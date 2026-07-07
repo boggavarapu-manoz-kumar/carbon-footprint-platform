@@ -83,8 +83,8 @@ class UserControllerTest {
     @Test
     @DisplayName("PUT /api/v1/users/{id} - Success")
     void updateUser() throws Exception {
-        UserUpdateDto updateDto = UserUpdateDto.builder().fullName("Updated").build();
-        UserDto updatedUser = UserDto.builder().id(1L).email("test@example.com").fullName("Updated").build();
+        UserUpdateDto updateDto = UserUpdateDto.builder().firstName("Updated").lastName("User").build();
+        UserDto updatedUser = UserDto.builder().id(1L).email("test@example.com").firstName("Updated").lastName("User").build();
         
         when(userService.updateUser(eq(1L), any(UserUpdateDto.class))).thenReturn(updatedUser);
 
@@ -92,6 +92,6 @@ class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.fullName").value("Updated"));
+                .andExpect(jsonPath("$.data.firstName").value("Updated"));
     }
 }
