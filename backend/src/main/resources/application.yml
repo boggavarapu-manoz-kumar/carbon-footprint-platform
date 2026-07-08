@@ -48,6 +48,18 @@ spring:
               - email
               - profile
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+
 server:
   port: 8081
   http2:
@@ -64,13 +76,23 @@ app:
   jwt:
     secret: ${JWT_SECRET:8f4c3a2b1d9e7f6a5c4b3a2d1e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9}
     expiration-ms: ${JWT_EXPIRATION:86400000}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5174}
 
 application:
   security:
     jwt:
-      secret-key: ${ADMIN_JWT_SECRET:8f4c3a2b1d9e7f6a5c4b3a2d1e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9b8a7d6e5f4c3b2a1d0e9f8c7b6a5d4e3f2c1b0a9f8e7d6c5b4a3d2e1f0c9}
+      secret-key: ${ADMIN_JWT_SECRET:9a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6}
       expiration: 86400000
       refresh-token:
         expiration: 604800000
 
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true

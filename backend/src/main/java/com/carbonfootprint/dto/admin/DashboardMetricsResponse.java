@@ -10,5 +10,8 @@ public record DashboardMetricsResponse(
     long activeUsers,
     long newRegistrations,
     BigDecimal totalCarbonEmissions,
-    long totalActivities
+    long totalActivities,
+    long suspendedUsers,
+    long securityAlerts,
+    long adminCount
 ) {}

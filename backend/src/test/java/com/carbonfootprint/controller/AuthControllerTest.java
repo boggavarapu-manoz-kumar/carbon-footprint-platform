@@ -30,8 +30,13 @@ class AuthControllerTest {
 
     @MockBean private AuthService authService;
     @MockBean private JwtService jwtService;
-    @MockBean private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    @MockBean(name = "userDetailsService") private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
     @MockBean private com.carbonfootprint.repository.TokenRepository tokenRepository;
+    @MockBean private com.carbonfootprint.security.admin.AdminJwtService adminJwtService;
+    @MockBean private com.carbonfootprint.security.admin.GlobalRateLimitingService globalRateLimitingService;
+    @MockBean(name = "adminUserDetailsService") private com.carbonfootprint.security.admin.AdminUserDetailsService adminUserDetailsService;
+    @MockBean private com.carbonfootprint.repository.admin.AdminSessionRepository adminSessionRepository;
+    @MockBean private io.micrometer.core.instrument.MeterRegistry meterRegistry;
 
     @Test
     @DisplayName("POST /api/v1/auth/register - Success")

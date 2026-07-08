@@ -1,11 +1,13 @@
 package com.carbonfootprint.controller.admin;
 
+import com.carbonfootprint.dto.admin.AdminUserResponse;
 import com.carbonfootprint.dto.admin.UserStatusUpdateRequest;
 import com.carbonfootprint.response.ApiResponse;
-import com.carbonfootprint.security.admin.AdminPermissions;
+import com.carbonfootprint.service.admin.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,55 +21,69 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AdminUserController {
 
+    private final AdminUserService adminUserService;
+
     /**
-     * Retrieves a paginated list of all users.
-     * 
-     * @return ApiResponse containing list of users
+     * Retrieves a paginated, searchable list of all platform users.
      */
     @GetMapping
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_VIEW)")
-    public ResponseEntity<ApiResponse<String>> getUsers() {
-        log.info("Fetching paginated users list");
-        return ResponseEntity.ok(ApiResponse.success("Users list", "Users fetched successfully"));
+    public ResponseEntity<ApiResponse<Page<AdminUserResponse>>> getUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        log.info("Fetching users — page={}, size={}, search={}", page, size, search);
+        Page<AdminUserResponse> users = adminUserService.getUsers(search, page, size, sortBy, direction);
+        return ResponseEntity.ok(ApiResponse.success(users, "Users fetched successfully"));
     }
 
     /**
      * Retrieves detailed profile for a specific user.
-     *
-     * @param id The ID of the user
-     * @return ApiResponse containing user details
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_VIEW)")
-    public ResponseEntity<ApiResponse<String>> getUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<AdminUserResponse>> getUser(@PathVariable Long id) {
         log.info("Fetching user details for id: {}", id);
-        return ResponseEntity.ok(ApiResponse.success("User details", "User fetched successfully"));
+        AdminUserResponse user = adminUserService.getUserById(id);
+        return ResponseEntity.ok(ApiResponse.success(user, "User fetched successfully"));
     }
 
     /**
-     * Updates the status of a specific user (e.g. SUSPEND, LOCK, ACTIVE).
-     *
-     * @param id The ID of the user
-     * @param request The status update payload containing reason
-     * @return Empty ApiResponse on success
+     * Updates the status of a specific user (ACTIVE, SUSPENDED, LOCKED).
      */
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE)")
-    public ResponseEntity<ApiResponse<Void>> updateUserStatus(@PathVariable Long id, @Valid @RequestBody UserStatusUpdateRequest request) {
-        log.info("Updating user {} status to: {}", id, request.getStatus());
-        // Add audit logging here via service layer
-        return ResponseEntity.ok(ApiResponse.success(null, "User status updated successfully"));
+    public ResponseEntity<ApiResponse<Void>> updateUserStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UserStatusUpdateRequest request) {
+        log.info("Admin updating user {} status to: {}", id, request.getStatus());
+        adminUserService.updateUserStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.success(null, "User status updated to " + request.getStatus()));
     }
 
     /**
-     * Manually provisions a new user from the admin portal.
-     *
-     * @return Empty ApiResponse on success
+     * Convenience endpoint: Suspends a specific user.
      */
-    @PostMapping
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_CREATE)")
-    public ResponseEntity<ApiResponse<Void>> createUser() {
-        log.info("Provisioning a new user manually from admin portal");
-        return ResponseEntity.ok(ApiResponse.success(null, "User created successfully"));
+    @PostMapping("/{id}/suspend")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE)")
+    public ResponseEntity<ApiResponse<Void>> suspendUser(@PathVariable Long id) {
+        log.info("Admin suspending user {}", id);
+        adminUserService.updateUserStatus(id,
+                UserStatusUpdateRequest.builder().status("SUSPENDED").reason("Admin action").build());
+        return ResponseEntity.ok(ApiResponse.success(null, "User suspended successfully"));
+    }
+
+    /**
+     * Convenience endpoint: Restores a suspended user.
+     */
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE)")
+    public ResponseEntity<ApiResponse<Void>> restoreUser(@PathVariable Long id) {
+        log.info("Admin restoring user {}", id);
+        adminUserService.updateUserStatus(id,
+                UserStatusUpdateRequest.builder().status("ACTIVE").reason("Admin restore action").build());
+        return ResponseEntity.ok(ApiResponse.success(null, "User restored successfully"));
     }
 }

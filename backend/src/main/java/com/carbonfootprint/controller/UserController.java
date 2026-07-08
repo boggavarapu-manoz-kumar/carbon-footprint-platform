@@ -66,7 +66,11 @@ public class UserController {
         String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         log.info("REST request to get User Profile for: {}", email);
         UserDto user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(ApiResponse.success(user));
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(ApiResponse.success(user));
     }
 
     @PutMapping("/profile")

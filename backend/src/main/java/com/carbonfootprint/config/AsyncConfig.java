@@ -1,5 +1,8 @@
 package com.carbonfootprint.config;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -11,6 +14,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @EnableAsync
 public class AsyncConfig {
+
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
 
     @Bean(name = "auditLogExecutor")
     public Executor auditLogExecutor() {
@@ -27,7 +33,16 @@ public class AsyncConfig {
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(60);
         
+        // Attach the TaskDecorator for MDC and SecurityContext propagation
+        executor.setTaskDecorator(new MdcTaskDecorator());
+        
         executor.initialize();
+        
+        // Register with Micrometer if available for metrics monitoring
+        if (meterRegistry != null) {
+            return ExecutorServiceMetrics.monitor(meterRegistry, executor.getThreadPoolExecutor(), "auditLogExecutor");
+        }
+        
         return executor;
     }
 }

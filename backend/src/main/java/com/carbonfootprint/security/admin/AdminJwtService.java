@@ -7,6 +7,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -14,7 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Service
@@ -31,18 +32,39 @@ public class AdminJwtService {
 
     private static final String ISSUER = "carbon-platform-admin";
     private static final String AUDIENCE = "admin-portal";
+    private static final String REDIS_BLACKLIST_PREFIX = "jwt:blacklist:";
 
-    // In-memory map for Token Replay protection
-    private final Map<String, Boolean> revokedTokens = new ConcurrentHashMap<>();
+    private final StringRedisTemplate redisTemplate;
+
+    public AdminJwtService(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     public void revokeToken(String jti) {
         if (jti != null) {
-            revokedTokens.put(jti, true);
+            try {
+                // Store the revoked JTI in Redis with a TTL matching the token's max lifespan
+                redisTemplate.opsForValue().set(
+                    REDIS_BLACKLIST_PREFIX + jti,
+                    "revoked",
+                    jwtExpiration,
+                    TimeUnit.MILLISECONDS
+                );
+            } catch (Exception e) {
+                // Ignore if Redis is down
+            }
         }
     }
 
     public boolean isTokenRevoked(String jti) {
-        return jti != null && revokedTokens.containsKey(jti);
+        if (jti == null) return false;
+        try {
+            Boolean isRevoked = redisTemplate.hasKey(REDIS_BLACKLIST_PREFIX + jti);
+            return Boolean.TRUE.equals(isRevoked);
+        } catch (Exception e) {
+            // Log warning and fallback to false if Redis is down
+            return false;
+        }
     }
 
     public String extractUsername(String token) {

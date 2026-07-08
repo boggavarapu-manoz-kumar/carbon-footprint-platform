@@ -8,9 +8,13 @@ const Navbar = ({ onOpenSidebar }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [navAvatarError, setNavAvatarError] = useState(false);
   const { data: userProfile } = useProfile();
 
   const isProfileIncomplete = userProfile && (!userProfile.username || !userProfile.mobileNumber || !userProfile.gender);
+
+  const navAvatarUrl = getAvatarUrl(userProfile?.profilePictureUrl);
+  const navFallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent((userProfile?.firstName || 'U') + '+' + (userProfile?.lastName || ''))}&background=10b981&color=fff&size=64&bold=true`;
 
   return (
     <header className="h-14 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 sticky top-0 flex-shrink-0 transition-all">
@@ -68,9 +72,12 @@ const Navbar = ({ onOpenSidebar }) => {
           >
             <div className="relative">
               <img
+                key={navAvatarUrl}
                 className="h-8 w-8 rounded-full border border-slate-200 bg-slate-100 object-cover shadow-sm"
-                src={getAvatarUrl(userProfile?.username || userProfile?.firstName, userProfile?.gender)}
+                src={navAvatarError ? navFallbackUrl : navAvatarUrl}
                 alt="Avatar"
+                onError={() => setNavAvatarError(true)}
+                onLoad={() => setNavAvatarError(false)}
               />
               {isProfileIncomplete && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">

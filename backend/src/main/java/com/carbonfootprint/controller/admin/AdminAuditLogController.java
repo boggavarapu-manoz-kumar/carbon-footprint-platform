@@ -7,11 +7,14 @@ import com.carbonfootprint.service.admin.AdminAuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -32,9 +35,19 @@ public class AdminAuditLogController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).AUDITLOGS_VIEW)")
-    public ResponseEntity<ApiResponse<Page<AuditLog>>> getAuditLogs(Pageable pageable) {
-        log.info("Fetching paginated audit logs");
-        return ResponseEntity.ok(ApiResponse.success(adminAuditService.getAuditLogs(pageable), "Audit logs retrieved successfully"));
+    public ResponseEntity<ApiResponse<Page<AuditLog>>> getAuditLogs(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "timestamp") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        
+        log.info("Fetching paginated audit logs — page={}, size={}, search={}", page, size, search);
+        Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<AuditLog> auditLogs = adminAuditService.getAuditLogs(search, pageable);
+        return ResponseEntity.ok(ApiResponse.success(auditLogs, "Audit logs retrieved successfully"));
     }
 
     /**

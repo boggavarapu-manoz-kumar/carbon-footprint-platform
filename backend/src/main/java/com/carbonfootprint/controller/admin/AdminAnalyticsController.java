@@ -1,7 +1,10 @@
 package com.carbonfootprint.controller.admin;
 
+import com.carbonfootprint.dto.admin.ActivityTrendResponse;
+import com.carbonfootprint.dto.admin.CategoryAnalyticsResponse;
+import com.carbonfootprint.dto.admin.UserGrowthResponse;
 import com.carbonfootprint.response.ApiResponse;
-import com.carbonfootprint.security.admin.AdminPermissions;
+import com.carbonfootprint.service.admin.AdminAnalyticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,28 +14,36 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Controller for Admin Analytics.
- */
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/analytics")
 @RequiredArgsConstructor
 public class AdminAnalyticsController {
 
-    /**
-     * Retrieves aggregated carbon analytics trends over a specific date range.
-     *
-     * @param startDate Optional start date ISO-8601
-     * @param endDate Optional end date ISO-8601
-     * @return ApiResponse containing the analytics data
-     */
-    @GetMapping("/trends")
+    private final AdminAnalyticsService analyticsService;
+
+    @GetMapping("/users/growth")
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
-    public ResponseEntity<ApiResponse<String>> getAnalyticsTrends(
-            @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate) {
-        log.info("Fetching analytics trends from {} to {}", startDate, endDate);
-        return ResponseEntity.ok(ApiResponse.success("Analytics trends data", "Analytics retrieved successfully"));
+    public ResponseEntity<ApiResponse<List<UserGrowthResponse>>> getUserGrowth(
+            @RequestParam(defaultValue = "30") int days) {
+        log.info("Fetching user growth analytics for {} days", days);
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getUserGrowth(days), "User growth retrieved successfully"));
+    }
+
+    @GetMapping("/activities/trends")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
+    public ResponseEntity<ApiResponse<List<ActivityTrendResponse>>> getActivityTrends(
+            @RequestParam(defaultValue = "30") int days) {
+        log.info("Fetching activity trends for {} days", days);
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getActivityTrends(days), "Activity trends retrieved successfully"));
+    }
+
+    @GetMapping("/categories")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
+    public ResponseEntity<ApiResponse<List<CategoryAnalyticsResponse>>> getCategoryAnalytics() {
+        log.info("Fetching category analytics");
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getCategoryAnalytics(), "Category analytics retrieved successfully"));
     }
 }
