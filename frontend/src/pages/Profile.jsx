@@ -4,13 +4,13 @@ import { useProfile, useUpdateProfile } from '../hooks/useProfile';
 import api from '../api/axiosConfig';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
-import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { getAvatarUrl } from '../utils/formatters';
+import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf, CheckCircle2, XCircle, Loader2, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getAvatarUrl, AVATAR_OPTIONS } from '../utils/formatters';
 import PhoneInput from 'react-phone-number-input';
 
 const Profile = () => {
-  const { user, logout, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   const { data: fetchedProfile, isLoading: loading, error: fetchError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
 
@@ -30,6 +30,11 @@ const Profile = () => {
   const [originalUsername, setOriginalUsername] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+
+  const liveAvatarUrl = getAvatarUrl(profileData.profilePictureUrl);
+  const fallbackAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent((profileData.firstName || 'U') + '+' + (profileData.lastName || ''))}&background=10b981&color=fff&size=128&bold=true`;
 
   useEffect(() => {
     if (fetchedProfile) {
@@ -46,6 +51,7 @@ const Profile = () => {
         createdAt: fetchedProfile.createdAt || new Date().toISOString()
       });
       setOriginalUsername(fetchedProfile.username || '');
+      setAvatarLoadError(false);
     }
   }, [fetchedProfile]);
 
@@ -58,7 +64,7 @@ const Profile = () => {
       setCheckingUsername(true);
       try {
         const response = await api.get(`/v1/users/check-username?username=${profileData.username}`);
-        setUsernameAvailable(response.data.data); // data is boolean, true = available
+        setUsernameAvailable(response.data.data);
       } catch (e) {
         setUsernameAvailable(null);
       } finally {
@@ -71,18 +77,13 @@ const Profile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProfileData(prev => {
-      const newData = { ...prev, [name]: value };
-      // If gender changes, always regenerate the avatar to match the new gender
-      if (name === 'gender') {
-        newData.profilePictureUrl = getAvatarUrl(newData.username, value);
-      }
-      // If username changes, regenerate to get a new seed
-      if (name === 'username') {
-        newData.profilePictureUrl = getAvatarUrl(value, newData.gender);
-      }
-      return newData;
-    });
+    setProfileData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAvatarSelect = (avatarUrl) => {
+    setProfileData(prev => ({ ...prev, profilePictureUrl: avatarUrl }));
+    setAvatarLoadError(false);
+    setShowAvatarPicker(false);
   };
 
   const handleSaveChanges = async (e) => {
@@ -100,7 +101,7 @@ const Profile = () => {
         mobileNumber: profileData.mobileNumber,
         gender: profileData.gender,
         sustainabilityPreferences: profileData.sustainabilityPreferences,
-        profilePictureUrl: profileData.profilePictureUrl
+        profilePictureUrl: profileData.profilePictureUrl,
       },
       {
         onSuccess: async () => {
@@ -163,13 +164,37 @@ const Profile = () => {
               transition={{ duration: 0.5 }}
               className="bg-white rounded-2xl shadow-xl p-6 border border-slate-100 sticky top-24"
             >
+              {/* Avatar with change button */}
               <div className="flex justify-center -mt-16 mb-4">
-                <img
-                  className="h-32 w-32 rounded-full border-4 border-white shadow-lg object-cover bg-slate-100"
-                  src={getAvatarUrl(profileData.username || profileData.firstName, profileData.gender)}
-                  alt={`${profileData.firstName} Avatar`}
-                />
+                <div className="relative group">
+                  <img
+                    key={liveAvatarUrl}
+                    className="h-32 w-32 rounded-full border-4 border-white shadow-lg object-cover bg-slate-100 transition-all duration-300"
+                    src={avatarLoadError ? fallbackAvatarUrl : liveAvatarUrl}
+                    alt={`${profileData.firstName} Avatar`}
+                    onError={() => setAvatarLoadError(true)}
+                    onLoad={() => setAvatarLoadError(false)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarPicker(true)}
+                    className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    title="Change Avatar"
+                  >
+                    <Camera className="h-7 w-7 text-white" />
+                  </button>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(true)}
+                className="w-full mb-4 py-2 px-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
+              >
+                <Camera className="h-4 w-4" />
+                Change Avatar
+              </button>
+
               <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold text-slate-900">{profileData.firstName} {profileData.lastName}</h1>
                 <p className="text-sm font-medium text-emerald-600 bg-emerald-50 inline-block px-3 py-1 rounded-full mt-2">
@@ -242,7 +267,6 @@ const Profile = () => {
                         onChange={handleInputChange}
                         className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
                         placeholder="Doe"
-                        required
                       />
                     </div>
                   </div>
@@ -361,9 +385,84 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Avatar Picker Modal */}
+      <AnimatePresence>
+        {showAvatarPicker && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+              onClick={() => setShowAvatarPicker(false)}
+            />
+            <motion.div
+              key="modal"
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg pointer-events-auto">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Choose Your Avatar</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">Pick a cartoon avatar that suits you</p>
+                  </div>
+                  <button
+                    onClick={() => setShowAvatarPicker(false)}
+                    className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg p-1.5 transition-colors"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-5 gap-3">
+                  {AVATAR_OPTIONS.map((avatar) => {
+                    const isSelected = profileData.profilePictureUrl === avatar.url;
+                    return (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        onClick={() => handleAvatarSelect(avatar.url)}
+                        className={`relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all hover:scale-105 active:scale-100 ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-100'
+                            : 'border-slate-100 hover:border-slate-300 bg-slate-50'
+                        }`}
+                        title={avatar.label}
+                      >
+                        <img
+                          src={avatar.url}
+                          alt={avatar.label}
+                          className="h-14 w-14 rounded-full object-cover bg-white"
+                        />
+                        <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">
+                          {avatar.label}
+                        </span>
+                        {isSelected && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 rounded-full p-0.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-slate-400 text-center mt-4">
+                  Click an avatar to select it, then save your profile to apply.
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 export default Profile;
-

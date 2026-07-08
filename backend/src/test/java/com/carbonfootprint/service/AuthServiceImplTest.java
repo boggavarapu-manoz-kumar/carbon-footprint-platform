@@ -85,6 +85,7 @@ class AuthServiceImplTest {
         AuthenticationRequest req = AuthenticationRequest.builder().loginIdentifier("test@example.com").password("pass").build();
         
         when(userRepository.findByUsernameOrEmail("test@example.com", "test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(eq("pass"), any())).thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("jwtToken");
         when(jwtService.generateRefreshToken(user)).thenReturn("refreshToken");
         when(userMapper.toDto(user)).thenReturn(userDto);
@@ -93,7 +94,6 @@ class AuthServiceImplTest {
 
         assertNotNull(response);
         assertEquals("jwtToken", response.getAccessToken());
-        verify(authenticationManager).authenticate(any());
     }
 
     @Test
@@ -101,6 +101,6 @@ class AuthServiceImplTest {
         AuthenticationRequest req = AuthenticationRequest.builder().loginIdentifier("notfound@example.com").password("pass").build();
         when(userRepository.findByUsernameOrEmail("notfound@example.com", "notfound@example.com")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> authService.authenticate(req));
+        assertThrows(BadRequestException.class, () -> authService.authenticate(req));
     }
 }

@@ -60,9 +60,16 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         log.info("Bulk creating {} activity logs for user: {}", createDtos.size(), userEmail);
         User user = getUserByEmail(userEmail);
         
+        // Optimize: Prevent N+1 queries by pre-fetching all required ActivityTypes
+        java.util.Set<String> typeCodes = createDtos.stream().map(ActivityLogCreateDto::getActivityType).collect(Collectors.toSet());
+        java.util.Map<String, ActivityType> typeMap = activityTypeRepository.findByCodeIn(typeCodes).stream()
+                .collect(Collectors.toMap(ActivityType::getCode, type -> type));
+        
         List<ActivityLog> logsToSave = createDtos.stream().map(dto -> {
-            ActivityType type = activityTypeRepository.findByCode(dto.getActivityType())
-                    .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", dto.getActivityType()));
+            ActivityType type = typeMap.get(dto.getActivityType());
+            if (type == null) {
+                throw new ResourceNotFoundException("ActivityType", "code", dto.getActivityType());
+            }
             ActivityLog logItem = mapper.toEntity(dto);
             logItem.setUser(user);
             logItem.setActivityType(type);

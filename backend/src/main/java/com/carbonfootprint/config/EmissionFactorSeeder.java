@@ -89,7 +89,8 @@ public class EmissionFactorSeeder implements CommandLineRunner {
         efRepo.save(EmissionFactor.builder()
             .activityType(type).factorValue(new BigDecimal(factorVal)).unit(unit).source("EPA/DEFRA 2023").build());
             
+        String schemaUnit = unit.contains("/") ? unit.split("/")[1].trim() : "";
         schemaRepo.save(ActivityInputSchema.builder()
-            .activityType(type).fieldName(schemaField).fieldType(schemaType).isRequired(true).build());
+            .activityType(type).fieldName(schemaField).fieldType(schemaType).unit(schemaUnit).isRequired(true).build());
     }
 }

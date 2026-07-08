@@ -46,6 +46,8 @@ export const AuthProvider = ({ children }) => {
     }
     setIsAuthenticated(true);
     await fetchUser();
+    // Invalidate profile cache so CompleteProfile always gets fresh data from the server
+    queryClient.invalidateQueries({ queryKey: ['userProfile'] });
   };
 
   const register = async (userData) => {

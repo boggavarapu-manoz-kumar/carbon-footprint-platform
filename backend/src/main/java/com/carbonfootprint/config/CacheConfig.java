@@ -19,7 +19,8 @@ public class CacheConfig {
                 "dashboardMetrics",
                 "emissionTrends",
                 "leaderboard",
-                "securityAlerts"
+                "securityAlerts",
+                "userProfile"
         );
         cacheManager.setCaffeine(caffeineCacheBuilder());
         return cacheManager;

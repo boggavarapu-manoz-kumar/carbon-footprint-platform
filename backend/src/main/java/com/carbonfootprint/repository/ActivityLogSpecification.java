@@ -9,8 +9,14 @@ import java.time.LocalDate;
 public class ActivityLogSpecification {
 
     public static Specification<ActivityLog> belongsToUser(Long userId) {
-        return (root, query, criteriaBuilder) ->
-                criteriaBuilder.equal(root.get("user").get("id"), userId);
+        return (root, query, criteriaBuilder) -> {
+            if (Long.class != query.getResultType()) {
+                root.fetch("activityType", jakarta.persistence.criteria.JoinType.LEFT)
+                    .fetch("subCategory", jakarta.persistence.criteria.JoinType.LEFT)
+                    .fetch("category", jakarta.persistence.criteria.JoinType.LEFT);
+            }
+            return criteriaBuilder.equal(root.get("user").get("id"), userId);
+        };
     }
 
     public static Specification<ActivityLog> hasCategoryCode(String categoryCode) {

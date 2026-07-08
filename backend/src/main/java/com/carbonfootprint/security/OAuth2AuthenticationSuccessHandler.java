@@ -23,6 +23,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5174}")
+    private String frontendUrl;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
@@ -39,8 +42,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         saveUserToken(user, jwtToken);
 
         // Redirect to frontend with token
-        // In a real production app, this URL should be configured via application.yml
-        String redirectUrl = "http://localhost:5173/oauth2/redirect?token=" + jwtToken + "&refreshToken=" + refreshToken;
+        String redirectUrl = frontendUrl + "/oauth2/redirect?token=" + jwtToken + "&refreshToken=" + refreshToken;
         
         log.info("OAuth2 login successful for user: {}. Redirecting to frontend.", user.getEmail());
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);

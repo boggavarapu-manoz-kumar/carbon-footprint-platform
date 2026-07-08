@@ -102,13 +102,12 @@ public class AuthServiceImpl implements AuthService {
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         log.info("Authenticating user: {}", request.getLoginIdentifier());
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getLoginIdentifier(),
-                        request.getPassword()));
-
         User user = userRepository.findByUsernameOrEmail(request.getLoginIdentifier(), request.getLoginIdentifier())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "loginIdentifier", request.getLoginIdentifier()));
+                .orElseThrow(() -> new BadRequestException("Invalid email/username or password."));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadRequestException("Invalid email/username or password.");
+        }
 
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);

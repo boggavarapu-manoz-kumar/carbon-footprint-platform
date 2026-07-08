@@ -27,11 +27,16 @@ public class EmissionCalculationServiceImpl implements EmissionCalculationServic
         EmissionFactor factor = emissionFactorRepository.findByActivityTypeCode(activityType)
                 .orElseThrow(() -> new MissingEmissionFactorException(activityType));
                 
-        // Enforce strict unit matching for MVP calculation safety
-        if (!factor.getUnit().split("/")[1].trim().equalsIgnoreCase(unit.trim())) {
+        // Normalize the unit from the database string "kg CO2e / km" -> "km"
+        String[] parts = factor.getUnit().split("/");
+        String expectedUnit = parts.length > 1 ? parts[1].trim() : factor.getUnit().trim();
+
+        // Check if units match, ignoring case. 
+        // We also check if the expectedUnit starts with the provided unit (e.g., 'km' vs 'km ')
+        if (!expectedUnit.equalsIgnoreCase(unit.trim()) && !expectedUnit.toLowerCase().startsWith(unit.trim().toLowerCase())) {
             throw new BadRequestException(
                 String.format("Unit mismatch. Expected %s, but provided %s", 
-                factor.getUnit().split("/")[1], unit)
+                expectedUnit, unit)
             );
         }
         

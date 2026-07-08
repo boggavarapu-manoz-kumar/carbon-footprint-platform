@@ -30,16 +30,26 @@ export const getActivityIcon = (type, category) => {
   return <Activity className="h-5 w-5" />;
 };
 
-export const getAvatarUrl = (username, gender) => {
-  const safeUsername = username || 'User';
-  const normalizedGender = gender?.toUpperCase();
-  
-  if (normalizedGender === 'MALE') {
-    return `https://api.dicebear.com/9.x/micah/svg?seed=${safeUsername}&backgroundColor=b6e3f4`;
-  } else if (normalizedGender === 'FEMALE') {
-    return `https://api.dicebear.com/9.x/lorelei/svg?seed=${safeUsername}&backgroundColor=ffd5dc`;
-  } else {
-    // Better default for humans before they choose a gender
-    return `https://api.dicebear.com/9.x/avataaars/svg?seed=${safeUsername}&backgroundColor=e2e8f0`;
+// 10 curated cartoon avatar options that users can choose from
+export const AVATAR_OPTIONS = [
+  { id: 1, url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix&backgroundColor=b6e3f4,c0aede', label: 'Explorer' },
+  { id: 2, url: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Luna&backgroundColor=ffd5dc,ffdfbf', label: 'Dreamer' },
+  { id: 3, url: 'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Zara&backgroundColor=c0aede,d1d4f9', label: 'Fun' },
+  { id: 4, url: 'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Axel&backgroundColor=b6e3f4,d1d4f9', label: 'Chill' },
+  { id: 5, url: 'https://api.dicebear.com/9.x/micah/svg?seed=Nova&backgroundColor=b6e3f4', label: 'Creative' },
+  { id: 6, url: 'https://api.dicebear.com/9.x/micah/svg?seed=Orion&backgroundColor=ffd5dc', label: 'Artistic' },
+  { id: 7, url: 'https://api.dicebear.com/9.x/notionists/svg?seed=Sage&backgroundColor=c0aede', label: 'Thinker' },
+  { id: 8, url: 'https://api.dicebear.com/9.x/notionists/svg?seed=Blaze&backgroundColor=d1d4f9', label: 'Bold' },
+  { id: 9, url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=River&backgroundColor=b6e3f4', label: 'Vibrant' },
+  { id: 10, url: 'https://api.dicebear.com/9.x/open-peeps/svg?seed=Storm&backgroundColor=ffd5dc', label: 'Dynamic' },
+];
+
+export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].url;
+
+// Returns the user's chosen/stored avatar, or the first default option
+export const getAvatarUrl = (profilePictureUrl) => {
+  if (profilePictureUrl && profilePictureUrl.trim() !== '') {
+    return profilePictureUrl;
   }
+  return DEFAULT_AVATAR;
 };

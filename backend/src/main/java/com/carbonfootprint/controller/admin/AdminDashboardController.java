@@ -24,7 +24,7 @@ public class AdminDashboardController {
     private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/metrics")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW) or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<DashboardMetricsResponse>> getMetrics() {
         return ResponseEntity.ok(ApiResponse.success(
                 adminDashboardService.getMetrics(),
@@ -33,7 +33,7 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/trends")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW) or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<EmissionTrendResponse>>> getEmissionTrends(
             @RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(ApiResponse.success(
@@ -43,7 +43,7 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/leaderboard")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW)")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ANALYTICS_VIEW) or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<LeaderboardResponse>>> getTopEmitters() {
         return ResponseEntity.ok(ApiResponse.success(
                 adminDashboardService.getTopEmitters(),
@@ -52,7 +52,7 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/security-alerts")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).AUDIT_LOGS_VIEW)")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).AUDIT_LOGS_VIEW) or hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<AdminSecurityEvent>>> getSecurityAlerts() {
         return ResponseEntity.ok(ApiResponse.success(
                 adminDashboardService.getRecentSecurityAlerts(),

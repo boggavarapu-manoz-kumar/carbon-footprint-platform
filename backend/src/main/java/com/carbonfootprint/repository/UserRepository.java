@@ -1,9 +1,14 @@
 package com.carbonfootprint.repository;
 
+import com.carbonfootprint.entity.Role;
 import com.carbonfootprint.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +18,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);
+
+    Long countByRole(Role role);
+    
+    Long countByCreatedAtAfter(LocalDateTime date);
+    
+    // Grouping by date for user growth chart (MySQL compatible cast, or JPA function)
+    @Query("SELECT function('DATE', u.createdAt) as logDate, COUNT(u) as count FROM User u WHERE u.createdAt >= :startDate GROUP BY function('DATE', u.createdAt) ORDER BY function('DATE', u.createdAt) ASC")
+    List<Object[]> countUsersGroupedByDate(@Param("startDate") LocalDateTime startDate);
 }

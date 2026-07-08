@@ -3,7 +3,7 @@ import UserService from '../services/UserService';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useProfile = () => {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   return useQuery({
     queryKey: ['userProfile'],
@@ -11,7 +11,7 @@ export const useProfile = () => {
       const data = await UserService.getProfile();
       return data;
     },
-    enabled: !!user, // Only run the query if a user is logged in
+    enabled: isAuthenticated, // Gate on token presence, not user object (avoids race condition)
     staleTime: 5 * 60 * 1000, // Data remains fresh for 5 minutes
   });
 };

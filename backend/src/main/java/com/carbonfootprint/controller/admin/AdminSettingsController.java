@@ -3,6 +3,7 @@ package com.carbonfootprint.controller.admin;
 import com.carbonfootprint.dto.admin.PlatformSettingsUpdateRequest;
 import com.carbonfootprint.response.ApiResponse;
 import com.carbonfootprint.security.admin.AdminPermissions;
+import com.carbonfootprint.service.admin.PlatformSettingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
- * Controller for Admin Platform Settings.
+ * Controller for Admin Platform Settings — fully dynamic, database-backed.
  */
 @Slf4j
 @RestController
@@ -19,29 +22,38 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AdminSettingsController {
 
+    private final PlatformSettingService settingService;
+
     /**
-     * Retrieves global platform settings for the administration portal.
-     *
-     * @return ApiResponse containing current global settings
+     * Retrieves all global platform settings as a key→value map from the database.
      */
     @GetMapping
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).SETTINGS_VIEW)")
-    public ResponseEntity<ApiResponse<String>> getSettings() {
-        log.info("Fetching global platform settings");
-        return ResponseEntity.ok(ApiResponse.success("Global settings data", "Settings retrieved successfully"));
+    public ResponseEntity<ApiResponse<Map<String, String>>> getSettings() {
+        log.info("Fetching all platform settings");
+        Map<String, String> settings = settingService.getSettingsAsMap();
+        return ResponseEntity.ok(ApiResponse.success(settings, "Settings retrieved successfully"));
     }
 
     /**
-     * Updates global platform settings such as maintenance mode.
-     *
-     * @param request The settings update payload
-     * @return Empty ApiResponse on success
+     * Updates platform settings (key→value map). Any key not present in DB is ignored.
      */
     @PutMapping
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).SETTINGS_UPDATE)")
-    public ResponseEntity<ApiResponse<Void>> updateSettings(@Valid @RequestBody PlatformSettingsUpdateRequest request) {
-        log.info("Updating global platform settings. Maintenance Mode: {}", request.getMaintenanceMode());
-        // Add audit logging here via service layer
-        return ResponseEntity.ok(ApiResponse.success(null, "Platform settings updated successfully"));
+    public ResponseEntity<ApiResponse<Void>> updateSettings(@RequestBody Map<String, String> updates) {
+        log.info("Updating platform settings: {}", updates.keySet());
+        settingService.updateSettings(updates);
+        return ResponseEntity.ok(ApiResponse.success(null, "Settings updated successfully"));
+    }
+
+    /**
+     * Purge the application cache (Redis flush). SUPER_ADMIN only.
+     */
+    @PostMapping("/purge-cache")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).SETTINGS_UPDATE)")
+    public ResponseEntity<ApiResponse<Void>> purgeCache() {
+        log.warn("Cache purge initiated by admin");
+        settingService.purgeCache();
+        return ResponseEntity.ok(ApiResponse.success(null, "Cache purged successfully"));
     }
 }

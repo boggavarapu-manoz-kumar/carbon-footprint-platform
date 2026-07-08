@@ -15,7 +15,7 @@ import com.carbonfootprint.security.admin.AdminJwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -46,9 +46,7 @@ public class AdminAuthService {
     private final AdminDeviceTrackingRepository deviceTrackingRepository;
     private final AdminSecurityEventRepository securityEventRepository;
     private final AdminJwtService adminJwtService;
-
-    @Qualifier("adminAuthenticationManager")
-    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int LOCKOUT_MINUTES = 15;
@@ -70,19 +68,19 @@ public class AdminAuthService {
             throw new RuntimeException("Account is temporarily locked due to excessive failed attempts.");
         }
 
-        try {
-            log.debug("Authenticating admin user: {}", request.getEmail());
-            // 2. Authenticate
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-        } catch (BadCredentialsException e) {
+        log.debug("Authenticating admin user: {}", request.getEmail());
+        var adminUser = adminUserRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    log.warn("Failed authentication attempt for email: {}", request.getEmail());
+                    logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "FAILED");
+                    return new BadCredentialsException("Invalid credentials");
+                });
+
+        if (!passwordEncoder.matches(request.getPassword(), adminUser.getPassword())) {
             log.warn("Failed authentication attempt for email: {}", request.getEmail());
             logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "FAILED");
             throw new BadCredentialsException("Invalid credentials");
         }
-
-        var adminUser = adminUserRepository.findByEmail(request.getEmail()).orElseThrow();
 
         // 3. Device Fingerprinting
         var deviceTracking = deviceTrackingRepository.findByAdminUser_IdAndDeviceFingerprint(
@@ -126,6 +124,7 @@ public class AdminAuthService {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("ip_hash", hashFingerprint(ipAddress));
         extraClaims.put("ua_hash", hashFingerprint(userAgent));
+        extraClaims.put("role", adminUser.getRoles().stream().findFirst().map(com.carbonfootprint.entity.admin.AdminRole::getName).orElse("SUPER_ADMIN"));
         
         String jwtToken = adminJwtService.generateAdminToken(extraClaims, adminUser, session.getId());
         String refreshToken = adminJwtService.generateAdminRefreshToken(adminUser, session.getId());
@@ -151,6 +150,51 @@ public class AdminAuthService {
             adminSessionRepository.save(session);
             log.info("Successfully revoked session ID: {}", sessionId);
         });
+    }
+
+    public AdminLoginResponse refreshToken(String refreshToken, HttpServletRequest request) {
+        String username = adminJwtService.extractUsername(refreshToken);
+        var adminUser = adminUserRepository.findByEmail(username).orElseThrow();
+        
+        if (!adminJwtService.isTokenValid(refreshToken, adminUser)) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+        
+        Long sessionId = adminJwtService.extractSessionId(refreshToken);
+        var session = adminSessionRepository.findById(sessionId).orElseThrow();
+        if (session.isRevoked() || session.getRefreshToken() == null || !session.getRefreshToken().equals(refreshToken)) {
+            throw new RuntimeException("Invalid or revoked session");
+        }
+        
+        String ipAddress = getClientIp(request);
+        String userAgent = request.getHeader("User-Agent");
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("ip_hash", hashFingerprint(ipAddress));
+        extraClaims.put("ua_hash", hashFingerprint(userAgent));
+        extraClaims.put("role", adminUser.getRoles().stream().findFirst().map(com.carbonfootprint.entity.admin.AdminRole::getName).orElse("SUPER_ADMIN"));
+        
+        String newJwtToken = adminJwtService.generateAdminToken(extraClaims, adminUser, sessionId);
+        String newRefreshToken = adminJwtService.generateAdminRefreshToken(adminUser, sessionId);
+        
+        session.setAccessToken(newJwtToken);
+        session.setRefreshToken(newRefreshToken);
+        session.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+        adminSessionRepository.save(session);
+        
+        return AdminLoginResponse.builder()
+                .accessToken(newJwtToken)
+                .refreshToken(newRefreshToken)
+                .sessionId(sessionId)
+                .build();
+    }
+
+    public void logout(String refreshToken) {
+        try {
+            Long sessionId = adminJwtService.extractSessionId(refreshToken);
+            revokeSession(sessionId);
+        } catch (Exception e) {
+            log.warn("Failed to extract session ID during logout: {}", e.getMessage());
+        }
     }
 
     private void logLoginHistory(String adminId, String email, String ip, String ua, String status) {

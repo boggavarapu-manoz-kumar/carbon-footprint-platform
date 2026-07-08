@@ -3,6 +3,7 @@ package com.carbonfootprint.config;
 import com.carbonfootprint.security.JwtAuthenticationEntryPoint;
 import com.carbonfootprint.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import com.carbonfootprint.security.admin.GlobalRateLimitFilter;
 import com.carbonfootprint.security.admin.AdminJwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,6 +47,7 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final AdminJwtAuthenticationFilter adminJwtAuthFilter;
+    private final GlobalRateLimitFilter globalRateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
@@ -57,18 +59,14 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
-            // Re-enable CSRF but strictly for browser-based endpoints, using a Cookie to allow frontend extraction.
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .csrfTokenRequestHandler(requestHandler)
-                .ignoringRequestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/oauth2/code/**") // Ignore for public endpoints
-            )
+            // Disable CSRF as we use stateless JWT Bearer tokens in headers, not cookies.
+            .csrf(csrf -> csrf.disable())
             
             // XSS & Clickjacking Protection: Strict HTTP Security Headers
             .headers(headers -> headers
                 .xssProtection(xss -> xss.disable()) // Deprecated in favor of CSP
                 .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; form-action 'self';")
+                    .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-ancestors 'none'; form-action 'self';")
                 )
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .httpStrictTransportSecurity(hsts -> hsts
@@ -81,11 +79,13 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**", "/api/v1/admin/auth/**", "/oauth2/**", "/login/oauth2/code/**", "/api/v1/users/check-username", "/api/v1/users/suggest-username", "/error").permitAll()
+                .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/api/v1/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MODERATOR", "SUPPORT_TEAM", "AUDITOR")
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
+            .addFilterBefore(globalRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(adminJwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, AdminJwtAuthenticationFilter.class)
             .oauth2Login(oauth2 -> oauth2
@@ -116,7 +116,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // Read from ENV, fallback to strict local defaults (DO NOT use '*')
+        String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+        if (allowedOrigins == null || allowedOrigins.trim().isEmpty()) {
+            configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://localhost:5174"));
+        } else {
+            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        }
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));

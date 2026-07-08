@@ -48,8 +48,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
         } else {
             log.info("Registering new user via OAuth2: {}", email);
-            String firstName = "Unknown";
-            String lastName = "Unknown";
+            String firstName = "User";
+            String lastName = "";
             if (name != null) {
                 String[] parts = name.split(" ", 2);
                 firstName = parts[0];

@@ -23,7 +23,7 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final ResourceLoader resourceLoader;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
+    @Value("${app.frontend.url:http://localhost:5174}")
     private String frontendUrl;
 
     @Value("${spring.mail.username:}")

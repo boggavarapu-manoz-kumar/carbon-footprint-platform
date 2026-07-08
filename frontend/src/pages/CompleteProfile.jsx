@@ -25,10 +25,23 @@ const CompleteProfile = () => {
   const username = watch('username');
   const mobileNumber = watch('mobileNumber');
 
-  // Pre-fill existing data (though it should be missing for incomplete profiles)
+  // Pre-fill existing data from Google/OAuth or existing profile
   useEffect(() => {
     if (userProfile) {
-      if (userProfile.username) setValue('username', userProfile.username);
+      // Always pre-fill personal info from the profile (comes from Google for OAuth users)
+      if (userProfile.firstName) setValue('firstName', userProfile.firstName);
+      if (userProfile.lastName) setValue('lastName', userProfile.lastName);
+
+      // Pre-fill other fields if they exist
+      if (userProfile.username) {
+        setValue('username', userProfile.username);
+      } else if (userProfile.firstName) {
+        // Auto-generate a sensible username suggestion from Google name
+        const base = (userProfile.firstName + (userProfile.lastName ? userProfile.lastName.charAt(0) : ''))
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
+        setValue('username', base);
+      }
       if (userProfile.mobileNumber) setValue('mobileNumber', userProfile.mobileNumber);
       if (userProfile.gender) setValue('gender', userProfile.gender);
     }
@@ -71,9 +84,9 @@ const CompleteProfile = () => {
     
     try {
       setLoading(true);
-      // Only send the fields this form manages — don't spread userProfile
-      // to avoid accidentally triggering validation on fields we're not editing
       await api.put('/v1/users/profile', {
+        firstName: data.firstName || userProfile?.firstName,
+        lastName: data.lastName || userProfile?.lastName,
         username: data.username,
         mobileNumber: data.mobileNumber || null,
         gender: data.gender || null,
@@ -110,7 +123,41 @@ const CompleteProfile = () => {
 
         <div className="px-6 py-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            
+
+            {/* Google pre-fill notice */}
+            {userProfile?.provider === 'GOOGLE' && (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Signed in with Google</p>
+                  <p className="text-xs text-slate-500">Your name has been pre-filled from your Google account.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Name Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  {...register('firstName', { required: 'Required' })}
+                  className={`block w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm ${errors.firstName ? 'border-red-300' : 'border-slate-200'}`}
+                  placeholder="First"
+                />
+                {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  {...register('lastName')}
+                  className="block w-full px-3 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
+                  placeholder="Last"
+                />
+              </div>
+            </div>
+
             {/* Username Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Username <span className="text-red-500">*</span></label>
@@ -208,10 +255,9 @@ const CompleteProfile = () => {
                 className={`block w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm bg-white ${errors.gender ? 'border-red-300' : 'border-slate-200'}`}
               >
                 <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Prefer Not To Say">Prefer Not To Say</option>
-                <option value="Other">Other</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Prefer Not To Say</option>
               </select>
               {errors.gender && (
                 <p className="mt-1 text-xs text-red-500 font-medium">{errors.gender.message}</p>
