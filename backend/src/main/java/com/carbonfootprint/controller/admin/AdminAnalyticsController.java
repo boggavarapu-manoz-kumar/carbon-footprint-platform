@@ -124,4 +124,11 @@ public class AdminAnalyticsController {
         log.info("Fetching monthly platform analytics");
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getMonthlyAnalytics(), "Monthly analytics retrieved"));
     }
+
+    // ─── Yearly Platform Analytics ─────────────────────────────────
+    @GetMapping("/yearly")
+    public ResponseEntity<ApiResponse<YearlyAnalyticsResponse>> getYearlyAnalytics() {
+        log.info("Fetching yearly platform analytics");
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getYearlyAnalytics(), "Yearly analytics retrieved"));
+    }
 }

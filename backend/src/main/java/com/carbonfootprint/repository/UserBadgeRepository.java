@@ -15,4 +15,9 @@ public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
     Long countBadgesEarnedToday(
             @Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfDay") LocalDateTime endOfDay);
+
+    @Query("SELECT function('DATE', b.awardedAt), COUNT(b) FROM UserBadge b WHERE b.awardedAt >= :startDate AND b.awardedAt <= :endDate GROUP BY function('DATE', b.awardedAt)")
+    java.util.List<Object[]> getDailyBadgeBreakdown(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
 }

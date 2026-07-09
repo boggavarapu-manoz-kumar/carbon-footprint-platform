@@ -604,9 +604,128 @@ public class AdminAnalyticsService {
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // YEARLY PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public YearlyAnalyticsResponse getYearlyAnalytics() {
+        log.info("Fetching Yearly Platform Analytics");
+        
+        LocalDate today = LocalDate.now();
+        
+        // Current Year
+        LocalDateTime startOfYear = today.withDayOfYear(1).atStartOfDay();
+        LocalDateTime endOfYear = today.withDayOfYear(today.lengthOfYear()).atTime(23, 59, 59);
+
+        // Previous Year
+        LocalDate prevYearDate = today.minusYears(1);
+        LocalDateTime startOfPrevYear = prevYearDate.withDayOfYear(1).atStartOfDay();
+        LocalDateTime endOfPrevYear = prevYearDate.withDayOfYear(prevYearDate.lengthOfYear()).atTime(23, 59, 59);
+
+        // Current Year Totals
+        Long curActivities = activityLogRepository.countActivitiesToday(startOfYear, endOfYear);
+        Long curUsers = activityLogRepository.countActiveUsersToday(startOfYear, endOfYear);
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfYear, endOfYear);
+        Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfYear, endOfYear);
+        Long curBadges = userBadgeRepository.countBadgesEarnedToday(startOfYear, endOfYear);
+
+        if (curActivities == null) curActivities = 0L;
+        if (curUsers == null) curUsers = 0L;
+        if (curEmissions == null) curEmissions = BigDecimal.ZERO;
+        if (curGoals == null) curGoals = 0L;
+        if (curBadges == null) curBadges = 0L;
+
+        // Previous Year Totals
+        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevYear, endOfPrevYear);
+        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevYear, endOfPrevYear);
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevYear, endOfPrevYear);
+        Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevYear, endOfPrevYear);
+        Long prevBadges = userBadgeRepository.countBadgesEarnedToday(startOfPrevYear, endOfPrevYear);
+
+        if (prevActivities == null) prevActivities = 0L;
+        if (prevUsers == null) prevUsers = 0L;
+        if (prevEmissions == null) prevEmissions = BigDecimal.ZERO;
+        if (prevGoals == null) prevGoals = 0L;
+        if (prevBadges == null) prevBadges = 0L;
+
+        // Calculate % Changes
+        double actChange = prevActivities == 0 ? (curActivities > 0 ? 100.0 : 0.0) : ((double)(curActivities - prevActivities) / prevActivities) * 100.0;
+        double usrChange = prevUsers == 0 ? (curUsers > 0 ? 100.0 : 0.0) : ((double)(curUsers - prevUsers) / prevUsers) * 100.0;
+        double emsChange = prevEmissions.compareTo(BigDecimal.ZERO) == 0 ? (curEmissions.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0) : curEmissions.subtract(prevEmissions).divide(prevEmissions, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).doubleValue();
+        double goalChange = prevGoals == 0 ? (curGoals > 0 ? 100.0 : 0.0) : ((double)(curGoals - prevGoals) / prevGoals) * 100.0;
+        double badChange = prevBadges == 0 ? (curBadges > 0 ? 100.0 : 0.0) : ((double)(curBadges - prevBadges) / prevBadges) * 100.0;
+
+        // Daily breakdowns for aggregation
+        List<Object[]> dailyRaw = activityLogRepository.getWeeklyBreakdown(startOfYear, endOfYear);
+        List<Object[]> dailyGoalsRaw = goalRepository.getWeeklyGoalBreakdown(GoalStatus.ACHIEVED, startOfYear, endOfYear);
+        List<Object[]> dailyBadgesRaw = userBadgeRepository.getDailyBadgeBreakdown(startOfYear, endOfYear);
+
+        Map<java.sql.Date, Object[]> dayMap = new HashMap<>();
+        for (Object[] row : dailyRaw) { dayMap.put((java.sql.Date) row[0], row); }
+        
+        Map<java.sql.Date, Long> goalDayMap = new HashMap<>();
+        for (Object[] row : dailyGoalsRaw) { goalDayMap.put((java.sql.Date) row[0], ((Number) row[1]).longValue()); }
+
+        Map<java.sql.Date, Long> badgeDayMap = new HashMap<>();
+        for (Object[] row : dailyBadgesRaw) { badgeDayMap.put((java.sql.Date) row[0], ((Number) row[1]).longValue()); }
+
+        String[] monthNames = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        List<YearlyAnalyticsResponse.MonthlySlot> monthlyData = new ArrayList<>();
+
+        for (int m = 1; m <= 12; m++) {
+            long mActs = 0L;
+            long mUsers = 0L; // Approximate unique users (sum of daily actives)
+            BigDecimal mEms = BigDecimal.ZERO;
+            long mGoals = 0L;
+            long mBadges = 0L;
+            
+            LocalDate startOfM = today.withMonth(m).withDayOfMonth(1);
+            int daysInM = startOfM.lengthOfMonth();
+            
+            for (int d = 1; d <= daysInM; d++) {
+                LocalDate date = startOfM.withDayOfMonth(d);
+                if (date.isAfter(today)) break; // Don't include future days in current year
+                
+                java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+                
+                Object[] row = dayMap.get(sqlDate);
+                if (row != null) {
+                    mActs += ((Number) row[1]).longValue();
+                    mEms = mEms.add(row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO);
+                    mUsers += ((Number) row[3]).longValue(); // Approximate for trend
+                }
+                mGoals += goalDayMap.getOrDefault(sqlDate, 0L);
+                mBadges += badgeDayMap.getOrDefault(sqlDate, 0L);
+            }
+            
+            monthlyData.add(YearlyAnalyticsResponse.MonthlySlot.builder()
+                    .monthLabel(monthNames[m-1])
+                    .activities(mActs)
+                    .activeUsers(mUsers)
+                    .emissions(mEms)
+                    .goalsAchieved(mGoals)
+                    .badgesEarned(mBadges)
+                    .organizationsJoined(0L) // Mocking organizations since not yet implemented
+                    .build());
+        }
+
+        return YearlyAnalyticsResponse.builder()
+                .totalActivities(curActivities)
+                .totalUsers(curUsers)
+                .totalEmissions(curEmissions)
+                .totalGoals(curGoals)
+                .totalBadges(curBadges)
+                .totalOrganizations(0L)
+                .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
+                .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
+                .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
                 .goalsChangePct(Math.round(goalChange * 100.0) / 100.0)
-                .weeklyData(weeklyData)
-                .categoryData(catData)
+                .badgesChangePct(Math.round(badChange * 100.0) / 100.0)
+                .organizationsChangePct(0.0)
+                .monthlyData(monthlyData)
                 .build();
     }
 }
