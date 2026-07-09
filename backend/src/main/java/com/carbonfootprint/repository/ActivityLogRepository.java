@@ -89,5 +89,12 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     java.util.List<Object[]> getHourlyBreakdown(
             @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
             @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+
+    // ─── WEEKLY BREAKDOWN ─────────────────────────────────────────
+
+    @org.springframework.data.jpa.repository.Query("SELECT function('DATE', a.createdAt), COUNT(a), COALESCE(SUM(a.emissionValue), 0), COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.createdAt >= :startOfWeek AND a.createdAt <= :endOfWeek GROUP BY function('DATE', a.createdAt) ORDER BY function('DATE', a.createdAt) ASC")
+    java.util.List<Object[]> getWeeklyBreakdown(
+            @org.springframework.data.repository.query.Param("startOfWeek") java.time.LocalDateTime startOfWeek,
+            @org.springframework.data.repository.query.Param("endOfWeek") java.time.LocalDateTime endOfWeek);
 }
 

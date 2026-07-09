@@ -23,4 +23,10 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     Long countCreatedToday(
             @Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfDay") LocalDateTime endOfDay);
+
+    @Query("SELECT function('DATE', g.updatedAt), COUNT(g) FROM Goal g WHERE g.status = :status AND g.updatedAt >= :startOfWeek AND g.updatedAt <= :endOfWeek GROUP BY function('DATE', g.updatedAt)")
+    List<Object[]> getWeeklyGoalBreakdown(
+            @Param("status") GoalStatus status,
+            @Param("startOfWeek") LocalDateTime startOfWeek,
+            @Param("endOfWeek") LocalDateTime endOfWeek);
 }

@@ -110,4 +110,11 @@ public class AdminAnalyticsController {
         log.info("Fetching daily platform analytics");
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getDailyAnalytics(), "Daily analytics retrieved"));
     }
+
+    // ─── Weekly Platform Analytics ─────────────────────────────────
+    @GetMapping("/weekly")
+    public ResponseEntity<ApiResponse<WeeklyAnalyticsResponse>> getWeeklyAnalytics() {
+        log.info("Fetching weekly platform analytics");
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getWeeklyAnalytics(), "Weekly analytics retrieved"));
+    }
 }

@@ -392,8 +392,108 @@ public class AdminAnalyticsService {
                 .activeUsersToday(activeUsers)
                 .newUsersToday(newUsers)
                 .goalsAchievedToday(goalsAchieved)
-                .badgesEarnedToday(badgesEarned)
-                .hourlyData(hourlyData)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // WEEKLY PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public WeeklyAnalyticsResponse getWeeklyAnalytics() {
+        log.info("Fetching Weekly Platform Analytics");
+        
+        LocalDate today = LocalDate.now();
+        // Calculate current week (Monday to Sunday)
+        int dayOfWeekVal = today.getDayOfWeek().getValue(); // 1 = Monday, 7 = Sunday
+        LocalDate startOfWeekDate = today.minusDays(dayOfWeekVal - 1);
+        LocalDate endOfWeekDate = startOfWeekDate.plusDays(6);
+        LocalDateTime startOfWeek = startOfWeekDate.atStartOfDay();
+        LocalDateTime endOfWeek = endOfWeekDate.atTime(23, 59, 59);
+
+        // Previous week
+        LocalDateTime startOfPrevWeek = startOfWeek.minusWeeks(1);
+        LocalDateTime endOfPrevWeek = endOfWeek.minusWeeks(1);
+
+        // Current Week Totals
+        Long curActivities = activityLogRepository.countActivitiesToday(startOfWeek, endOfWeek);
+        Long curUsers = activityLogRepository.countActiveUsersToday(startOfWeek, endOfWeek);
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfWeek, endOfWeek);
+        Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfWeek, endOfWeek);
+
+        if (curActivities == null) curActivities = 0L;
+        if (curUsers == null) curUsers = 0L;
+        if (curEmissions == null) curEmissions = BigDecimal.ZERO;
+        if (curGoals == null) curGoals = 0L;
+
+        // Previous Week Totals
+        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevWeek, endOfPrevWeek);
+        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevWeek, endOfPrevWeek);
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevWeek, endOfPrevWeek);
+        Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevWeek, endOfPrevWeek);
+
+        if (prevActivities == null) prevActivities = 0L;
+        if (prevUsers == null) prevUsers = 0L;
+        if (prevEmissions == null) prevEmissions = BigDecimal.ZERO;
+        if (prevGoals == null) prevGoals = 0L;
+
+        // Calculate % Changes
+        double actChange = prevActivities == 0 ? (curActivities > 0 ? 100.0 : 0.0) : ((double)(curActivities - prevActivities) / prevActivities) * 100.0;
+        double usrChange = prevUsers == 0 ? (curUsers > 0 ? 100.0 : 0.0) : ((double)(curUsers - prevUsers) / prevUsers) * 100.0;
+        double emsChange = prevEmissions.compareTo(BigDecimal.ZERO) == 0 ? (curEmissions.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0) : curEmissions.subtract(prevEmissions).divide(prevEmissions, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).doubleValue();
+        double goalChange = prevGoals == 0 ? (curGoals > 0 ? 100.0 : 0.0) : ((double)(curGoals - prevGoals) / prevGoals) * 100.0;
+
+        // Daily Breakdown (Mon-Sun)
+        List<Object[]> weeklyRaw = activityLogRepository.getWeeklyBreakdown(startOfWeek, endOfWeek);
+        List<Object[]> weeklyGoalsRaw = goalRepository.getWeeklyGoalBreakdown(GoalStatus.ACHIEVED, startOfWeek, endOfWeek);
+
+        Map<java.sql.Date, Object[]> dayMap = new HashMap<>();
+        for (Object[] row : weeklyRaw) {
+            dayMap.put((java.sql.Date) row[0], row);
+        }
+        
+        Map<java.sql.Date, Long> goalDayMap = new HashMap<>();
+        for (Object[] row : weeklyGoalsRaw) {
+            goalDayMap.put((java.sql.Date) row[0], ((Number) row[1]).longValue());
+        }
+
+        List<WeeklyAnalyticsResponse.DailySlot> weeklyData = new ArrayList<>();
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("MMM dd");
+
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = startOfWeekDate.plusDays(i);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(d);
+            
+            Object[] row = dayMap.get(sqlDate);
+            long acts          = row != null ? ((Number) row[1]).longValue()  : 0L;
+            BigDecimal ems     = row != null ? (BigDecimal) row[2]            : BigDecimal.ZERO;
+            long users         = row != null ? ((Number) row[3]).longValue()  : 0L;
+            if (ems == null) ems = BigDecimal.ZERO;
+            
+            long goals = goalDayMap.getOrDefault(sqlDate, 0L);
+            
+            String dayOfWeekName = d.getDayOfWeek().name();
+            dayOfWeekName = dayOfWeekName.substring(0, 1) + dayOfWeekName.substring(1).toLowerCase();
+
+            weeklyData.add(WeeklyAnalyticsResponse.DailySlot.builder()
+                    .dayOfWeek(dayOfWeekName)
+                    .dateLabel(d.format(fmt))
+                    .activities(acts)
+                    .activeUsers(users)
+                    .emissions(ems)
+                    .goalsAchieved(goals)
+                    .build());
+        }
+
+        return WeeklyAnalyticsResponse.builder()
+                .totalActivities(curActivities)
+                .totalUsers(curUsers)
+                .totalEmissions(curEmissions)
+                .totalGoals(curGoals)
+                .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
+                .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
+                .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
+                .goalsChangePct(Math.round(goalChange * 100.0) / 100.0)
+                .weeklyData(weeklyData)
                 .build();
     }
 }

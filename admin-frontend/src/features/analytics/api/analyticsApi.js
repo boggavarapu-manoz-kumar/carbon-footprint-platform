@@ -66,4 +66,10 @@ export const analyticsApi = {
     const res = await adminAxios.get('/analytics/daily');
     return res.data.data;
   },
+
+  // Weekly Platform Analytics
+  getWeeklyAnalytics: async () => {
+    const res = await adminAxios.get('/analytics/weekly');
+    return res.data.data;
+  },
 };
