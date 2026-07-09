@@ -69,6 +69,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT function('YEAR', a.logDate) FROM ActivityLog a WHERE a.user.id = :userId ORDER BY function('YEAR', a.logDate) DESC")
     java.util.List<Integer> findDistinctYearsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT function('YEAR', a.createdAt) FROM ActivityLog a ORDER BY function('YEAR', a.createdAt) DESC")
+    java.util.List<Integer> findAvailableYearsGlobal();
+
     // ─── DAILY ANALYTICS (Today) ─────────────────────────────────
 
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")

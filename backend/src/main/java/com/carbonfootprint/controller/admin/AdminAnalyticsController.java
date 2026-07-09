@@ -104,31 +104,37 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getTrendComparison(), "Trend comparison retrieved"));
     }
 
+    // ─── Available Years ──────────────────────────────────────────
+    @GetMapping("/years")
+    public ResponseEntity<ApiResponse<java.util.List<Integer>>> getAvailableYears() {
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getAvailableYears(), "Available years retrieved"));
+    }
+
     // ─── Daily Platform Analytics ─────────────────────────────────
     @GetMapping("/daily")
-    public ResponseEntity<ApiResponse<DailyAnalyticsResponse>> getDailyAnalytics() {
+    public ResponseEntity<ApiResponse<DailyAnalyticsResponse>> getDailyAnalytics(@RequestParam(required = false) Integer year) {
         log.info("Fetching daily platform analytics");
-        return ResponseEntity.ok(ApiResponse.success(analyticsService.getDailyAnalytics(), "Daily analytics retrieved"));
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getDailyAnalytics(year), "Daily analytics retrieved"));
     }
 
     // ─── Weekly Platform Analytics ─────────────────────────────────
     @GetMapping("/weekly")
-    public ResponseEntity<ApiResponse<WeeklyAnalyticsResponse>> getWeeklyAnalytics() {
+    public ResponseEntity<ApiResponse<WeeklyAnalyticsResponse>> getWeeklyAnalytics(@RequestParam(required = false) Integer year) {
         log.info("Fetching weekly platform analytics");
-        return ResponseEntity.ok(ApiResponse.success(analyticsService.getWeeklyAnalytics(), "Weekly analytics retrieved"));
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getWeeklyAnalytics(year), "Weekly analytics retrieved"));
     }
 
     // ─── Monthly Platform Analytics ─────────────────────────────────
     @GetMapping("/monthly")
-    public ResponseEntity<ApiResponse<MonthlyAnalyticsResponse>> getMonthlyAnalytics() {
+    public ResponseEntity<ApiResponse<MonthlyAnalyticsResponse>> getMonthlyAnalytics(@RequestParam(required = false) Integer year) {
         log.info("Fetching monthly platform analytics");
-        return ResponseEntity.ok(ApiResponse.success(analyticsService.getMonthlyAnalytics(), "Monthly analytics retrieved"));
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getMonthlyAnalytics(year), "Monthly analytics retrieved"));
     }
 
     // ─── Yearly Platform Analytics ─────────────────────────────────
     @GetMapping("/yearly")
-    public ResponseEntity<ApiResponse<YearlyAnalyticsResponse>> getYearlyAnalytics() {
+    public ResponseEntity<ApiResponse<YearlyAnalyticsResponse>> getYearlyAnalytics(@RequestParam(required = false) Integer year) {
         log.info("Fetching yearly platform analytics");
-        return ResponseEntity.ok(ApiResponse.success(analyticsService.getYearlyAnalytics(), "Yearly analytics retrieved"));
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getYearlyAnalytics(year), "Yearly analytics retrieved"));
     }
 }

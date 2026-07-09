@@ -781,8 +781,8 @@ export const AdminAnalytics = () => {
 
   // ─── WEEKLY TAB ───────────────────────────────────────────────
   const { data: weekly, isLoading: weeklyLoading, refetch: refetchWeekly } = useQuery({
-    queryKey: ['admin-analytics-weekly'],
-    queryFn: analyticsApi.getWeeklyAnalytics,
+    queryKey: ['admin-analytics-weekly', selectedYear],
+    queryFn: () => analyticsApi.getWeeklyAnalytics(selectedYear),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -942,8 +942,8 @@ export const AdminAnalytics = () => {
 
   // ─── YEARLY TAB ───────────────────────────────────────────────
   const { data: yearly, isLoading: yearlyLoading, refetch: refetchYearly } = useQuery({
-    queryKey: ['admin-analytics-yearly'],
-    queryFn: analyticsApi.getYearlyAnalytics,
+    queryKey: ['admin-analytics-yearly', selectedYear],
+    queryFn: () => analyticsApi.getYearlyAnalytics(selectedYear),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -1105,8 +1105,8 @@ export const AdminAnalytics = () => {
 
   // ─── MONTHLY TAB ───────────────────────────────────────────────
   const { data: monthly, isLoading: monthlyLoading, refetch: refetchMonthly } = useQuery({
-    queryKey: ['admin-analytics-monthly'],
-    queryFn: analyticsApi.getMonthlyAnalytics,
+    queryKey: ['admin-analytics-monthly', selectedYear],
+    queryFn: () => analyticsApi.getMonthlyAnalytics(selectedYear),
     staleTime: 5 * 60 * 1000,
   });
 

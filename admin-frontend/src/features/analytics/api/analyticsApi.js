@@ -61,27 +61,33 @@ export const analyticsApi = {
     return res.data.data;
   },
 
+  // Available Years
+  getAvailableYears: async () => {
+    const res = await adminAxios.get('/analytics/years');
+    return res.data.data;
+  },
+
   // Daily Platform Analytics
-  getDailyAnalytics: async () => {
-    const res = await adminAxios.get('/analytics/daily');
+  getDailyAnalytics: async (year) => {
+    const res = await adminAxios.get('/analytics/daily', { params: { year } });
     return res.data.data;
   },
 
   // Weekly Platform Analytics
-  getWeeklyAnalytics: async () => {
-    const res = await adminAxios.get('/analytics/weekly');
+  getWeeklyAnalytics: async (year) => {
+    const res = await adminAxios.get('/analytics/weekly', { params: { year } });
     return res.data.data;
   },
 
   // Monthly Platform Analytics
-  getMonthlyAnalytics: async () => {
-    const res = await adminAxios.get('/analytics/monthly');
+  getMonthlyAnalytics: async (year) => {
+    const res = await adminAxios.get('/analytics/monthly', { params: { year } });
     return res.data.data;
   },
 
   // Yearly Platform Analytics
-  getYearlyAnalytics: async () => {
-    const res = await adminAxios.get('/analytics/yearly');
+  getYearlyAnalytics: async (year) => {
+    const res = await adminAxios.get('/analytics/yearly', { params: { year } });
     return res.data.data;
   },
 };

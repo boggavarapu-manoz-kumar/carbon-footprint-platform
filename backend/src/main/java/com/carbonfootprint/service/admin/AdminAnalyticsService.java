@@ -37,7 +37,27 @@ public class AdminAnalyticsService {
     };
 
     // ─────────────────────────────────────────────────────────────
-    // PLATFORM ANALYTICS
+    // DYNAMIC YEAR SELECTION
+    // ─────────────────────────────────────────────────────────────
+
+    public List<Integer> getAvailableYears() {
+        List<Integer> years = activityLogRepository.findAvailableYearsGlobal();
+        if (years == null || years.isEmpty()) {
+            years = List.of(LocalDate.now().getYear());
+        }
+        return years;
+    }
+
+    private LocalDate getReferenceDate(Integer year) {
+        LocalDate now = LocalDate.now();
+        if (year == null || year == now.getYear()) {
+            return now;
+        }
+        return LocalDate.of(year, 12, 31);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // PLATFORM ANALYTICS (Overview Tab)
     // ─────────────────────────────────────────────────────────────
 
     @Cacheable(value = "platformAnalytics", key = "'all'")
@@ -334,10 +354,12 @@ public class AdminAnalyticsService {
     // DAILY PLATFORM ANALYTICS
     // ─────────────────────────────────────────────────────────────
 
-    public DailyAnalyticsResponse getDailyAnalytics() {
-        log.info("Fetching Daily Platform Analytics");
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay   = LocalDate.now().atTime(23, 59, 59);
+    public DailyAnalyticsResponse getDailyAnalytics(Integer year) {
+        log.info("Fetching Daily Platform Analytics for year: {}", year);
+        
+        LocalDate today = getReferenceDate(year);
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay   = today.atTime(23, 59, 59);
 
         // ─── KPIs ─────────────────────────────────────────────────
         Long activitiesToday  = activityLogRepository.countActivitiesToday(startOfDay, endOfDay);
@@ -399,10 +421,10 @@ public class AdminAnalyticsService {
     // WEEKLY PLATFORM ANALYTICS
     // ─────────────────────────────────────────────────────────────
 
-    public WeeklyAnalyticsResponse getWeeklyAnalytics() {
-        log.info("Fetching Weekly Platform Analytics");
+    public WeeklyAnalyticsResponse getWeeklyAnalytics(Integer year) {
+        log.info("Fetching Weekly Platform Analytics for year: {}", year);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = getReferenceDate(year);
         // Calculate current week (Monday to Sunday)
         int dayOfWeekVal = today.getDayOfWeek().getValue(); // 1 = Monday, 7 = Sunday
         LocalDate startOfWeekDate = today.minusDays(dayOfWeekVal - 1);
@@ -499,10 +521,10 @@ public class AdminAnalyticsService {
     // MONTHLY PLATFORM ANALYTICS
     // ─────────────────────────────────────────────────────────────
 
-    public MonthlyAnalyticsResponse getMonthlyAnalytics() {
-        log.info("Fetching Monthly Platform Analytics");
+    public MonthlyAnalyticsResponse getMonthlyAnalytics(Integer year) {
+        log.info("Fetching Monthly Platform Analytics for year: {}", year);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = getReferenceDate(year);
         // Current Month
         LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime endOfMonth = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
@@ -611,10 +633,10 @@ public class AdminAnalyticsService {
     // YEARLY PLATFORM ANALYTICS
     // ─────────────────────────────────────────────────────────────
 
-    public YearlyAnalyticsResponse getYearlyAnalytics() {
-        log.info("Fetching Yearly Platform Analytics");
+    public YearlyAnalyticsResponse getYearlyAnalytics(Integer year) {
+        log.info("Fetching Yearly Platform Analytics for year: {}", year);
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = getReferenceDate(year);
         
         // Current Year
         LocalDateTime startOfYear = today.withDayOfYear(1).atStartOfDay();
