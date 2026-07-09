@@ -38,6 +38,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public ActivityLogDto createActivityLog(final String userEmail, final ActivityLogCreateDto createDto) {
         log.info("Creating activity log for user: {}", userEmail);
         User user = getUserByEmail(userEmail);
@@ -56,6 +57,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public List<ActivityLogDto> createActivityLogsBulk(final String userEmail, final List<ActivityLogCreateDto> createDtos) {
         log.info("Bulk creating {} activity logs for user: {}", createDtos.size(), userEmail);
         User user = getUserByEmail(userEmail);
@@ -115,6 +117,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public ActivityLogDto updateActivityLog(final Long id, final String userEmail, final ActivityLogUpdateDto updateDto) {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());
@@ -157,6 +160,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public void deleteActivityLog(final Long id, final String userEmail) {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());

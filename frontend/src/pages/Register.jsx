@@ -3,21 +3,30 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Leaf, ArrowRight, Check } from 'lucide-react';
+import { Leaf, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { FadeIn } from '../components/motion/FadeIn';
 import { StaggerReveal } from '../components/motion/StaggerReveal';
+import api from '../api/axiosConfig';
 
 const Register = () => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm();
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
 
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   
   // Password strength state
   const password = watch("password", "");
+  const username = watch("username", "");
+  const firstName = watch("firstName", "");
+  const lastName = watch("lastName", "");
   const [strength, setStrength] = useState(0);
 
   useEffect(() => {
@@ -29,6 +38,33 @@ const Register = () => {
     setStrength(currentStrength);
   }, [password]);
 
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (!username || username.length < 3) {
+        setUsernameAvailable(null);
+        setUsernameSuggestions([]);
+        return;
+      }
+      setCheckingUsername(true);
+      try {
+        const res = await api.get(`/v1/users/check-username?username=${username}`);
+        setUsernameAvailable(res.data.data);
+        if (!res.data.data && firstName && lastName) {
+          const sugRes = await api.get(`/v1/users/suggest-username?firstName=${firstName}&lastName=${lastName}`);
+          setUsernameSuggestions(sugRes.data.data || []);
+        } else {
+          setUsernameSuggestions([]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+    const delay = setTimeout(checkUsername, 500);
+    return () => clearTimeout(delay);
+  }, [username, firstName, lastName]);
+
   const onSubmit = async (data) => {
     try {
       setAuthError('');
@@ -38,7 +74,10 @@ const Register = () => {
         lastName: data.lastName,
         username: data.username,
         email: data.email,
-        password: data.password
+        mobileNumber: data.mobileNumber,
+        gender: data.gender,
+        password: data.password,
+        confirmPassword: data.confirmPassword
       });
       navigate('/dashboard');
     } catch (err) {
@@ -164,15 +203,53 @@ const Register = () => {
               </div>
 
               <div className="space-y-1">
+                <label htmlFor="gender" className="block text-sm font-semibold text-slate-700">Gender</label>
+                <select
+                  id="gender"
+                  className={`w-full px-4 py-3 bg-white border ${errors.gender ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all`}
+                  {...register('gender', { required: 'Gender is required' })}
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+                {errors.gender && <p className="text-sm text-red-500 mt-1">{errors.gender.message}</p>}
+              </div>
+
+              <div className="space-y-1">
                 <label htmlFor="username" className="block text-sm font-semibold text-slate-700">Username</label>
-                <input
-                  id="username"
-                  type="text"
-                  placeholder="janedoe"
-                  className={`w-full px-4 py-3 bg-white border ${errors.username ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400`}
-                  {...register('username', { required: 'Username is required', minLength: { value: 3, message: 'Min 3 characters' } })}
-                />
+                <div className="relative">
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="janedoe"
+                    className={`w-full px-4 py-3 bg-white border ${errors.username || usernameAvailable === false ? 'border-red-400 focus:ring-red-500' : usernameAvailable ? 'border-emerald-400 focus:ring-emerald-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400 pr-10`}
+                    {...register('username', { required: 'Username is required', minLength: { value: 3, message: 'Min 3 characters' } })}
+                  />
+                  {checkingUsername && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />}
+                  {!checkingUsername && usernameAvailable === true && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />}
+                </div>
                 {errors.username && <p className="text-sm text-red-500 mt-1">{errors.username.message}</p>}
+                {!errors.username && usernameAvailable === false && (
+                  <div className="mt-1">
+                    <p className="text-sm text-red-500 mb-1">Username is already taken.</p>
+                    {usernameSuggestions.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {usernameSuggestions.map(s => (
+                          <span 
+                            key={s} 
+                            onClick={() => setValue('username', s, { shouldValidate: true })}
+                            className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md cursor-pointer hover:bg-emerald-100 transition-colors"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -185,6 +262,18 @@ const Register = () => {
                   {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })}
                 />
                 {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="mobileNumber" className="block text-sm font-semibold text-slate-700">Mobile Number</label>
+                <input
+                  id="mobileNumber"
+                  type="tel"
+                  placeholder="+1234567890"
+                  className={`w-full px-4 py-3 bg-white border ${errors.mobileNumber ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400`}
+                  {...register('mobileNumber', { required: 'Mobile Number is required', pattern: { value: /^\+?[0-9]{10,15}$/, message: 'Invalid mobile number (10-15 digits)' } })}
+                />
+                {errors.mobileNumber && <p className="text-sm text-red-500 mt-1">{errors.mobileNumber.message}</p>}
               </div>
 
               <div className="space-y-1">
@@ -224,6 +313,34 @@ const Register = () => {
                 <AnimatePresence>
                   {errors.password && <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-sm text-red-500 mt-1">{errors.password.message}</motion.p>}
                 </AnimatePresence>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className={`w-full px-4 py-3 bg-white border ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400`}
+                    {...register('confirmPassword', { 
+                      required: 'Please confirm your password', 
+                      validate: val => val === password || 'Passwords do not match'
+                    })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                  >
+                    {showConfirmPassword ? (
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                    ) : (
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>}
               </div>
 
               <div className="flex items-start">

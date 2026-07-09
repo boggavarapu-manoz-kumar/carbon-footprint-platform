@@ -24,6 +24,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OAuth2RedirectHandler = lazy(() => import('./pages/OAuth2RedirectHandler'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const LogActivity = lazy(() => import('./pages/LogActivity'));
 const LogElectricity = lazy(() => import('./pages/LogElectricity'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
@@ -68,6 +69,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/analytics" element={<Analytics />} />
                 <Route path="/log-activity" element={<LogActivity />} />
                 <Route path="/log-electricity" element={<LogElectricity />} />
                 <Route path="/activity-history" element={<ActivityHistory />} />
