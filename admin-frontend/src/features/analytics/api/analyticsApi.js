@@ -60,4 +60,10 @@ export const analyticsApi = {
     const res = await adminAxios.get('/analytics/trends/comparison');
     return res.data.data;
   },
+
+  // Daily Platform Analytics
+  getDailyAnalytics: async () => {
+    const res = await adminAxios.get('/analytics/daily');
+    return res.data.data;
+  },
 };

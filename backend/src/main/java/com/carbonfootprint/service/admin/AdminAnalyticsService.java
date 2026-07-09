@@ -1,7 +1,10 @@
 package com.carbonfootprint.service.admin;
 
 import com.carbonfootprint.dto.admin.*;
+import com.carbonfootprint.entity.GoalStatus;
 import com.carbonfootprint.repository.ActivityLogRepository;
+import com.carbonfootprint.repository.GoalRepository;
+import com.carbonfootprint.repository.UserBadgeRepository;
 import com.carbonfootprint.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,8 @@ public class AdminAnalyticsService {
 
     private final UserRepository userRepository;
     private final ActivityLogRepository activityLogRepository;
+    private final GoalRepository goalRepository;
+    private final UserBadgeRepository userBadgeRepository;
 
     private static final String[] MONTH_NAMES = {
         "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -323,5 +328,72 @@ public class AdminAnalyticsService {
         result.put("lastMonthUsers", lastMonthUsers);
         result.put("userChangePercent", Math.round(userChange * 100.0) / 100.0);
         return result;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // DAILY PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public DailyAnalyticsResponse getDailyAnalytics() {
+        log.info("Fetching Daily Platform Analytics");
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = LocalDate.now().atTime(23, 59, 59);
+
+        // ─── KPIs ─────────────────────────────────────────────────
+        Long activitiesToday  = activityLogRepository.countActivitiesToday(startOfDay, endOfDay);
+        BigDecimal emissions  = activityLogRepository.sumEmissionsToday(startOfDay, endOfDay);
+        Long activeUsers      = activityLogRepository.countActiveUsersToday(startOfDay, endOfDay);
+        Long newUsers         = userRepository.countUsersInRange(startOfDay, endOfDay);
+        Long goalsAchieved    = goalRepository.countByStatusAndUpdatedAtBetween(
+                GoalStatus.ACHIEVED, startOfDay, endOfDay);
+        Long badgesEarned     = userBadgeRepository.countBadgesEarnedToday(startOfDay, endOfDay);
+
+        if (activitiesToday == null) activitiesToday = 0L;
+        if (emissions       == null) emissions       = BigDecimal.ZERO;
+        if (activeUsers     == null) activeUsers     = 0L;
+        if (newUsers        == null) newUsers        = 0L;
+        if (goalsAchieved   == null) goalsAchieved   = 0L;
+        if (badgesEarned    == null) badgesEarned    = 0L;
+
+        // ─── Hourly Breakdown ──────────────────────────────────────
+        List<Object[]> hourlyRaw = activityLogRepository.getHourlyBreakdown(startOfDay, endOfDay);
+        Map<Integer, Object[]> hourMap = new HashMap<>();
+        for (Object[] row : hourlyRaw) {
+            int hour = ((Number) row[0]).intValue();
+            hourMap.put(hour, row);
+        }
+
+        List<DailyAnalyticsResponse.HourlySlot> hourlyData = new ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            Object[] row = hourMap.get(h);
+            long acts          = row != null ? ((Number) row[1]).longValue()  : 0L;
+            BigDecimal ems     = row != null ? (BigDecimal) row[2]            : BigDecimal.ZERO;
+            long users         = row != null ? ((Number) row[3]).longValue()  : 0L;
+            if (ems == null) ems = BigDecimal.ZERO;
+
+            String label;
+            if (h == 0)       label = "12 AM";
+            else if (h < 12)  label = h + " AM";
+            else if (h == 12) label = "12 PM";
+            else              label = (h - 12) + " PM";
+
+            hourlyData.add(DailyAnalyticsResponse.HourlySlot.builder()
+                    .hour(h)
+                    .label(label)
+                    .activities(acts)
+                    .emissions(ems)
+                    .activeUsers(users)
+                    .build());
+        }
+
+        return DailyAnalyticsResponse.builder()
+                .activitiesToday(activitiesToday)
+                .emissionsToday(emissions)
+                .activeUsersToday(activeUsers)
+                .newUsersToday(newUsers)
+                .goalsAchievedToday(goalsAchieved)
+                .badgesEarnedToday(badgesEarned)
+                .hourlyData(hourlyData)
+                .build();
     }
 }

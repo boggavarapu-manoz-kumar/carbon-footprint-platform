@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Users, Activity, Leaf, BarChart3,
-  Target, Award, ChevronRight, RefreshCw, AlertTriangle, Loader2
+  Target, Award, ChevronRight, AlertTriangle, Loader2, Calendar, Zap, Star
 } from 'lucide-react';
 import { analyticsApi } from '../api/analyticsApi';
 
@@ -98,19 +98,20 @@ const fmtKg = (n) => `${fmt(n)} kg`;
 
 // ─── TAB DEFINITIONS ────────────────────────────────────────────
 const TABS = [
-  { id: 'platform', label: 'Platform', icon: BarChart3 },
-  { id: 'carbon', label: 'Carbon', icon: Leaf },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'activity', label: 'Activity', icon: Activity },
-  { id: 'leaderboard', label: 'Leaderboard', icon: Award },
-  { id: 'trends', label: 'Trends', icon: TrendingUp },
+  { id: 'daily',       label: 'Daily',       icon: Calendar  },
+  { id: 'platform',   label: 'Platform',    icon: BarChart3  },
+  { id: 'carbon',     label: 'Carbon',      icon: Leaf       },
+  { id: 'users',      label: 'Users',       icon: Users      },
+  { id: 'activity',   label: 'Activity',    icon: Activity   },
+  { id: 'leaderboard',label: 'Leaderboard', icon: Award      },
+  { id: 'trends',     label: 'Trends',      icon: TrendingUp },
 ];
 
 // ──────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ──────────────────────────────────────────────────────────────────
 export const AdminAnalytics = () => {
-  const [activeTab, setActiveTab] = useState('platform');
+  const [activeTab, setActiveTab] = useState('daily');
   const [activityDays, setActivityDays] = useState(30);
   const [carbonDays, setCarbonDays] = useState(30);
   const [userDays, setUserDays] = useState(30);
@@ -604,7 +605,179 @@ export const AdminAnalytics = () => {
     </div>
   );
 
+  // ─── DAILY TAB ───────────────────────────────────────────────
+  const { data: daily, isLoading: dailyLoading, refetch: refetchDaily } = useQuery({
+    queryKey: ['admin-analytics-daily'],
+    queryFn: analyticsApi.getDailyAnalytics,
+    staleTime: 60 * 1000,           // refresh every 60 s
+    refetchInterval: 2 * 60 * 1000, // auto-refresh every 2 min
+  });
+
+  const renderDaily = () => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const hourly = daily?.hourlyData || [];
+
+    const KPI_CARDS = [
+      { title: 'Active Users Today',     value: fmt(daily?.activeUsersToday),   icon: Users,    color: 'indigo',  subtitle: 'Users who logged activity' },
+      { title: 'Activities Logged Today',value: fmt(daily?.activitiesToday),    icon: Activity, color: 'sky',     subtitle: 'Total logs since midnight' },
+      { title: 'CO₂ Emitted Today',      value: fmtKg(daily?.emissionsToday),  icon: Leaf,     color: 'emerald', subtitle: 'Platform total (kg CO₂)' },
+      { title: 'Goals Achieved Today',   value: fmt(daily?.goalsAchievedToday),icon: Target,   color: 'amber',   subtitle: 'Status changed to Achieved' },
+      { title: 'Badges Earned Today',    value: fmt(daily?.badgesEarnedToday), icon: Star,     color: 'violet',  subtitle: 'Awarded since midnight' },
+      { title: 'New Users Today',        value: fmt(daily?.newUsersToday),     icon: Zap,      color: 'indigo',  subtitle: 'Registered since midnight' },
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Header Strip */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Daily Platform Analytics</h2>
+            <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+              <Calendar className="h-3.5 w-3.5" /> {today}
+            </p>
+          </div>
+          <button
+            onClick={() => refetchDaily()}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+          >
+            <Activity className="h-3.5 w-3.5" />
+            Refresh
+          </button>
+        </div>
+
+        {/* KPI Cards — 6 cards in 3 × 2 grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {KPI_CARDS.map(k => (
+            <StatCard key={k.title} title={k.title} value={k.value} subtitle={k.subtitle}
+              icon={k.icon} color={k.color} loading={dailyLoading} />
+          ))}
+        </div>
+
+        {/* Hourly Activity Graph */}
+        <ChartCard
+          title="Hourly Activity Volume"
+          subtitle="Activities logged every hour today (12 AM – 11 PM)"
+          loading={dailyLoading}
+        >
+          {hourly.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourly} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                <defs>
+                  <linearGradient id="gradDailyAct" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.9} />
+                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={1} angle={-35} textAnchor="end" height={40} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="activities" name="Activities" fill="url(#gradDailyAct)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <EmptyState message="No activities logged yet today" />}
+        </ChartCard>
+
+        {/* Hourly Carbon Emissions Graph */}
+        <ChartCard
+          title="Hourly Carbon Emissions"
+          subtitle="CO₂ (kg) emitted per hour today"
+          loading={dailyLoading}
+        >
+          {hourly.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={hourly} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                <defs>
+                  <linearGradient id="gradDailyCarbon" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={1} angle={-35} textAnchor="end" height={40} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${parseFloat(v).toFixed(1)}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="emissions" name="CO₂ (kg)" stroke="#10b981"
+                  fill="url(#gradDailyCarbon)" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : <EmptyState message="No emissions data yet today" />}
+        </ChartCard>
+
+        {/* Hourly Active User Trend */}
+        <ChartCard
+          title="Hourly Active User Trend"
+          subtitle="Distinct users active per hour today"
+          loading={dailyLoading}
+        >
+          {hourly.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={hourly} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={1} angle={-35} textAnchor="end" height={40} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line
+                  type="monotone" dataKey="activeUsers" name="Active Users"
+                  stroke="#6366f1" strokeWidth={2.5}
+                  dot={{ r: 3.5, fill: '#6366f1', strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: '#4f46e5' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <EmptyState message="No user activity yet today" />}
+        </ChartCard>
+
+        {/* Hourly Data Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Full Hourly Breakdown</h3>
+            <p className="text-xs text-gray-500 mt-0.5">All 24 hours — actual timestamps, all users aggregated</p>
+          </div>
+          {dailyLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hour</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Activities</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">CO₂ (kg)</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Users</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {hourly.map(slot => (
+                    <tr key={slot.hour}
+                      className={`transition-colors ${ slot.activities > 0 ? 'hover:bg-indigo-50/30' : 'opacity-50' }`}
+                    >
+                      <td className="px-6 py-3 font-medium text-gray-700">
+                        <span className={`inline-flex items-center gap-2 ${ slot.activities > 0 ? 'text-indigo-700' : 'text-gray-400' }`}>
+                          {slot.activities > 0 && <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />}
+                          {slot.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-right font-semibold text-gray-900">{slot.activities || '—'}</td>
+                      <td className="px-6 py-3 text-right text-emerald-700 font-medium">
+                        {slot.emissions > 0 ? `${parseFloat(slot.emissions).toFixed(3)} kg` : '—'}
+                      </td>
+                      <td className="px-6 py-3 text-right text-gray-600">{slot.activeUsers || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const tabContent = {
+    daily: renderDaily(),
     platform: renderPlatform(),
     carbon: renderCarbon(),
     users: renderUsers(),

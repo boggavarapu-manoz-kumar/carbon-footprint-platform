@@ -103,4 +103,11 @@ public class AdminAnalyticsController {
         log.info("Fetching trend comparison analytics");
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getTrendComparison(), "Trend comparison retrieved"));
     }
+
+    // ─── Daily Platform Analytics ─────────────────────────────────
+    @GetMapping("/daily")
+    public ResponseEntity<ApiResponse<DailyAnalyticsResponse>> getDailyAnalytics() {
+        log.info("Fetching daily platform analytics");
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getDailyAnalytics(), "Daily analytics retrieved"));
+    }
 }

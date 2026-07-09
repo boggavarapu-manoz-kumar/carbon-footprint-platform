@@ -65,4 +65,29 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT function('YEAR', a.logDate) FROM ActivityLog a WHERE a.user.id = :userId ORDER BY function('YEAR', a.logDate) DESC")
     java.util.List<Integer> findDistinctYearsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    // ─── DAILY ANALYTICS (Today) ─────────────────────────────────
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
+    Long countActivitiesToday(
+            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
+            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(a.emissionValue), 0) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
+    java.math.BigDecimal sumEmissionsToday(
+            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
+            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
+    Long countActiveUsersToday(
+            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
+            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+
+    // ─── HOURLY BREAKDOWN ─────────────────────────────────────────
+
+    @org.springframework.data.jpa.repository.Query("SELECT function('HOUR', a.createdAt), COUNT(a), COALESCE(SUM(a.emissionValue), 0), COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay GROUP BY function('HOUR', a.createdAt) ORDER BY function('HOUR', a.createdAt) ASC")
+    java.util.List<Object[]> getHourlyBreakdown(
+            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
+            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
 }
+
