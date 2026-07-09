@@ -63,6 +63,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.code, SUM(a.emissionValue) FROM ActivityLog a WHERE a.user.id = :userId AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.code")
     java.util.List<Object[]> sumEmissionsByCategoryAndDateRange(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.code, SUM(a.emissionValue) FROM ActivityLog a WHERE a.createdAt >= :startDate AND a.createdAt <= :endDate GROUP BY a.activityType.subCategory.category.code")
+    java.util.List<Object[]> sumEmissionsByCategoryAndDateRangeGlobal(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
+
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT function('YEAR', a.logDate) FROM ActivityLog a WHERE a.user.id = :userId ORDER BY function('YEAR', a.logDate) DESC")
     java.util.List<Integer> findDistinctYearsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 

@@ -72,4 +72,10 @@ export const analyticsApi = {
     const res = await adminAxios.get('/analytics/weekly');
     return res.data.data;
   },
+
+  // Monthly Platform Analytics
+  getMonthlyAnalytics: async () => {
+    const res = await adminAxios.get('/analytics/monthly');
+    return res.data.data;
+  },
 };

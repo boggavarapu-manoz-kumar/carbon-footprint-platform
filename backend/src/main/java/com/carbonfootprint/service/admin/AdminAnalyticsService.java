@@ -492,8 +492,121 @@ public class AdminAnalyticsService {
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MONTHLY PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public MonthlyAnalyticsResponse getMonthlyAnalytics() {
+        log.info("Fetching Monthly Platform Analytics");
+        
+        LocalDate today = LocalDate.now();
+        // Current Month
+        LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+
+        // Previous Month
+        LocalDate prevMonthDate = today.minusMonths(1);
+        LocalDateTime startOfPrevMonth = prevMonthDate.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfPrevMonth = prevMonthDate.withDayOfMonth(prevMonthDate.lengthOfMonth()).atTime(23, 59, 59);
+
+        // Current Month Totals
+        Long curActivities = activityLogRepository.countActivitiesToday(startOfMonth, endOfMonth);
+        Long curUsers = activityLogRepository.countActiveUsersToday(startOfMonth, endOfMonth);
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfMonth, endOfMonth);
+        Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfMonth, endOfMonth);
+
+        if (curActivities == null) curActivities = 0L;
+        if (curUsers == null) curUsers = 0L;
+        if (curEmissions == null) curEmissions = BigDecimal.ZERO;
+        if (curGoals == null) curGoals = 0L;
+
+        // Previous Month Totals
+        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevMonth, endOfPrevMonth);
+        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevMonth, endOfPrevMonth);
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevMonth, endOfPrevMonth);
+        Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevMonth, endOfPrevMonth);
+
+        if (prevActivities == null) prevActivities = 0L;
+        if (prevUsers == null) prevUsers = 0L;
+        if (prevEmissions == null) prevEmissions = BigDecimal.ZERO;
+        if (prevGoals == null) prevGoals = 0L;
+
+        // Calculate % Changes
+        double actChange = prevActivities == 0 ? (curActivities > 0 ? 100.0 : 0.0) : ((double)(curActivities - prevActivities) / prevActivities) * 100.0;
+        double usrChange = prevUsers == 0 ? (curUsers > 0 ? 100.0 : 0.0) : ((double)(curUsers - prevUsers) / prevUsers) * 100.0;
+        double emsChange = prevEmissions.compareTo(BigDecimal.ZERO) == 0 ? (curEmissions.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0) : curEmissions.subtract(prevEmissions).divide(prevEmissions, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).doubleValue();
+        double goalChange = prevGoals == 0 ? (curGoals > 0 ? 100.0 : 0.0) : ((double)(curGoals - prevGoals) / prevGoals) * 100.0;
+
+        // Category Distribution
+        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfMonth, endOfMonth);
+        List<MonthlyAnalyticsResponse.CategorySlot> catData = new ArrayList<>();
+        for (Object[] row : catRaw) {
+            String cat = (String) row[0];
+            BigDecimal val = (BigDecimal) row[1];
+            catData.add(MonthlyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).build());
+        }
+
+        // Weekly Breakdown (Week 1 - 5)
+        // We reuse the getWeeklyBreakdown method which just groups by DATE
+        List<Object[]> dailyRaw = activityLogRepository.getWeeklyBreakdown(startOfMonth, endOfMonth);
+        List<Object[]> dailyGoalsRaw = goalRepository.getWeeklyGoalBreakdown(GoalStatus.ACHIEVED, startOfMonth, endOfMonth);
+
+        Map<java.sql.Date, Object[]> dayMap = new HashMap<>();
+        for (Object[] row : dailyRaw) { dayMap.put((java.sql.Date) row[0], row); }
+        
+        Map<java.sql.Date, Long> goalDayMap = new HashMap<>();
+        for (Object[] row : dailyGoalsRaw) { goalDayMap.put((java.sql.Date) row[0], ((Number) row[1]).longValue()); }
+
+        List<MonthlyAnalyticsResponse.WeeklySlot> weeklyData = new ArrayList<>();
+        for (int week = 1; week <= 5; week++) {
+            long wActs = 0L;
+            long wUsers = 0L; // approximate sum over days (not distinct per week, but good enough for trend)
+            BigDecimal wEms = BigDecimal.ZERO;
+            long wGoals = 0L;
+            boolean hasDays = false;
+            
+            for (int d = 1; d <= 7; d++) {
+                int dayOfMonth = ((week - 1) * 7) + d;
+                if (dayOfMonth > today.lengthOfMonth()) break;
+                
+                LocalDate date = startOfMonth.toLocalDate().plusDays(dayOfMonth - 1);
+                java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+                hasDays = true;
+                
+                Object[] row = dayMap.get(sqlDate);
+                if (row != null) {
+                    wActs += ((Number) row[1]).longValue();
+                    wEms = wEms.add(row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO);
+                    wUsers += ((Number) row[3]).longValue();
+                }
+                wGoals += goalDayMap.getOrDefault(sqlDate, 0L);
+            }
+            
+            if (hasDays) {
+                weeklyData.add(MonthlyAnalyticsResponse.WeeklySlot.builder()
+                        .weekLabel("Week " + week)
+                        .activities(wActs)
+                        .activeUsers(wUsers)
+                        .emissions(wEms)
+                        .goalsAchieved(wGoals)
+                        .build());
+            }
+        }
+
+        return MonthlyAnalyticsResponse.builder()
+                .totalActivities(curActivities)
+                .totalUsers(curUsers)
+                .totalEmissions(curEmissions)
+                .totalGoals(curGoals)
+                .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
+                .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
+                .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
                 .goalsChangePct(Math.round(goalChange * 100.0) / 100.0)
                 .weeklyData(weeklyData)
+                .categoryData(catData)
                 .build();
     }
 }

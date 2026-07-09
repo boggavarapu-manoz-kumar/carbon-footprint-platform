@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Users, Activity, Leaf, BarChart3,
-  Target, Award, ChevronRight, AlertTriangle, Loader2, Calendar, CalendarDays, Zap, Star
+  Target, Award, ChevronRight, AlertTriangle, Loader2, Calendar, CalendarDays, CalendarRange, Zap, Star
 } from 'lucide-react';
 import { analyticsApi } from '../api/analyticsApi';
 
@@ -100,6 +100,7 @@ const fmtKg = (n) => `${fmt(n)} kg`;
 const TABS = [
   { id: 'daily',       label: 'Daily',       icon: Calendar  },
   { id: 'weekly',      label: 'Weekly',      icon: CalendarDays },
+  { id: 'monthly',     label: 'Monthly',     icon: CalendarRange },
   { id: 'platform',   label: 'Platform',    icon: BarChart3  },
   { id: 'carbon',     label: 'Carbon',      icon: Leaf       },
   { id: 'users',      label: 'Users',       icon: Users      },
@@ -112,7 +113,7 @@ const TABS = [
 // MAIN COMPONENT
 // ──────────────────────────────────────────────────────────────────
 export const AdminAnalytics = () => {
-  const [activeTab, setActiveTab] = useState('weekly');
+  const [activeTab, setActiveTab] = useState('monthly');
   const [activityDays, setActivityDays] = useState(30);
   const [carbonDays, setCarbonDays] = useState(30);
   const [userDays, setUserDays] = useState(30);
@@ -938,7 +939,164 @@ export const AdminAnalytics = () => {
     );
   };
 
+  // ─── MONTHLY TAB ───────────────────────────────────────────────
+  const { data: monthly, isLoading: monthlyLoading, refetch: refetchMonthly } = useQuery({
+    queryKey: ['admin-analytics-monthly'],
+    queryFn: analyticsApi.getMonthlyAnalytics,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const renderMonthly = () => {
+    const mData = monthly?.weeklyData || [];
+    const catData = monthly?.categoryData || [];
+
+    const KPI_CARDS = [
+      { title: 'Activities This Month', value: fmt(monthly?.totalActivities), icon: Activity, color: 'sky',     trend: monthly?.activitiesChangePct },
+      { title: 'Active Users',          value: fmt(monthly?.totalUsers),      icon: Users,    color: 'indigo',  trend: monthly?.usersChangePct },
+      { title: 'CO₂ Emitted (kg)',      value: fmtKg(monthly?.totalEmissions),icon: Leaf,     color: 'emerald', trend: monthly?.emissionsChangePct },
+      { title: 'Goals Achieved',        value: fmt(monthly?.totalGoals),      icon: Target,   color: 'amber',   trend: monthly?.goalsChangePct },
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Monthly Platform Analytics</h2>
+            <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+              <CalendarRange className="h-3.5 w-3.5" /> Current Month (Weeks 1 - 5)
+            </p>
+          </div>
+          <button
+            onClick={() => refetchMonthly()}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${monthlyLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Top KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {KPI_CARDS.map(k => (
+            <StatCard key={k.title} title={k.title} value={k.value} trend={k.trend}
+              icon={k.icon} color={k.color} loading={monthlyLoading} subtitle="vs prev month" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Trend Graph (Activities & Carbon) */}
+          <ChartCard title="Monthly Trend" subtitle="Activities vs CO₂ over the weeks" loading={monthlyLoading}>
+            {mData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={mData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar yAxisId="left" dataKey="activities" name="Activities" fill="#0ea5e9" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Line yAxisId="right" type="monotone" dataKey="emissions" name="CO₂ (kg)" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : <EmptyState message="No data for this month" />}
+          </ChartCard>
+
+          {/* Weekly Breakdown (Users) */}
+          <ChartCard title="Weekly Breakdown" subtitle="Active users per week" loading={monthlyLoading}>
+            {mData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={mData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <defs>
+                    <linearGradient id="gradMonthlyUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area type="monotone" dataKey="activeUsers" name="Active Users" stroke="#6366f1"
+                    fill="url(#gradMonthlyUsers)" strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : <EmptyState message="No data for this month" />}
+          </ChartCard>
+
+          {/* Category Distribution */}
+          <ChartCard title="Category Distribution" subtitle="Emissions by category this month" loading={monthlyLoading}>
+            {catData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={catData} dataKey="emissions" nameKey="category" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
+                    {catData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)} kg CO₂`} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <EmptyState message="No category data" />}
+          </ChartCard>
+
+          {/* Goal Performance */}
+          <ChartCard title="Goal Performance" subtitle="Goals achieved per week" loading={monthlyLoading}>
+            {mData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={mData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="goalsAchieved" name="Goals Achieved" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyState message="No data for this month" />}
+          </ChartCard>
+        </div>
+
+        {/* Monthly Data Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Monthly Breakdown (Weeks)</h3>
+          </div>
+          {monthlyLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-indigo-400" /></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Week</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Activities</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Users</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">CO₂ (kg)</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Goals Achieved</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {mData.map(slot => (
+                    <tr key={slot.weekLabel} className="hover:bg-indigo-50/30 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-700">{slot.weekLabel}</td>
+                      <td className="px-6 py-3 text-right font-semibold text-gray-900">{slot.activities || '—'}</td>
+                      <td className="px-6 py-3 text-right text-gray-600">{slot.activeUsers || '—'}</td>
+                      <td className="px-6 py-3 text-right text-emerald-700 font-medium">{slot.emissions > 0 ? `${parseFloat(slot.emissions).toFixed(2)} kg` : '—'}</td>
+                      <td className="px-6 py-3 text-right text-amber-600 font-medium">{slot.goalsAchieved || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const tabContent = {
+    monthly: renderMonthly(),
     weekly: renderWeekly(),
     daily: renderDaily(),
     platform: renderPlatform(),
