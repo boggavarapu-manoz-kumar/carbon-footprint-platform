@@ -33,6 +33,9 @@ public class YearlyAnalyticsResponse {
     // ─── Monthly breakdown (Jan - Dec) ───────────────────────────
     private List<MonthlySlot> monthlyData;
 
+    // ─── Category Distribution ────────────────────────────────────
+    private List<CategorySlot> categoryData;
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -45,5 +48,15 @@ public class YearlyAnalyticsResponse {
         private long goalsAchieved;
         private long badgesEarned;
         private long organizationsJoined;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategorySlot {
+        private String category;
+        private BigDecimal emissions;
+        private long count;
     }
 }

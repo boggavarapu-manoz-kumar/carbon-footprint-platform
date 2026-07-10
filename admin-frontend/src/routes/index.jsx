@@ -5,6 +5,7 @@ import { AuthLayout } from '../layouts/AuthLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { RoleRoute } from '../components/security/RoleRoute';
 import { Forbidden } from '../pages/Forbidden';
+import { ErrorPage } from '../pages/ErrorPage';
 
 // Lazy loaded feature modules
 const Login = React.lazy(() => import('../features/auth/components/Login').then(module => ({ default: module.Login })));
@@ -13,6 +14,7 @@ const UserList = React.lazy(() => import('../features/users/components/UserList'
 const AuditList = React.lazy(() => import('../features/audit/components/AuditList').then(module => ({ default: module.AuditList })));
 const SettingsLayout = React.lazy(() => import('../features/settings/components/SettingsLayout').then(module => ({ default: module.SettingsLayout })));
 const AdminAnalytics = React.lazy(() => import('../features/analytics/components/AdminAnalytics').then(module => ({ default: module.AdminAnalytics })));
+const SuspensionsPage = React.lazy(() => import('../features/suspensions/components/SuspensionsPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -27,6 +29,7 @@ const PageLoader = () => (
 export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         path: '/login',
@@ -44,6 +47,7 @@ export const router = createBrowserRouter([
   },
   {
     element: <ProtectedRoute />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <AdminLayout />,
@@ -64,6 +68,16 @@ export const router = createBrowserRouter([
               <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT_TEAM']}>
                 <Suspense fallback={<PageLoader />}>
                   <UserList />
+                </Suspense>
+              </RoleRoute>
+            ),
+          },
+          {
+            path: '/suspensions',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'MODERATOR']}>
+                <Suspense fallback={<PageLoader />}>
+                  <SuspensionsPage />
                 </Suspense>
               </RoleRoute>
             ),

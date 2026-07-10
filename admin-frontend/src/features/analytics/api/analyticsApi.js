@@ -90,4 +90,10 @@ export const analyticsApi = {
     const res = await adminAxios.get('/analytics/yearly', { params: { year } });
     return res.data.data;
   },
+
+  // Organization Analytics
+  getOrganizationAnalytics: async () => {
+    const res = await adminAxios.get('/analytics/organizations');
+    return res.data.data;
+  },
 };

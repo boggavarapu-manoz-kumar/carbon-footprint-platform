@@ -51,5 +51,6 @@ public class MonthlyAnalyticsResponse {
     public static class CategorySlot {
         private String category;
         private BigDecimal emissions;
+        private long count;
     }
 }

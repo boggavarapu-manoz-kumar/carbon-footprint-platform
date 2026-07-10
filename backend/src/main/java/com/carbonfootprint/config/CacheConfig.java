@@ -15,14 +15,7 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
-                "dashboardMetrics",
-                "emissionTrends",
-                "leaderboard",
-                "securityAlerts",
-                "userProfile",
-                "analyticsCache"
-        );
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
         cacheManager.setCaffeine(caffeineCacheBuilder());
         return cacheManager;
     }

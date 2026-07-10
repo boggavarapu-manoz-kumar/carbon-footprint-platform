@@ -6,6 +6,10 @@ import com.carbonfootprint.repository.ActivityLogRepository;
 import com.carbonfootprint.repository.GoalRepository;
 import com.carbonfootprint.repository.UserBadgeRepository;
 import com.carbonfootprint.repository.UserRepository;
+import com.carbonfootprint.repository.OrganizationRepository;
+import com.carbonfootprint.repository.OrganizationMemberRepository;
+import com.carbonfootprint.entity.Organization;
+import com.carbonfootprint.entity.OrganizationMember;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -30,6 +34,8 @@ public class AdminAnalyticsService {
     private final ActivityLogRepository activityLogRepository;
     private final GoalRepository goalRepository;
     private final UserBadgeRepository userBadgeRepository;
+    private final OrganizationRepository organizationRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
 
     private static final String[] MONTH_NAMES = {
         "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -362,9 +368,9 @@ public class AdminAnalyticsService {
         LocalDateTime endOfDay   = today.atTime(23, 59, 59);
 
         // ─── KPIs ─────────────────────────────────────────────────
-        Long activitiesToday  = activityLogRepository.countActivitiesToday(startOfDay, endOfDay);
-        BigDecimal emissions  = activityLogRepository.sumEmissionsToday(startOfDay, endOfDay);
-        Long activeUsers      = activityLogRepository.countActiveUsersToday(startOfDay, endOfDay);
+        Long activitiesToday  = activityLogRepository.countActivitiesToday(startOfDay.toLocalDate());
+        BigDecimal emissions  = activityLogRepository.sumEmissionsToday(startOfDay.toLocalDate());
+        Long activeUsers      = activityLogRepository.countActiveUsersToday(startOfDay.toLocalDate());
         Long newUsers         = userRepository.countUsersInRange(startOfDay, endOfDay);
         Long goalsAchieved    = goalRepository.countByStatusAndUpdatedAtBetween(
                 GoalStatus.ACHIEVED, startOfDay, endOfDay);
@@ -378,7 +384,7 @@ public class AdminAnalyticsService {
         if (badgesEarned    == null) badgesEarned    = 0L;
 
         // ─── Hourly Breakdown ──────────────────────────────────────
-        List<Object[]> hourlyRaw = activityLogRepository.getHourlyBreakdown(startOfDay, endOfDay);
+        List<Object[]> hourlyRaw = activityLogRepository.getHourlyBreakdown(startOfDay.toLocalDate());
         Map<Integer, Object[]> hourMap = new HashMap<>();
         for (Object[] row : hourlyRaw) {
             int hour = ((Number) row[0]).intValue();
@@ -408,12 +414,25 @@ public class AdminAnalyticsService {
                     .build());
         }
 
+        // ─── Category Distribution ─────────────────────────────────
+        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfDay.toLocalDate(), endOfDay.toLocalDate());
+        List<DailyAnalyticsResponse.CategorySlot> catData = new ArrayList<>();
+        for (Object[] row : catRaw) {
+            String cat = (String) row[0];
+            BigDecimal val = (BigDecimal) row[1];
+            long count = ((Number) row[2]).longValue();
+            catData.add(DailyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).count(count).build());
+        }
+
         return DailyAnalyticsResponse.builder()
                 .activitiesToday(activitiesToday)
                 .emissionsToday(emissions)
                 .activeUsersToday(activeUsers)
                 .newUsersToday(newUsers)
                 .goalsAchievedToday(goalsAchieved)
+                .badgesEarnedToday(badgesEarned)
+                .hourlyData(hourlyData)
+                .categoryData(catData)
                 .build();
     }
 
@@ -437,9 +456,9 @@ public class AdminAnalyticsService {
         LocalDateTime endOfPrevWeek = endOfWeek.minusWeeks(1);
 
         // Current Week Totals
-        Long curActivities = activityLogRepository.countActivitiesToday(startOfWeek, endOfWeek);
-        Long curUsers = activityLogRepository.countActiveUsersToday(startOfWeek, endOfWeek);
-        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfWeek, endOfWeek);
+        Long curActivities = activityLogRepository.countActivitiesInRange(startOfWeek.toLocalDate(), endOfWeek.toLocalDate());
+        Long curUsers = activityLogRepository.countActiveUsersInRange(startOfWeek.toLocalDate(), endOfWeek.toLocalDate());
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsInRange(startOfWeek.toLocalDate(), endOfWeek.toLocalDate());
         Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfWeek, endOfWeek);
 
         if (curActivities == null) curActivities = 0L;
@@ -448,9 +467,9 @@ public class AdminAnalyticsService {
         if (curGoals == null) curGoals = 0L;
 
         // Previous Week Totals
-        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevWeek, endOfPrevWeek);
-        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevWeek, endOfPrevWeek);
-        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevWeek, endOfPrevWeek);
+        Long prevActivities = activityLogRepository.countActivitiesInRange(startOfPrevWeek.toLocalDate(), endOfPrevWeek.toLocalDate());
+        Long prevUsers = activityLogRepository.countActiveUsersInRange(startOfPrevWeek.toLocalDate(), endOfPrevWeek.toLocalDate());
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsInRange(startOfPrevWeek.toLocalDate(), endOfPrevWeek.toLocalDate());
         Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevWeek, endOfPrevWeek);
 
         if (prevActivities == null) prevActivities = 0L;
@@ -506,6 +525,16 @@ public class AdminAnalyticsService {
                     .build());
         }
 
+        // ─── Category Distribution ─────────────────────────────────
+        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfWeek.toLocalDate(), endOfWeek.toLocalDate());
+        List<WeeklyAnalyticsResponse.CategorySlot> catData = new ArrayList<>();
+        for (Object[] row : catRaw) {
+            String cat = (String) row[0];
+            BigDecimal val = (BigDecimal) row[1];
+            long count = ((Number) row[2]).longValue();
+            catData.add(WeeklyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).count(count).build());
+        }
+
         return WeeklyAnalyticsResponse.builder()
                 .totalActivities(curActivities)
                 .totalUsers(curUsers)
@@ -514,6 +543,8 @@ public class AdminAnalyticsService {
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
+                .weeklyData(weeklyData)
+                .categoryData(catData)
                 .build();
     }
 
@@ -535,9 +566,9 @@ public class AdminAnalyticsService {
         LocalDateTime endOfPrevMonth = prevMonthDate.withDayOfMonth(prevMonthDate.lengthOfMonth()).atTime(23, 59, 59);
 
         // Current Month Totals
-        Long curActivities = activityLogRepository.countActivitiesToday(startOfMonth, endOfMonth);
-        Long curUsers = activityLogRepository.countActiveUsersToday(startOfMonth, endOfMonth);
-        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfMonth, endOfMonth);
+        Long curActivities = activityLogRepository.countActivitiesInRange(startOfMonth.toLocalDate(), endOfMonth.toLocalDate());
+        Long curUsers = activityLogRepository.countActiveUsersInRange(startOfMonth.toLocalDate(), endOfMonth.toLocalDate());
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsInRange(startOfMonth.toLocalDate(), endOfMonth.toLocalDate());
         Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfMonth, endOfMonth);
 
         if (curActivities == null) curActivities = 0L;
@@ -546,9 +577,9 @@ public class AdminAnalyticsService {
         if (curGoals == null) curGoals = 0L;
 
         // Previous Month Totals
-        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevMonth, endOfPrevMonth);
-        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevMonth, endOfPrevMonth);
-        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevMonth, endOfPrevMonth);
+        Long prevActivities = activityLogRepository.countActivitiesInRange(startOfPrevMonth.toLocalDate(), endOfPrevMonth.toLocalDate());
+        Long prevUsers = activityLogRepository.countActiveUsersInRange(startOfPrevMonth.toLocalDate(), endOfPrevMonth.toLocalDate());
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsInRange(startOfPrevMonth.toLocalDate(), endOfPrevMonth.toLocalDate());
         Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevMonth, endOfPrevMonth);
 
         if (prevActivities == null) prevActivities = 0L;
@@ -563,12 +594,13 @@ public class AdminAnalyticsService {
         double goalChange = prevGoals == 0 ? (curGoals > 0 ? 100.0 : 0.0) : ((double)(curGoals - prevGoals) / prevGoals) * 100.0;
 
         // Category Distribution
-        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfMonth, endOfMonth);
+        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfMonth.toLocalDate(), endOfMonth.toLocalDate());
         List<MonthlyAnalyticsResponse.CategorySlot> catData = new ArrayList<>();
         for (Object[] row : catRaw) {
             String cat = (String) row[0];
             BigDecimal val = (BigDecimal) row[1];
-            catData.add(MonthlyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).build());
+            long count = ((Number) row[2]).longValue();
+            catData.add(MonthlyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).count(count).build());
         }
 
         // Weekly Breakdown (Week 1 - 5)
@@ -626,6 +658,8 @@ public class AdminAnalyticsService {
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
+                .categoryData(catData)
+                .weeklyData(weeklyData)
                 .build();
     }
 
@@ -648,9 +682,9 @@ public class AdminAnalyticsService {
         LocalDateTime endOfPrevYear = prevYearDate.withDayOfYear(prevYearDate.lengthOfYear()).atTime(23, 59, 59);
 
         // Current Year Totals
-        Long curActivities = activityLogRepository.countActivitiesToday(startOfYear, endOfYear);
-        Long curUsers = activityLogRepository.countActiveUsersToday(startOfYear, endOfYear);
-        BigDecimal curEmissions = activityLogRepository.sumEmissionsToday(startOfYear, endOfYear);
+        Long curActivities = activityLogRepository.countActivitiesInRange(startOfYear.toLocalDate(), endOfYear.toLocalDate());
+        Long curUsers = activityLogRepository.countActiveUsersInRange(startOfYear.toLocalDate(), endOfYear.toLocalDate());
+        BigDecimal curEmissions = activityLogRepository.sumEmissionsInRange(startOfYear.toLocalDate(), endOfYear.toLocalDate());
         Long curGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfYear, endOfYear);
         Long curBadges = userBadgeRepository.countBadgesEarnedToday(startOfYear, endOfYear);
 
@@ -661,9 +695,9 @@ public class AdminAnalyticsService {
         if (curBadges == null) curBadges = 0L;
 
         // Previous Year Totals
-        Long prevActivities = activityLogRepository.countActivitiesToday(startOfPrevYear, endOfPrevYear);
-        Long prevUsers = activityLogRepository.countActiveUsersToday(startOfPrevYear, endOfPrevYear);
-        BigDecimal prevEmissions = activityLogRepository.sumEmissionsToday(startOfPrevYear, endOfPrevYear);
+        Long prevActivities = activityLogRepository.countActivitiesInRange(startOfPrevYear.toLocalDate(), endOfPrevYear.toLocalDate());
+        Long prevUsers = activityLogRepository.countActiveUsersInRange(startOfPrevYear.toLocalDate(), endOfPrevYear.toLocalDate());
+        BigDecimal prevEmissions = activityLogRepository.sumEmissionsInRange(startOfPrevYear.toLocalDate(), endOfPrevYear.toLocalDate());
         Long prevGoals = goalRepository.countByStatusAndUpdatedAtBetween(GoalStatus.ACHIEVED, startOfPrevYear, endOfPrevYear);
         Long prevBadges = userBadgeRepository.countBadgesEarnedToday(startOfPrevYear, endOfPrevYear);
 
@@ -730,8 +764,18 @@ public class AdminAnalyticsService {
                     .emissions(mEms)
                     .goalsAchieved(mGoals)
                     .badgesEarned(mBadges)
-                    .organizationsJoined(0L) // Mocking organizations since not yet implemented
+                    .organizationsJoined(0L) // Will be updated when we add organization metrics logic if needed, currently leaving as 0 for simplicity or we can just leave it as 0
                     .build());
+        }
+
+        // ─── Category Distribution ─────────────────────────────────
+        List<Object[]> catRaw = activityLogRepository.sumEmissionsByCategoryAndDateRangeGlobal(startOfYear.toLocalDate(), endOfYear.toLocalDate());
+        List<YearlyAnalyticsResponse.CategorySlot> catData = new ArrayList<>();
+        for (Object[] row : catRaw) {
+            String cat = (String) row[0];
+            BigDecimal val = (BigDecimal) row[1];
+            long count = ((Number) row[2]).longValue();
+            catData.add(YearlyAnalyticsResponse.CategorySlot.builder().category(cat).emissions(val != null ? val : BigDecimal.ZERO).count(count).build());
         }
 
         return YearlyAnalyticsResponse.builder()
@@ -740,7 +784,7 @@ public class AdminAnalyticsService {
                 .totalEmissions(curEmissions)
                 .totalGoals(curGoals)
                 .totalBadges(curBadges)
-                .totalOrganizations(0L)
+                .totalOrganizations(organizationRepository.count())
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
@@ -748,6 +792,63 @@ public class AdminAnalyticsService {
                 .badgesChangePct(Math.round(badChange * 100.0) / 100.0)
                 .organizationsChangePct(0.0)
                 .monthlyData(monthlyData)
+                .categoryData(catData)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ORGANIZATION ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public OrganizationAnalyticsResponse getOrganizationAnalytics() {
+        log.info("Fetching Organization Analytics");
+
+        long totalOrganizations = organizationRepository.count();
+
+        // Calculate total organization emissions and rankings
+        // In a real scenario, this requires a complex join or aggregating members.
+        // For now, we will query organizations and build mock/empty data if they have no members.
+        // Since we are building real architecture, we will do a basic implementation.
+
+        List<Organization> orgs = organizationRepository.findAll();
+        List<OrganizationAnalyticsResponse.OrganizationRank> rankings = new ArrayList<>();
+        BigDecimal totalOrgEmissions = BigDecimal.ZERO;
+
+        for (Organization org : orgs) {
+            List<OrganizationMember> members = organizationMemberRepository.findByOrganizationId(org.getId());
+            long memberCount = members.size();
+            BigDecimal orgEmissions = BigDecimal.ZERO;
+
+            for (OrganizationMember member : members) {
+                // Fetch user's total emissions. We can use activityLogRepository sum for that user.
+                BigDecimal userEmissions = activityLogRepository.sumEmissionsByUserId(member.getUser().getId());
+                if (userEmissions != null) {
+                    orgEmissions = orgEmissions.add(userEmissions);
+                }
+            }
+
+            BigDecimal avgEmissions = memberCount > 0 
+                ? orgEmissions.divide(BigDecimal.valueOf(memberCount), 2, RoundingMode.HALF_UP) 
+                : BigDecimal.ZERO;
+
+            totalOrgEmissions = totalOrgEmissions.add(orgEmissions);
+
+            rankings.add(OrganizationAnalyticsResponse.OrganizationRank.builder()
+                    .name(org.getName())
+                    .industry(org.getIndustry() != null ? org.getIndustry() : "N/A")
+                    .memberCount(memberCount)
+                    .totalEmissions(orgEmissions)
+                    .avgEmissionsPerMember(avgEmissions)
+                    .build());
+        }
+
+        // Sort rankings by total emissions descending
+        rankings.sort((a, b) -> b.getTotalEmissions().compareTo(a.getTotalEmissions()));
+
+        return OrganizationAnalyticsResponse.builder()
+                .totalOrganizations(totalOrganizations)
+                .totalOrganizationEmissions(totalOrgEmissions)
+                .rankings(rankings)
                 .build();
     }
 }

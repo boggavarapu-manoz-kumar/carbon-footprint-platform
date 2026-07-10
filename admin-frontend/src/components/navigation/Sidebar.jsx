@@ -1,10 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/', icon: Home, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT', 'AUDITOR'] },
   { name: 'User Management', href: '/users', icon: Users, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT'] },
+  { name: 'Suspensions', href: '/suspensions', icon: Ban, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'] },
   { name: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert, allowedRoles: ['SUPER_ADMIN', 'AUDITOR'] },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'System Settings', href: '/settings', icon: Settings, allowedRoles: ['SUPER_ADMIN'] },

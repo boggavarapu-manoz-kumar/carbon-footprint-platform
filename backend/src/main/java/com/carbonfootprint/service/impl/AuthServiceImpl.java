@@ -30,6 +30,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.carbonfootprint.repository.UserSuspensionRepository;
+import com.carbonfootprint.exception.UserSuspendedException;
+import com.carbonfootprint.dto.admin.UserSuspensionResponse;
 
 @Slf4j
 @Service
@@ -45,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
     private final ActivityLogService activityLogService;
+    private final UserSuspensionRepository userSuspensionRepository;
 
     @Override
     @Transactional
@@ -107,6 +111,25 @@ public class AuthServiceImpl implements AuthService {
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Invalid email/username or password.");
+        }
+
+        if (user.isSuspended()) {
+            userSuspensionRepository.findFirstByUserIdAndActiveTrueOrderByCreatedAtDesc(user.getId())
+                .ifPresent(suspension -> {
+                    UserSuspensionResponse response = UserSuspensionResponse.builder()
+                            .id(suspension.getId())
+                            .userId(suspension.getUser().getId())
+                            .reason(suspension.getReason())
+                            .description(suspension.getDescription())
+                            .startDate(suspension.getStartDate())
+                            .endDate(suspension.getEndDate())
+                            .suspendedBy(suspension.getSuspendedBy())
+                            .active(suspension.isActive())
+                            .build();
+                    throw new UserSuspendedException("Your account is currently suspended.", response);
+                });
+            // Fallback generic if no record
+            throw new BadRequestException("Account is suspended.");
         }
 
         String jwtToken = jwtService.generateToken(user);

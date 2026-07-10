@@ -25,6 +25,9 @@ public class DailyAnalyticsResponse {
     // ─── Hourly breakdown (24 slots: 0–23) ───────────────────────
     private List<HourlySlot> hourlyData;
 
+    // ─── Category Distribution ────────────────────────────────────
+    private List<CategorySlot> categoryData;
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -35,5 +38,15 @@ public class DailyAnalyticsResponse {
         private long activities;
         private BigDecimal emissions;
         private long activeUsers;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategorySlot {
+        private String category;
+        private BigDecimal emissions;
+        private long count;
     }
 }

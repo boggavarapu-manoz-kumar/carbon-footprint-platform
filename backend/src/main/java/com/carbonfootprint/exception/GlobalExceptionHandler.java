@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import com.carbonfootprint.response.ApiResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -57,6 +58,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex, WebRequest request) {
         return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED, request);
+    }
+
+    @ExceptionHandler(UserSuspendedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUserSuspendedException(UserSuspendedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.success(ex.getSuspensionDetails(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

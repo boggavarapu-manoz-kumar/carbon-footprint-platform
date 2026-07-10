@@ -43,6 +43,9 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate")
     Long countActivitiesInRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate")
+    Long countActiveUsersInRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
     @org.springframework.data.jpa.repository.Query("SELECT function('DATE', a.logDate) as logDate, COUNT(a) as count FROM ActivityLog a WHERE a.logDate >= :startDate GROUP BY function('DATE', a.logDate) ORDER BY function('DATE', a.logDate) ASC")
     java.util.List<Object[]> countActivitiesGroupedByDate(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
     
@@ -63,8 +66,8 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.code, SUM(a.emissionValue) FROM ActivityLog a WHERE a.user.id = :userId AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.code")
     java.util.List<Object[]> sumEmissionsByCategoryAndDateRange(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 
-    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.code, SUM(a.emissionValue) FROM ActivityLog a WHERE a.createdAt >= :startDate AND a.createdAt <= :endDate GROUP BY a.activityType.subCategory.category.code")
-    java.util.List<Object[]> sumEmissionsByCategoryAndDateRangeGlobal(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.code, SUM(a.emissionValue), COUNT(a) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.code")
+    java.util.List<Object[]> sumEmissionsByCategoryAndDateRangeGlobal(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT function('YEAR', a.logDate) FROM ActivityLog a WHERE a.user.id = :userId ORDER BY function('YEAR', a.logDate) DESC")
     java.util.List<Integer> findDistinctYearsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
@@ -74,27 +77,19 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
 
     // ─── DAILY ANALYTICS (Today) ─────────────────────────────────
 
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
-    Long countActivitiesToday(
-            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
-            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.logDate = :targetDate")
+    Long countActivitiesToday(@org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(a.emissionValue), 0) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
-    java.math.BigDecimal sumEmissionsToday(
-            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
-            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(a.emissionValue), 0) FROM ActivityLog a WHERE a.logDate = :targetDate")
+    java.math.BigDecimal sumEmissionsToday(@org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 
-    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay")
-    Long countActiveUsersToday(
-            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
-            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.logDate = :targetDate")
+    Long countActiveUsersToday(@org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 
-    // ─── HOURLY BREAKDOWN ─────────────────────────────────────────
+    // ─── HOURLY BREAKDOWN (IST Timezone) ─────────────────────────
 
-    @org.springframework.data.jpa.repository.Query("SELECT function('HOUR', a.createdAt), COUNT(a), COALESCE(SUM(a.emissionValue), 0), COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.createdAt >= :startOfDay AND a.createdAt <= :endOfDay GROUP BY function('HOUR', a.createdAt) ORDER BY function('HOUR', a.createdAt) ASC")
-    java.util.List<Object[]> getHourlyBreakdown(
-            @org.springframework.data.repository.query.Param("startOfDay") java.time.LocalDateTime startOfDay,
-            @org.springframework.data.repository.query.Param("endOfDay") java.time.LocalDateTime endOfDay);
+    @org.springframework.data.jpa.repository.Query("SELECT function('HOUR', function('CONVERT_TZ', a.createdAt, '+00:00', '+05:30')), COUNT(a), COALESCE(SUM(a.emissionValue), 0), COUNT(DISTINCT a.user.id) FROM ActivityLog a WHERE a.logDate = :targetDate GROUP BY function('HOUR', function('CONVERT_TZ', a.createdAt, '+00:00', '+05:30')) ORDER BY function('HOUR', function('CONVERT_TZ', a.createdAt, '+00:00', '+05:30')) ASC")
+    java.util.List<Object[]> getHourlyBreakdown(@org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 
     // ─── WEEKLY BREAKDOWN ─────────────────────────────────────────
 

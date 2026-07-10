@@ -38,6 +38,9 @@ public class EmailServiceImpl implements EmailService {
 
         if (mailUsername == null || mailUsername.isEmpty() || mailUsername.equals("your-email@example.com")) {
             log.warn("SMTP credentials not fully configured. Email was not actually sent via network.");
+            log.info("=========================================================================");
+            log.info("PASSWORD RESET LINK: {}", resetUrl);
+            log.info("=========================================================================");
             return;
         }
 
@@ -58,6 +61,9 @@ public class EmailServiceImpl implements EmailService {
             log.info("Password reset HTML email sent successfully to {}", toEmail);
         } catch (Exception e) {
             log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            log.info("=========================================================================");
+            log.info("PASSWORD RESET LINK (FALLBACK): {}", resetUrl);
+            log.info("=========================================================================");
         }
     }
 }

@@ -29,6 +29,9 @@ public class WeeklyAnalyticsResponse {
     // ─── Daily breakdown (Mon - Sun) ──────────────────────────────
     private List<DailySlot> weeklyData;
 
+    // ─── Category Distribution ────────────────────────────────────
+    private List<CategorySlot> categoryData;
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -40,5 +43,15 @@ public class WeeklyAnalyticsResponse {
         private long activeUsers;
         private BigDecimal emissions;
         private long goalsAchieved;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CategorySlot {
+        private String category;
+        private BigDecimal emissions;
+        private long count;
     }
 }
