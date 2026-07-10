@@ -8,7 +8,8 @@ const AppLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
+    { name: 'Dashboard', path: '/dashboard', icon: HomeIcon, exact: true },
+    { name: 'Analytics', path: '/dashboard/analytics', icon: BarChartIcon },
     { name: 'Log Activity', path: '/log-activity', icon: PlusIcon },
     { name: 'Activity History', path: '/activity-history', icon: ListIcon },
     { name: 'Profile Settings', path: '/profile', icon: UserIcon },
@@ -42,7 +43,9 @@ const AppLayout = () => {
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             <p className="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Main Menu</p>
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = item.exact
+                ? location.pathname === item.path
+                : location.pathname === item.path || location.pathname.startsWith(item.path + '/');
               return (
                 <NavLink
                   key={item.name}
@@ -104,6 +107,9 @@ const SearchIcon = (props) => (
 );
 const BellIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+);
+const BarChartIcon = (props) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
 );
 
 export default AppLayout;

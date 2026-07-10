@@ -1,18 +1,24 @@
 package com.carbonfootprint.service.admin;
 
-import com.carbonfootprint.dto.admin.ActivityTrendResponse;
-import com.carbonfootprint.dto.admin.CategoryAnalyticsResponse;
-import com.carbonfootprint.dto.admin.UserGrowthResponse;
+import com.carbonfootprint.dto.admin.*;
+import com.carbonfootprint.entity.GoalStatus;
+import com.carbonfootprint.repository.ActivityLogRepository;
+import com.carbonfootprint.repository.GoalRepository;
+import com.carbonfootprint.repository.UserBadgeRepository;
+import com.carbonfootprint.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -20,25 +26,58 @@ import java.util.ArrayList;
 @Transactional(readOnly = true)
 public class AdminAnalyticsService {
 
-    private final com.carbonfootprint.repository.UserRepository userRepository;
-    private final com.carbonfootprint.repository.ActivityLogRepository activityLogRepository;
+    private final UserRepository userRepository;
+    private final ActivityLogRepository activityLogRepository;
+    private final GoalRepository goalRepository;
+    private final UserBadgeRepository userBadgeRepository;
+
+    private static final String[] MONTH_NAMES = {
+        "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "platformAnalytics", key = "'all'")
+    public PlatformAnalyticsResponse getPlatformAnalytics() {
+        log.info("Fetching Platform Analytics");
+        long totalUsers = userRepository.count();
+        long totalActivities = activityLogRepository.count();
+        BigDecimal totalEmissions = activityLogRepository.sumAllEmissions();
+        if (totalEmissions == null) totalEmissions = BigDecimal.ZERO;
+
+        // Users registered in last 30 days = "active" approximation
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        long recentUsers = userRepository.countByCreatedAtAfter(thirtyDaysAgo);
+
+        return PlatformAnalyticsResponse.builder()
+                .totalUsers(totalUsers)
+                .activeUsers(recentUsers)
+                .totalActivities(totalActivities)
+                .totalEmissions(totalEmissions)
+                .totalGoals(0)
+                .completedGoals(0)
+                .build();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // USER GROWTH ANALYTICS
+    // ─────────────────────────────────────────────────────────────
 
     @Cacheable(value = "userGrowth", key = "#days")
     public List<UserGrowthResponse> getUserGrowth(int days) {
         log.info("Fetching User Growth for last {} days", days);
-        LocalDate startLocalDate = LocalDate.now().minusDays(days);
-        java.time.LocalDateTime startDate = startLocalDate.atStartOfDay();
+        LocalDateTime startDate = LocalDate.now().minusDays(days).atStartOfDay();
 
         List<Object[]> queryResults = userRepository.countUsersGroupedByDate(startDate);
-        
-        // Calculate the base total users before the start date
         long totalUsersBefore = userRepository.count() - userRepository.countByCreatedAtAfter(startDate);
 
         List<UserGrowthResponse> growth = new ArrayList<>();
         long runningTotal = totalUsersBefore;
-        
-        // Populate a map for O(1) lookup
-        java.util.Map<LocalDate, Long> dateRegMap = new java.util.HashMap<>();
+
+        Map<LocalDate, Long> dateRegMap = new HashMap<>();
         for (Object[] result : queryResults) {
             java.sql.Date sqlDate = (java.sql.Date) result[0];
             LocalDate date = sqlDate.toLocalDate();
@@ -55,16 +94,58 @@ public class AdminAnalyticsService {
         return growth;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // USER DEMOGRAPHICS
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "userDemographics", key = "'all'")
+    public List<UserDemographicsResponse> getUserDemographics() {
+        log.info("Fetching User Demographics");
+        List<Object[]> results = userRepository.countUsersByGender();
+        List<UserDemographicsResponse> response = new ArrayList<>();
+        for (Object[] result : results) {
+            String gender = (String) result[0];
+            long count = ((Number) result[1]).longValue();
+            response.add(new UserDemographicsResponse(gender, count));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // USER MONTHLY REGISTRATION
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "userMonthlyGrowth", key = "#year")
+    public List<UserGrowthResponse> getUserMonthlyGrowth(int year) {
+        log.info("Fetching User Monthly Growth for year {}", year);
+        List<Object[]> results = userRepository.countUsersGroupedByMonth(year);
+        Map<Integer, Long> monthMap = new HashMap<>();
+        for (Object[] result : results) {
+            int month = ((Number) result[0]).intValue();
+            long count = ((Number) result[1]).longValue();
+            monthMap.put(month, count);
+        }
+        List<UserGrowthResponse> response = new ArrayList<>();
+        for (int m = 1; m <= 12; m++) {
+            long count = monthMap.getOrDefault(m, 0L);
+            LocalDate date = LocalDate.of(year, m, 1);
+            response.add(new UserGrowthResponse(date, count, 0L));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ACTIVITY TRENDS
+    // ─────────────────────────────────────────────────────────────
+
     @Cacheable(value = "activityTrends", key = "#days")
     public List<ActivityTrendResponse> getActivityTrends(int days) {
         log.info("Fetching Activity Trends for last {} days", days);
         LocalDate startDate = LocalDate.now().minusDays(days);
-        
+
         List<Object[]> queryResults = activityLogRepository.countActivitiesGroupedByDate(startDate);
-        
-        List<ActivityTrendResponse> trends = new ArrayList<>();
-        
-        java.util.Map<LocalDate, Long> dateActMap = new java.util.HashMap<>();
+
+        Map<LocalDate, Long> dateActMap = new HashMap<>();
         for (Object[] result : queryResults) {
             java.sql.Date sqlDate = (java.sql.Date) result[0];
             LocalDate date = sqlDate.toLocalDate();
@@ -72,6 +153,7 @@ public class AdminAnalyticsService {
             dateActMap.put(date, count);
         }
 
+        List<ActivityTrendResponse> trends = new ArrayList<>();
         for (int i = days; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             long activityCount = dateActMap.getOrDefault(date, 0L);
@@ -80,12 +162,15 @@ public class AdminAnalyticsService {
         return trends;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // CATEGORY ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
     @Cacheable(value = "categoryAnalytics", key = "'all'")
     public List<CategoryAnalyticsResponse> getCategoryAnalytics() {
         log.info("Fetching Category Analytics");
         List<Object[]> queryResults = activityLogRepository.sumEmissionsAndCountByCategory();
         List<CategoryAnalyticsResponse> response = new ArrayList<>();
-        
         for (Object[] result : queryResults) {
             String category = (String) result[0];
             BigDecimal totalEmissions = (BigDecimal) result[1];
@@ -93,5 +178,222 @@ public class AdminAnalyticsService {
             response.add(new CategoryAnalyticsResponse(category, totalEmissions, (int) count));
         }
         return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CARBON TRENDS (Daily)
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "carbonTrends", key = "#days")
+    public List<CarbonTrendResponse> getCarbonTrends(int days) {
+        log.info("Fetching Carbon Trends for last {} days", days);
+        LocalDate startDate = LocalDate.now().minusDays(days);
+        List<Object[]> results = activityLogRepository.sumEmissionsGroupedByDateGlobal(startDate);
+
+        Map<LocalDate, Object[]> dataMap = new LinkedHashMap<>();
+        for (Object[] result : results) {
+            java.sql.Date sqlDate = (java.sql.Date) result[0];
+            dataMap.put(sqlDate.toLocalDate(), result);
+        }
+
+        List<CarbonTrendResponse> response = new ArrayList<>();
+        for (int i = days; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            Object[] data = dataMap.get(date);
+            BigDecimal emissions = data != null ? (BigDecimal) data[1] : BigDecimal.ZERO;
+            if (emissions == null) emissions = BigDecimal.ZERO;
+            Long actCount = activityLogRepository.countActivitiesInRange(date, date);
+            response.add(new CarbonTrendResponse(date.toString(), emissions, actCount == null ? 0L : actCount));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CARBON TRENDS (Monthly)
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "carbonMonthlyTrends", key = "#year")
+    public List<CarbonTrendResponse> getCarbonMonthlyTrends(int year) {
+        log.info("Fetching Carbon Monthly Trends for year {}", year);
+        List<Object[]> results = activityLogRepository.sumEmissionsGroupedByMonthGlobal(year);
+        Map<Integer, Object[]> monthMap = new HashMap<>();
+        for (Object[] result : results) {
+            int month = ((Number) result[0]).intValue();
+            monthMap.put(month, result);
+        }
+        List<CarbonTrendResponse> response = new ArrayList<>();
+        for (int m = 1; m <= 12; m++) {
+            Object[] data = monthMap.get(m);
+            BigDecimal emissions = data != null ? (BigDecimal) data[1] : BigDecimal.ZERO;
+            if (emissions == null) emissions = BigDecimal.ZERO;
+            Long count = data != null ? ((Number) data[2]).longValue() : 0L;
+            response.add(new CarbonTrendResponse(MONTH_NAMES[m], emissions, count));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ACTIVITY ANALYTICS (by category detail)
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "activityAnalytics", key = "'all'")
+    public List<ActivityAnalyticsResponse> getActivityAnalytics() {
+        log.info("Fetching Activity Analytics by category");
+        List<Object[]> results = activityLogRepository.getActivityAnalyticsByCategory();
+        List<ActivityAnalyticsResponse> response = new ArrayList<>();
+        for (Object[] result : results) {
+            String category = (String) result[0];
+            Long count = ((Number) result[1]).longValue();
+            BigDecimal totalEmissions = (BigDecimal) result[2];
+            BigDecimal avgEmissions = (BigDecimal) result[3];
+            if (totalEmissions == null) totalEmissions = BigDecimal.ZERO;
+            if (avgEmissions == null) avgEmissions = BigDecimal.ZERO;
+            response.add(new ActivityAnalyticsResponse(category, count, totalEmissions, avgEmissions));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LEADERBOARD ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    @Cacheable(value = "leaderboardAnalytics", key = "#limit")
+    public List<LeaderboardAnalyticsResponse> getLeaderboardAnalytics(int limit) {
+        log.info("Fetching Leaderboard Analytics top {}", limit);
+        List<Object[]> results = activityLogRepository.getLeaderboardAnalytics(PageRequest.of(0, limit));
+        List<LeaderboardAnalyticsResponse> response = new ArrayList<>();
+        for (Object[] result : results) {
+            String username = (String) result[1];
+            String firstName = (String) result[2];
+            String lastName = (String) result[3];
+            BigDecimal totalEmissions = (BigDecimal) result[4];
+            Long count = ((Number) result[5]).longValue();
+            if (totalEmissions == null) totalEmissions = BigDecimal.ZERO;
+            response.add(new LeaderboardAnalyticsResponse(username, firstName, lastName, totalEmissions, count));
+        }
+        return response;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // TREND ANALYTICS (Period Comparison)
+    // ─────────────────────────────────────────────────────────────
+
+    public Map<String, Object> getTrendComparison() {
+        log.info("Fetching Trend Comparison Analytics");
+        LocalDate today = LocalDate.now();
+
+        LocalDate thisMonthStart = today.withDayOfMonth(1);
+        LocalDate lastMonthStart = thisMonthStart.minusMonths(1);
+        LocalDate lastMonthEnd = thisMonthStart.minusDays(1);
+
+        BigDecimal thisMonthEmissions = activityLogRepository.sumEmissionsInRange(thisMonthStart, today);
+        BigDecimal lastMonthEmissions = activityLogRepository.sumEmissionsInRange(lastMonthStart, lastMonthEnd);
+        Long thisMonthActivities = activityLogRepository.countActivitiesInRange(thisMonthStart, today);
+        Long lastMonthActivities = activityLogRepository.countActivitiesInRange(lastMonthStart, lastMonthEnd);
+
+        if (thisMonthEmissions == null) thisMonthEmissions = BigDecimal.ZERO;
+        if (lastMonthEmissions == null) lastMonthEmissions = BigDecimal.ZERO;
+        if (thisMonthActivities == null) thisMonthActivities = 0L;
+        if (lastMonthActivities == null) lastMonthActivities = 0L;
+
+        LocalDateTime thisMonthStartDT = thisMonthStart.atStartOfDay();
+        LocalDateTime todayEndDT = today.atTime(23, 59, 59);
+        LocalDateTime lastMonthStartDT = lastMonthStart.atStartOfDay();
+        LocalDateTime lastMonthEndDT = lastMonthEnd.atTime(23, 59, 59);
+
+        Long thisMonthUsers = userRepository.countUsersInRange(thisMonthStartDT, todayEndDT);
+        Long lastMonthUsers = userRepository.countUsersInRange(lastMonthStartDT, lastMonthEndDT);
+        if (thisMonthUsers == null) thisMonthUsers = 0L;
+        if (lastMonthUsers == null) lastMonthUsers = 0L;
+
+        double emissionChange = lastMonthEmissions.compareTo(BigDecimal.ZERO) == 0 ? 0 :
+            thisMonthEmissions.subtract(lastMonthEmissions)
+                .divide(lastMonthEmissions, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100)).doubleValue();
+
+        double activityChange = lastMonthActivities == 0 ? 0 :
+            ((double)(thisMonthActivities - lastMonthActivities) / lastMonthActivities) * 100;
+
+        double userChange = lastMonthUsers == 0 ? 0 :
+            ((double)(thisMonthUsers - lastMonthUsers) / lastMonthUsers) * 100;
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("thisMonthEmissions", thisMonthEmissions);
+        result.put("lastMonthEmissions", lastMonthEmissions);
+        result.put("emissionChangePercent", Math.round(emissionChange * 100.0) / 100.0);
+        result.put("thisMonthActivities", thisMonthActivities);
+        result.put("lastMonthActivities", lastMonthActivities);
+        result.put("activityChangePercent", Math.round(activityChange * 100.0) / 100.0);
+        result.put("thisMonthUsers", thisMonthUsers);
+        result.put("lastMonthUsers", lastMonthUsers);
+        result.put("userChangePercent", Math.round(userChange * 100.0) / 100.0);
+        return result;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // DAILY PLATFORM ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public DailyAnalyticsResponse getDailyAnalytics() {
+        log.info("Fetching Daily Platform Analytics");
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = LocalDate.now().atTime(23, 59, 59);
+
+        // ─── KPIs ─────────────────────────────────────────────────
+        Long activitiesToday  = activityLogRepository.countActivitiesToday(startOfDay, endOfDay);
+        BigDecimal emissions  = activityLogRepository.sumEmissionsToday(startOfDay, endOfDay);
+        Long activeUsers      = activityLogRepository.countActiveUsersToday(startOfDay, endOfDay);
+        Long newUsers         = userRepository.countUsersInRange(startOfDay, endOfDay);
+        Long goalsAchieved    = goalRepository.countByStatusAndUpdatedAtBetween(
+                GoalStatus.ACHIEVED, startOfDay, endOfDay);
+        Long badgesEarned     = userBadgeRepository.countBadgesEarnedToday(startOfDay, endOfDay);
+
+        if (activitiesToday == null) activitiesToday = 0L;
+        if (emissions       == null) emissions       = BigDecimal.ZERO;
+        if (activeUsers     == null) activeUsers     = 0L;
+        if (newUsers        == null) newUsers        = 0L;
+        if (goalsAchieved   == null) goalsAchieved   = 0L;
+        if (badgesEarned    == null) badgesEarned    = 0L;
+
+        // ─── Hourly Breakdown ──────────────────────────────────────
+        List<Object[]> hourlyRaw = activityLogRepository.getHourlyBreakdown(startOfDay, endOfDay);
+        Map<Integer, Object[]> hourMap = new HashMap<>();
+        for (Object[] row : hourlyRaw) {
+            int hour = ((Number) row[0]).intValue();
+            hourMap.put(hour, row);
+        }
+
+        List<DailyAnalyticsResponse.HourlySlot> hourlyData = new ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            Object[] row = hourMap.get(h);
+            long acts          = row != null ? ((Number) row[1]).longValue()  : 0L;
+            BigDecimal ems     = row != null ? (BigDecimal) row[2]            : BigDecimal.ZERO;
+            long users         = row != null ? ((Number) row[3]).longValue()  : 0L;
+            if (ems == null) ems = BigDecimal.ZERO;
+
+            String label;
+            if (h == 0)       label = "12 AM";
+            else if (h < 12)  label = h + " AM";
+            else if (h == 12) label = "12 PM";
+            else              label = (h - 12) + " PM";
+
+            hourlyData.add(DailyAnalyticsResponse.HourlySlot.builder()
+                    .hour(h)
+                    .label(label)
+                    .activities(acts)
+                    .emissions(ems)
+                    .activeUsers(users)
+                    .build());
+        }
+
+        return DailyAnalyticsResponse.builder()
+                .activitiesToday(activitiesToday)
+                .emissionsToday(emissions)
+                .activeUsersToday(activeUsers)
+                .newUsersToday(newUsers)
+                .goalsAchievedToday(goalsAchieved)
+                .badgesEarnedToday(badgesEarned)
+                .hourlyData(hourlyData)
+                .build();
     }
 }

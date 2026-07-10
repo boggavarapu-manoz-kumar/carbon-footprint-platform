@@ -12,6 +12,7 @@ const Dashboard = React.lazy(() => import('../features/dashboard/components/Dash
 const UserList = React.lazy(() => import('../features/users/components/UserList').then(module => ({ default: module.UserList })));
 const AuditList = React.lazy(() => import('../features/audit/components/AuditList').then(module => ({ default: module.AuditList })));
 const SettingsLayout = React.lazy(() => import('../features/settings/components/SettingsLayout').then(module => ({ default: module.SettingsLayout })));
+const AdminAnalytics = React.lazy(() => import('../features/analytics/components/AdminAnalytics').then(module => ({ default: module.AdminAnalytics })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -83,6 +84,16 @@ export const router = createBrowserRouter([
               <RoleRoute allowedRoles={['SUPER_ADMIN']}>
                 <Suspense fallback={<PageLoader />}>
                   <SettingsLayout />
+                </Suspense>
+              </RoleRoute>
+            ),
+          },
+          {
+            path: '/analytics',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'AUDITOR']}>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminAnalytics />
                 </Suspense>
               </RoleRoute>
             ),

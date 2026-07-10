@@ -41,11 +41,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (userOptional.isPresent()) {
             user = userOptional.get();
             log.info("Existing user logged in via OAuth2: {}", email);
-            // Optional: update profile picture or name if needed
-            if (picture != null && !picture.equals(user.getProfilePictureUrl())) {
-                user.setProfilePictureUrl(picture);
-                user = userRepository.save(user);
-            }
         } else {
             log.info("Registering new user via OAuth2: {}", email);
             String firstName = "User";
