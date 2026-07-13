@@ -3,14 +3,23 @@ package com.carbonfootprint.controller.admin;
 import com.carbonfootprint.dto.admin.AdminUserResponse;
 import com.carbonfootprint.dto.admin.UserStatusUpdateRequest;
 import com.carbonfootprint.response.ApiResponse;
+import com.carbonfootprint.dto.admin.SuspendUserRequest;
+import com.carbonfootprint.dto.admin.UserSuspensionResponse;
 import com.carbonfootprint.service.admin.AdminUserService;
+import com.carbonfootprint.service.admin.UserSuspensionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.carbonfootprint.entity.User;
+import com.carbonfootprint.entity.admin.AdminUser;
+
+import java.util.List;
 
 /**
  * Controller for Admin User Management.
@@ -22,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final UserSuspensionService userSuspensionService;
 
     /**
      * Retrieves a paginated, searchable list of all platform users.
@@ -63,27 +73,35 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(null, "User status updated to " + request.getStatus()));
     }
 
-    /**
-     * Convenience endpoint: Suspends a specific user.
-     */
-    @PostMapping("/{id}/suspend")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE)")
-    public ResponseEntity<ApiResponse<Void>> suspendUser(@PathVariable Long id) {
-        log.info("Admin suspending user {}", id);
-        adminUserService.updateUserStatus(id,
-                UserStatusUpdateRequest.builder().status("SUSPENDED").reason("Admin action").build());
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE) or hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @PostMapping("/{userId}/suspend")
+    public ResponseEntity<ApiResponse<Void>> suspendUser(
+            @PathVariable Long userId,
+            @RequestBody SuspendUserRequest request,
+            @AuthenticationPrincipal UserDetails currentUser) {
+        log.info("Suspending user {}", userId);
+        String adminId = ((AdminUser) currentUser).getId();
+        userSuspensionService.suspendUser(userId, request, adminId);
         return ResponseEntity.ok(ApiResponse.success(null, "User suspended successfully"));
     }
 
-    /**
-     * Convenience endpoint: Restores a suspended user.
-     */
-    @PostMapping("/{id}/restore")
-    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE)")
-    public ResponseEntity<ApiResponse<Void>> restoreUser(@PathVariable Long id) {
-        log.info("Admin restoring user {}", id);
-        adminUserService.updateUserStatus(id,
-                UserStatusUpdateRequest.builder().status("ACTIVE").reason("Admin restore action").build());
-        return ResponseEntity.ok(ApiResponse.success(null, "User restored successfully"));
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_UPDATE) or hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @PostMapping("/{userId}/unsuspend")
+    public ResponseEntity<ApiResponse<Void>> unsuspendUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+        log.info("Unsuspending user {}", userId);
+        String adminId = ((AdminUser) currentUser).getId();
+        userSuspensionService.unsuspendUser(userId, adminId);
+        return ResponseEntity.ok(ApiResponse.success(null, "User unsuspended successfully"));
+    }
+
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_VIEW) or hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @GetMapping("/{userId}/suspensions")
+    public ResponseEntity<ApiResponse<List<UserSuspensionResponse>>> getSuspensionHistory(
+            @PathVariable Long userId) {
+        log.info("Fetching suspension history for user {}", userId);
+        return ResponseEntity.ok(ApiResponse.success(
+                userSuspensionService.getSuspensionHistory(userId), "Suspension history fetched successfully"));
     }
 }

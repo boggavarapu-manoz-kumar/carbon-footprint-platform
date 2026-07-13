@@ -1,6 +1,8 @@
 import { X, ShieldAlert, CheckCircle, Mail, Calendar, User, Globe, Phone, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../../components/ui/Button';
+import { useQuery } from '@tanstack/react-query';
+import { adminAxios } from '../../../core/api';
 
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between py-2 border-b border-gray-50 last:border-0">
@@ -28,6 +30,15 @@ export const UserDrawer = ({ user, isOpen, onClose, onSuspendToggle, isActionPen
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || user.email;
   const initial = (user.firstName || user.email || '?').charAt(0).toUpperCase();
   const isActive = user.status === 'ACTIVE';
+
+  const { data: suspensions, isLoading: isLoadingSuspensions } = useQuery({
+    queryKey: ['suspensions', user.id],
+    queryFn: async () => {
+      const res = await adminAxios.get(`/users/${user.id}/suspensions`);
+      return res.data.data; // ApiResponse format
+    },
+    enabled: isOpen && !!user.id,
+  });
 
   return (
     <>
@@ -115,6 +126,41 @@ export const UserDrawer = ({ user, isOpen, onClose, onSuspendToggle, isActionPen
             <p className="text-xs text-gray-400 text-center mt-3">
               Detailed per-user stats coming soon via analytics API.
             </p>
+          </div>
+
+          {/* Suspension History */}
+          <div className="px-6 py-6 border-t border-gray-100">
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" />
+              Suspension History
+            </h4>
+            
+            {isLoadingSuspensions ? (
+              <div className="text-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400 mx-auto" />
+              </div>
+            ) : !suspensions || suspensions.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-lg">No suspension history.</p>
+            ) : (
+              <div className="space-y-3">
+                {suspensions.map((susp) => (
+                  <div key={susp.id} className={`p-3 rounded-lg border ${susp.active ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-sm font-semibold text-gray-900">{susp.reason}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${susp.active ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {susp.active ? 'Active' : 'Revoked'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">{susp.description}</p>
+                    <div className="text-xs text-gray-500 flex flex-col gap-0.5">
+                      <div><span className="font-medium text-gray-700">Started:</span> {format(new Date(susp.startDate), 'MMM d, yyyy')}</div>
+                      {susp.endDate && <div><span className="font-medium text-gray-700">Ends:</span> {format(new Date(susp.endDate), 'MMM d, yyyy')}</div>}
+                      {susp.revokedDate && <div><span className="font-medium text-gray-700">Revoked:</span> {format(new Date(susp.revokedDate), 'MMM d, yyyy')}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+import jakarta.servlet.http.Cookie;
 
 import java.io.IOException;
 
@@ -22,6 +24,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5174}")
     private String frontendUrl;
@@ -42,10 +45,32 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         saveUserToken(user, jwtToken);
 
         // Redirect to frontend with token
-        String redirectUrl = frontendUrl + "/oauth2/redirect?token=" + jwtToken + "&refreshToken=" + refreshToken;
+        String targetUrl = determineTargetUrl(request, response, authentication, jwtToken, refreshToken);
         
-        log.info("OAuth2 login successful for user: {}. Redirecting to frontend.", user.getEmail());
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        log.info("OAuth2 login successful for user: {}. Redirecting to: {}", user.getEmail(), targetUrl);
+        
+        clearAuthenticationAttributes(request, response);
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+
+    protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication, String jwtToken, String refreshToken) {
+        String targetUrl = frontendUrl; // default
+
+        Cookie redirectUriCookie = HttpCookieOAuth2AuthorizationRequestRepository.getCookie(request, HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME);
+        if (redirectUriCookie != null && redirectUriCookie.getValue() != null && !redirectUriCookie.getValue().isEmpty()) {
+            targetUrl = redirectUriCookie.getValue();
+        }
+
+        return UriComponentsBuilder.fromUriString(targetUrl)
+                .path("/oauth2/redirect")
+                .queryParam("token", jwtToken)
+                .queryParam("refreshToken", refreshToken)
+                .build().toUriString();
+    }
+
+    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
+        super.clearAuthenticationAttributes(request);
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
 
     private void saveUserToken(User user, String jwtToken) {

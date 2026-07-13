@@ -80,6 +80,10 @@ public class User implements UserDetails, Serializable {
     @Column(name = "last_username_change_date")
     private LocalDateTime lastUsernameChangeDate;
 
+    @Column(name = "is_suspended", nullable = false)
+    @Builder.Default
+    private boolean isSuspended = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -109,7 +113,7 @@ public class User implements UserDetails, Serializable {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !isSuspended;
     }
 
     @Override

@@ -17,6 +17,11 @@ const ActivityService = {
     return response.data.data;
   },
 
+  getUnifiedActivityHistory: async (params = {}) => {
+    const response = await api.get('/v1/activities/history', { params });
+    return response.data.data;
+  },
+
   createActivity: async (activityData) => {
     const response = await api.post('/v1/activities', activityData);
     return response.data.data;

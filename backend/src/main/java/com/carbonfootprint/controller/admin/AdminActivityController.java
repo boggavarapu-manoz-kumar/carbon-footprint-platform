@@ -1,11 +1,16 @@
 package com.carbonfootprint.controller.admin;
 
+import com.carbonfootprint.dto.admin.AdminMonitoringActivityDTO;
+import com.carbonfootprint.dto.admin.AdminMonitoringFilterDTO;
 import com.carbonfootprint.dto.admin.ActivityRejectRequest;
 import com.carbonfootprint.response.ApiResponse;
 import com.carbonfootprint.security.admin.AdminPermissions;
+import com.carbonfootprint.service.admin.AdminActivityMonitorService;
+import com.carbonfootprint.service.admin.AdminActivityInspectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +24,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AdminActivityController {
 
+    private final AdminActivityMonitorService activityMonitorService;
+    private final AdminActivityInspectionService activityInspectionService;
+
     /**
      * Retrieves a paginated list of all activities pending moderation.
      *
@@ -29,6 +37,33 @@ public class AdminActivityController {
     public ResponseEntity<ApiResponse<String>> getActivities() {
         log.info("Fetching paginated activities list");
         return ResponseEntity.ok(ApiResponse.success("Activities list", "Activities fetched successfully"));
+    }
+
+    /**
+     * Retrieves a paginated list of all activities (regular and custom) for monitoring.
+     */
+    @PostMapping("/monitor")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ACTIVITIES_VIEW)")
+    public ResponseEntity<ApiResponse<Page<AdminMonitoringActivityDTO>>> getMonitoringActivities(
+            @RequestBody AdminMonitoringFilterDTO filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("Fetching monitoring activities with filter: {}, page: {}, size: {}", filter, page, size);
+        Page<AdminMonitoringActivityDTO> activities = activityMonitorService.getActivities(filter, page, size);
+        return ResponseEntity.ok(ApiResponse.success(activities, "Activities fetched successfully"));
+    }
+
+    /**
+     * Retrieves detailed inspection data and full history for a specific activity.
+     */
+    @GetMapping("/monitor/{id}")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).ACTIVITIES_VIEW)")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> inspectActivity(
+            @PathVariable Long id,
+            @RequestParam String type) {
+        log.info("Inspecting activity ID: {} Type: {}", id, type);
+        java.util.Map<String, Object> details = activityInspectionService.inspectActivity(id, type);
+        return ResponseEntity.ok(ApiResponse.success(details, "Activity details fetched successfully"));
     }
 
     /**

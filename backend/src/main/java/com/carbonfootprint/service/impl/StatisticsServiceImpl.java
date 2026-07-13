@@ -5,7 +5,9 @@ import com.carbonfootprint.entity.ActivityCategory;
 import com.carbonfootprint.entity.User;
 import com.carbonfootprint.exception.ResourceNotFoundException;
 import com.carbonfootprint.repository.ActivityLogRepository;
+import com.carbonfootprint.repository.OtherActivityLogRepository;
 import com.carbonfootprint.repository.UserRepository;
+import com.carbonfootprint.entity.OtherActivityLog;
 import com.carbonfootprint.service.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import java.util.Map;
 public class StatisticsServiceImpl implements StatisticsService {
 
     private final ActivityLogRepository activityLogRepository;
+    private final OtherActivityLogRepository otherActivityLogRepository;
     private final UserRepository userRepository;
 
     @Override
@@ -39,6 +42,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // OPTIMIZATION: Instead of 6 separate aggregate queries, we fetch the data once.
         // For a Google-standard dashboard, minimizing DB round-trips is critical for low latency.
         List<com.carbonfootprint.entity.ActivityLog> logs = activityLogRepository.findAll((root, query, cb) -> cb.equal(root.get("user").get("id"), userId));
+        List<OtherActivityLog> otherLogs = otherActivityLogRepository.findByUserId(userId);
 
         LocalDate now = LocalDate.now();
         LocalDate startOfCurrentMonth = now.with(TemporalAdjusters.firstDayOfMonth());
@@ -87,7 +91,26 @@ public class StatisticsServiceImpl implements StatisticsService {
             emissionsByCategory.put(category, emissionsByCategory.getOrDefault(category, BigDecimal.ZERO).add(val));
         }
 
-        Long totalActivities = (long) logs.size();
+        for (OtherActivityLog logItem : otherLogs) {
+            BigDecimal val = logItem.getCarbonValue() != null ? logItem.getCarbonValue() : BigDecimal.ZERO;
+            LocalDate logDate = logItem.getLogDate();
+            
+            totalEmissions = totalEmissions.add(val);
+            
+            if (logDate != null && !logDate.isBefore(startOfCurrentMonth) && !logDate.isAfter(endOfCurrentMonth)) {
+                currentMonthEmissions = currentMonthEmissions.add(val);
+            }
+            if (logDate != null && !logDate.isBefore(startOfPrevMonth) && !logDate.isAfter(endOfPrevMonth)) {
+                previousMonthEmissions = previousMonthEmissions.add(val);
+            }
+            if (logDate != null && !logDate.isBefore(startOfLast7Days) && !logDate.isAfter(now)) {
+                weeklyEmissions = weeklyEmissions.add(val);
+            }
+            
+            emissionsByCategory.put("Other", emissionsByCategory.getOrDefault("Other", BigDecimal.ZERO).add(val));
+        }
+
+        Long totalActivities = (long) (logs.size() + otherLogs.size());
 
         // Sustainability Score Logic
         int score = 85;

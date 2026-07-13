@@ -12,6 +12,9 @@ import com.carbonfootprint.repository.ActivityLogRepository;
 import com.carbonfootprint.repository.ActivityLogSpecification;
 import com.carbonfootprint.repository.ActivityTypeRepository;
 import com.carbonfootprint.repository.UserRepository;
+import com.carbonfootprint.repository.UserActivityMonitorRepositoryCustom;
+import com.carbonfootprint.dto.activity.UserActivityHistoryDTO;
+import com.carbonfootprint.dto.activity.UserActivityHistoryFilterDTO;
 import com.carbonfootprint.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +36,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     private final ActivityLogRepository activityLogRepository;
     private final ActivityTypeRepository activityTypeRepository;
     private final UserRepository userRepository;
+    private final UserActivityMonitorRepositoryCustom userActivityMonitorRepository;
     private final ActivityLogMapper mapper;
     private final com.carbonfootprint.service.EmissionCalculationService calculationService;
 
@@ -113,6 +117,13 @@ public class ActivityLogServiceImpl implements ActivityLogService {
                 .and(ActivityLogSpecification.isBetweenDates(startDate, endDate));
 
         return activityLogRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserActivityHistoryDTO> getUnifiedActivityHistory(String userEmail, UserActivityHistoryFilterDTO filter, Pageable pageable) {
+        log.debug("Fetching unified activity history for user {} with filters", userEmail);
+        return userActivityMonitorRepository.findFilteredUserActivities(userEmail, filter, pageable);
     }
 
     @Override

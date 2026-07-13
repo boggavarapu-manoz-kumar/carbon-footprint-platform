@@ -20,10 +20,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     Long countByRole(Role role);
-    
+
+    Long countByIsSuspendedTrue();
+
     Long countByCreatedAtAfter(LocalDateTime date);
     
     // Grouping by date for user growth chart (MySQL compatible cast, or JPA function)
     @Query("SELECT function('DATE', u.createdAt) as logDate, COUNT(u) as count FROM User u WHERE u.createdAt >= :startDate GROUP BY function('DATE', u.createdAt) ORDER BY function('DATE', u.createdAt) ASC")
     List<Object[]> countUsersGroupedByDate(@Param("startDate") LocalDateTime startDate);
+
+    @Query("SELECT u.gender, COUNT(u) FROM User u WHERE u.gender IS NOT NULL GROUP BY u.gender")
+    List<Object[]> countUsersByGender();
+
+    @Query("SELECT function('MONTH', u.createdAt), COUNT(u) FROM User u WHERE function('YEAR', u.createdAt) = :year GROUP BY function('MONTH', u.createdAt) ORDER BY function('MONTH', u.createdAt) ASC")
+    List<Object[]> countUsersGroupedByMonth(@Param("year") Integer year);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
+    Long countUsersInRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }

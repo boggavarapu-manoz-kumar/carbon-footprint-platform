@@ -18,13 +18,13 @@ export const usersApi = {
     return data.data;
   },
 
-  suspendUser: async (id) => {
-    const { data } = await adminAxios.post(`/users/${id}/suspend`);
+  suspendUser: async (id, payload) => {
+    const { data } = await adminAxios.post(`/users/${id}/suspend`, payload);
     return data;
   },
 
   restoreUser: async (id) => {
-    const { data } = await adminAxios.post(`/users/${id}/restore`);
+    const { data } = await adminAxios.post(`/users/${id}/unsuspend`);
     return data;
   },
 

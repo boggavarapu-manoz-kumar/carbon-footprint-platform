@@ -6,6 +6,8 @@ import com.carbonfootprint.dto.activity.ActivityLogUpdateDto;
 import com.carbonfootprint.entity.ActivityCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.carbonfootprint.dto.activity.UserActivityHistoryDTO;
+import com.carbonfootprint.dto.activity.UserActivityHistoryFilterDTO;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +26,8 @@ public interface ActivityLogService {
             LocalDate startDate, 
             LocalDate endDate, 
             Pageable pageable);
+            
+    Page<UserActivityHistoryDTO> getUnifiedActivityHistory(String userEmail, UserActivityHistoryFilterDTO filter, Pageable pageable);
             
     ActivityLogDto updateActivityLog(Long id, String userEmail, ActivityLogUpdateDto updateDto);
     void deleteActivityLog(Long id, String userEmail);

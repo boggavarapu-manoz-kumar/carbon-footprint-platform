@@ -6,6 +6,7 @@ import { Search, Filter, Download, MoreVertical, X, ChevronLeft, ChevronRight, U
 import { usersApi } from '../api/usersApi';
 import { UserDrawer } from './UserDrawer';
 import { Button } from '../../../components/ui/Button';
+import { SuspensionModal } from './SuspensionModal';
 
 // ── Status badge helper ──────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -57,6 +58,7 @@ export const UserList = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [actionError, setActionError] = useState(null);
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
   const parentRef = useRef(null);
 
   const PAGE_SIZE = 20;
@@ -140,7 +142,7 @@ export const UserList = () => {
 
   const handleSuspendToggle = (user) => {
     if (user.status === 'ACTIVE') {
-      suspendMutation.mutate(user.id);
+      setIsSuspendModalOpen(true);
     } else {
       restoreMutation.mutate(user.id);
     }
@@ -359,6 +361,13 @@ export const UserList = () => {
         isActionPending={isActionPending}
         actionError={actionError}
       />
+
+      {isSuspendModalOpen && selectedUser && (
+        <SuspensionModal
+          user={selectedUser}
+          onClose={() => setIsSuspendModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

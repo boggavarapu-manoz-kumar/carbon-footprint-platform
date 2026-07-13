@@ -170,17 +170,17 @@ public class UserServiceImpl implements UserService {
         String[] templates;
         if (!cleanLast.isEmpty()) {
             templates = new String[]{
-                cleanFirst + cleanLast,
                 cleanFirst + "." + cleanLast,
                 cleanFirst + "_" + cleanLast,
                 cleanFirst.charAt(0) + cleanLast,
-                cleanFirst + cleanLast.charAt(0)
+                cleanLast + "." + cleanFirst,
+                cleanFirst + cleanLast.substring(0, Math.min(1, cleanLast.length()))
             };
         } else {
             templates = new String[]{
                 cleanFirst,
-                cleanFirst + "123",
-                cleanFirst + "_user"
+                cleanFirst + "hq",
+                cleanFirst + "_official"
             };
         }
 
