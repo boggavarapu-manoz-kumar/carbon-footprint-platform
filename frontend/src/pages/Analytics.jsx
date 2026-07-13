@@ -123,7 +123,10 @@ const Analytics = () => {
 
   const getCategoryEmissions = (categoryName) => {
     if (!data?.categoryShares) return 0;
-    const cat = data.categoryShares.find(c => c.category.toLowerCase() === categoryName.toLowerCase());
+    // Case-insensitive partial match to handle DB names like "Home Energy", "Food & Diet"
+    const cat = data.categoryShares.find(
+      c => c.category.toLowerCase().includes(categoryName.toLowerCase())
+    );
     return cat ? Number(cat.emissions) : 0;
   };
 
@@ -223,13 +226,13 @@ const Analytics = () => {
                   delay={0.2}
                 />
                 <KpiCard
-                  label="Electricity"
-                  value={getCategoryEmissions('electricity')}
+                  label="Home Energy"
+                  value={getCategoryEmissions('energy')}
                   delay={0.25}
                 />
                 <KpiCard
-                  label="Food"
-                  value={getCategoryEmissions('food')}
+                  label="Food & Diet"
+                  value={getCategoryEmissions('diet')}
                   delay={0.3}
                 />
                 <KpiCard

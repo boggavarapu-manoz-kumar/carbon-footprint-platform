@@ -40,7 +40,7 @@ export const SuspensionList = ({
                   className="rounded bg-slate-800 border-slate-700 text-primary-500 focus:ring-primary-500/20"
                 />
               </th>
-              <th className="px-6 py-4 font-medium">User ID</th>
+              <th className="px-6 py-4 font-medium">User</th>
               <th className="px-6 py-4 font-medium">Reason</th>
               <th className="px-6 py-4 font-medium">Status</th>
               <th className="px-6 py-4 font-medium">Start Date</th>
@@ -61,8 +61,22 @@ export const SuspensionList = ({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-300">
-                      U{suspension.userId}
+                    <div className="h-9 w-9 rounded-full bg-primary-500/20 border border-primary-500/30 flex items-center justify-center font-bold text-primary-300 text-sm shrink-0">
+                      {suspension.firstName ? suspension.firstName[0].toUpperCase() : '#'}
+                      {suspension.lastName ? suspension.lastName[0].toUpperCase() : ''}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">
+                        {suspension.firstName || suspension.lastName
+                          ? `${suspension.firstName || ''} ${suspension.lastName || ''}`.trim()
+                          : suspension.username || `User #${suspension.userId}`}
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {suspension.email || '—'}
+                      </p>
+                      {suspension.username && (
+                        <p className="text-xs text-slate-500 truncate">@{suspension.username}</p>
+                      )}
                     </div>
                   </div>
                 </td>

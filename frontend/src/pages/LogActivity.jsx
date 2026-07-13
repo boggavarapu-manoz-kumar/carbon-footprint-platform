@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import ActivityService from '../services/ActivityService';
+import OtherActivityService from '../services/OtherActivityService';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
@@ -35,6 +37,7 @@ const IconResolver = ({ iconName, className }) => {
     '📱': <PhoneIphone className={className} fontSize="inherit" />,
     '👕': <Checkroom className={className} fontSize="inherit" />,
     '🏠': <Home className={className} fontSize="inherit" />,
+    '📦': <LocalMall className={className} fontSize="inherit" />,
   };
   return map[iconName] || <EnergySavingsLeafOutlined className={className} fontSize="inherit" />;
 };
@@ -48,6 +51,7 @@ const LogActivity = () => {
 
   // Wizard State
   const [step, setStep] = useState(1);
+  const queryClient = useQueryClient();
 
   // Selections
   const [selectedCategoryCode, setSelectedCategoryCode] = useState('');
@@ -113,7 +117,12 @@ const LogActivity = () => {
   }, [step]);
 
   // Derived active items
-  const activeCategory = useMemo(() => catalog.find(c => c.code === selectedCategoryCode), [catalog, selectedCategoryCode]);
+  const activeCategory = useMemo(() => {
+    if (selectedCategoryCode === 'OTHER_ACTIVITIES') {
+      return { code: 'OTHER_ACTIVITIES', name: 'Other Activities', icon: '📦' };
+    }
+    return catalog.find(c => c.code === selectedCategoryCode);
+  }, [catalog, selectedCategoryCode]);
   
   // Flatten activity types for easy lookup
   const allActivityTypes = useMemo(() => {
@@ -214,6 +223,7 @@ const LogActivity = () => {
         unit: unit,
         logDate: logDate
       });
+      await queryClient.invalidateQueries();
       toast.success('Activity logged successfully!');
       navigate('/activity-history');
     } catch (err) {
@@ -222,6 +232,36 @@ const LogActivity = () => {
       setIsSubmitting(false);
     }
   };
+
+  const handleOtherSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.activityName || !formData.quantity || !formData.unit) {
+      toast.error('Please fill in Activity Name, Quantity, and Unit');
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await OtherActivityService.createLog({
+        activityName: formData.activityName,
+        activityDescription: formData.activityDescription,
+        quantity: parseFloat(formData.quantity),
+        unit: formData.unit,
+        logDate: logDate,
+        logTime: formData.logTime ? (formData.logTime.length === 5 ? formData.logTime + ':00' : formData.logTime) : null,
+        carbonValue: formData.carbonValue ? parseFloat(formData.carbonValue) : 0,
+        notes: formData.notes
+      });
+      await queryClient.invalidateQueries();
+      toast.success('Custom activity logged successfully!');
+      navigate('/activity-history');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to log custom activity');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
 
   if (loading) {
     return (
@@ -289,6 +329,20 @@ const LogActivity = () => {
                     <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">{cat.name}</span>
                   </button>
                 ))}
+                
+                {/* Custom Other Category */}
+                <button
+                  onClick={() => {
+                    setSelectedCategoryCode('OTHER_ACTIVITIES');
+                    setStep(3); // Skip straight to details for custom
+                  }}
+                  className="group relative flex flex-col items-center justify-center p-6 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:shadow-md transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                >
+                  <span className="text-4xl mb-4 text-slate-400 group-hover:text-emerald-600 group-hover:scale-110 transition-transform">
+                    <IconResolver iconName="📦" />
+                  </span>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">Other Activities</span>
+                </button>
               </div>
             ) : (
               <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center">
@@ -313,7 +367,7 @@ const LogActivity = () => {
                 )}
               </div>
               
-              {step === 2 ? (
+              {step === 2 && activeCategory?.code !== 'OTHER_ACTIVITIES' ? (
                 activeCategory?.code === 'TRANSPORT' ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {['Car', 'Bus', 'Train', 'Flight'].map(mode => (
@@ -469,6 +523,45 @@ const LogActivity = () => {
               </div>
               
               <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+                {activeCategory?.code === 'OTHER_ACTIVITIES' ? (
+                  <form id="activityForm" onSubmit={handleOtherSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Activity Name <span className="text-emerald-500">*</span></label>
+                        <input type="text" value={formData.activityName || ''} onChange={(e) => handleInputChange('activityName', e.target.value)} required placeholder="e.g. Generator Usage" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
+                        <input type="text" value={formData.activityDescription || ''} onChange={(e) => handleInputChange('activityDescription', e.target.value)} placeholder="Brief description" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Quantity <span className="text-emerald-500">*</span></label>
+                        <input type="number" min="0" step="any" value={formData.quantity || ''} onChange={(e) => handleInputChange('quantity', e.target.value)} required placeholder="e.g. 5" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Unit <span className="text-emerald-500">*</span></label>
+                        <input type="text" value={formData.unit || ''} onChange={(e) => handleInputChange('unit', e.target.value)} required placeholder="e.g. Hours, kg" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date <span className="text-emerald-500">*</span></label>
+                        <input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} max={new Date().toISOString().split('T')[0]} required className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Time</label>
+                        <input type="time" value={formData.logTime || ''} onChange={(e) => handleInputChange('logTime', e.target.value)} className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Carbon Value (kg CO₂e)</label>
+                        <input type="number" min="0" step="any" value={formData.carbonValue || ''} onChange={(e) => handleInputChange('carbonValue', e.target.value)} placeholder="0.00" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                        <p className="text-xs text-slate-500 mt-1">Leave blank or 0 if unknown</p>
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Notes</label>
+                        <textarea value={formData.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} placeholder="Additional details..." rows="3" className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors" />
+                      </div>
+                    </div>
+                  </form>
+                ) : (
                 <form id="activityForm" onSubmit={handleSubmit} className="space-y-6">
                   
                   {activeCategory?.code === 'TRANSPORT' && transportMode === 'Car' && (
@@ -540,6 +633,7 @@ const LogActivity = () => {
                     />
                   </div>
                 </form>
+                )}
               </div>
             </div>
           )}
@@ -586,7 +680,7 @@ const LogActivity = () => {
                         aria-live="polite"
                         aria-atomic="true"
                         className="text-5xl font-extrabold text-slate-900 tracking-tight"
-                      >{estimatedCO2}</span>
+                      >{activeCategory?.code === 'OTHER_ACTIVITIES' ? (formData.carbonValue || 0) : estimatedCO2}</span>
                       <span className="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">kg CO₂e</span>
                     </div>
                   )}
@@ -616,14 +710,14 @@ const LogActivity = () => {
                 </div>
                 <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
                   <span className="text-slate-500 font-medium">Activity</span>
-                  <span className="font-bold text-slate-900">{activeActivityType?.name || '—'}</span>
+                  <span className="font-bold text-slate-900">{activeCategory?.code === 'OTHER_ACTIVITIES' ? formData.activityName || '—' : activeActivityType?.name || '—'}</span>
                 </div>
               </div>
 
               <button
                 type="submit"
                 form="activityForm"
-                disabled={step < 3 || isSubmitting || !activeActivityType}
+                disabled={step < 3 || isSubmitting || (activeCategory?.code !== 'OTHER_ACTIVITIES' && !activeActivityType)}
                 className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/20 transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Logging...' : 'Log Activity'}

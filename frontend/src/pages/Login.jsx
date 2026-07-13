@@ -42,7 +42,8 @@ const Login = () => {
     const hostname = window.location.hostname;
     const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
     const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
-    window.location.href = `${baseUrl}/oauth2/authorization/google`;
+    const redirectUri = window.location.origin;
+    window.location.href = `${baseUrl}/oauth2/authorization/google?redirect_uri=${redirectUri}`;
   };
 
   const handleGithubLogin = () => {

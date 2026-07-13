@@ -14,6 +14,12 @@ import java.time.LocalDateTime;
 public class UserSuspensionResponse {
     private Long id;
     private Long userId;
+    // User identity fields
+    private String username;
+    private String email;
+    private String firstName;
+    private String lastName;
+    // Suspension details
     private String reason;
     private String description;
     private String evidenceNotes;

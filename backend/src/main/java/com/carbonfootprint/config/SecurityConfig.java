@@ -26,9 +26,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.carbonfootprint.security.CustomOAuth2UserService;
 import com.carbonfootprint.security.OAuth2AuthenticationSuccessHandler;
 import com.carbonfootprint.security.OAuth2AuthenticationFailureHandler;
+import com.carbonfootprint.security.HttpCookieOAuth2AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
-import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 
 import java.util.Arrays;
@@ -48,6 +48,7 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final AdminJwtAuthenticationFilter adminJwtAuthFilter;
     private final GlobalRateLimitFilter globalRateLimitFilter;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
@@ -92,7 +93,7 @@ public class SecurityConfig {
                 .authorizationEndpoint(authEndpoint -> authEndpoint
                     .baseUri("/oauth2/authorization")
                     .authorizationRequestResolver(authorizationRequestResolver(clientRegistrationRepository))
-                    .authorizationRequestRepository(authorizationRequestRepository())
+                    .authorizationRequestRepository(cookieAuthorizationRequestRepository)
                 )
                 .redirectionEndpoint(redirectionEndpoint -> redirectionEndpoint
                     .baseUri("/login/oauth2/code/*")
@@ -130,11 +131,6 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    @Bean
-    public HttpSessionOAuth2AuthorizationRequestRepository authorizationRequestRepository() {
-        return new HttpSessionOAuth2AuthorizationRequestRepository();
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {

@@ -8,7 +8,7 @@ import {
 import {
   TrendingUp, TrendingDown, Users, Activity, Leaf, Target, Award,
   AlertTriangle, Loader2, Calendar, CalendarDays, CalendarRange, Globe,
-  Building, PieChart as PieChartIcon, ShieldCheck, Download
+  Building, PieChart as PieChartIcon, ShieldCheck, Download, PlusCircle
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -194,6 +194,12 @@ export const AdminAnalytics = () => {
     queryKey: ['admin-organizations', selectedYear],
     queryFn: () => analyticsApi.getOrganizationAnalytics(),
     enabled: activeTab === 'organizations' || activeTab === 'audit',
+  });
+
+  const { data: otherData, isLoading: otherLoading } = useQuery({
+    queryKey: ['admin-other-activities', selectedYear],
+    queryFn: () => analyticsApi.getOtherActivityAnalytics(selectedYear),
+    enabled: activeTab === 'other' || activeTab === 'audit',
   });
 
   // ─── Shared Components ──────────────────────────────────────────
@@ -602,6 +608,125 @@ export const AdminAnalytics = () => {
     );
   };
 
+  const renderOtherActivities = () => {
+    const data = otherData || {};
+    const topActivities = data.topActivities || [];
+    
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Total Custom Activities" value={fmt(data.totalActivities)} icon={Activity} color="warning" loading={otherLoading} />
+          <StatCard title="Total Emissions (kg)" value={fmtKg(data.totalEmissions)} icon={Leaf} color="success" loading={otherLoading} />
+          <StatCard 
+            title="Most Used Activity" 
+            value={data.mostUsedActivity ? data.mostUsedActivity.name : 'N/A'} 
+            subtitle={data.mostUsedActivity ? `${fmt(data.mostUsedActivity.usageCount)} logs` : ''} 
+            icon={TrendingUp} color="info" loading={otherLoading} 
+          />
+          <StatCard 
+            title="Highest Emission Activity" 
+            value={data.highestEmissionActivity ? data.highestEmissionActivity.name : 'N/A'} 
+            subtitle={data.highestEmissionActivity ? `${fmtKg(data.highestEmissionActivity.totalEmissions)}` : ''} 
+            icon={AlertTriangle} color="danger" loading={otherLoading} 
+          />
+        </div>
+
+        <ChartCard title="Top Custom Activities" subtitle="Activities ranked by usage" loading={otherLoading}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Rank</th>
+                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Activity Name</th>
+                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Usage Count</th>
+                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Total Emissions (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topActivities.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="py-8 text-center text-gray-500">No custom activities found.</td>
+                  </tr>
+                ) : (
+                  topActivities.map((act, index) => (
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                      <td className="py-3 px-4 text-sm text-gray-900 font-bold">#{index + 1}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">{act.name}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">{fmt(act.usageCount)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900 font-bold text-red-600">{fmtKg(act.totalEmissions)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartCard title="Daily Custom Trends" subtitle="Activities and Emissions per hour" loading={otherLoading}>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={data.dailyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar yAxisId="left" dataKey="activityCount" name="Activities" fill={BRAND.warning} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="totalEmissions" name="Emissions (kg)" stroke={BRAND.success} strokeWidth={3} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Weekly Custom Trends" subtitle="Activities per day of week" loading={otherLoading}>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={data.weeklyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar yAxisId="left" dataKey="activityCount" name="Activities" fill={BRAND.info} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="totalEmissions" name="Emissions (kg)" stroke={BRAND.success} strokeWidth={3} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+          
+          <ChartCard title="Monthly Custom Trends" subtitle="Activities per week in month" loading={otherLoading}>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={data.monthlyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar yAxisId="left" dataKey="activityCount" name="Activities" fill={BRAND.primary} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="totalEmissions" name="Emissions (kg)" stroke={BRAND.danger} strokeWidth={3} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+          
+          <ChartCard title="Yearly Custom Trends" subtitle="Activities per month in year" loading={otherLoading}>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={data.yearlyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar yAxisId="left" dataKey="activityCount" name="Activities" fill={BRAND.purple} radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="totalEmissions" name="Emissions (kg)" stroke={BRAND.warning} strokeWidth={3} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+      </div>
+    );
+  };
+
   const renderAudit = () => {
     // Generate scores based on loading states, meaning real react-query cache is populated
     const isReady = !dailyLoading && !weeklyLoading && !monthlyLoading && !yearlyLoading;
@@ -655,6 +780,7 @@ export const AdminAnalytics = () => {
     { id: 'monthly', label: 'Monthly', icon: CalendarRange },
     { id: 'yearly', label: 'Yearly', icon: Globe },
     { id: 'distribution', label: 'Distribution', icon: PieChartIcon },
+    { id: 'other', label: 'Other Activities', icon: PlusCircle },
     { id: 'organizations', label: 'Organizations', icon: Building },
     { id: 'audit', label: 'Audit', icon: ShieldCheck },
   ];
@@ -709,6 +835,7 @@ export const AdminAnalytics = () => {
       {activeTab === 'monthly' && renderMonthly()}
       {activeTab === 'yearly' && renderYearly()}
       {activeTab === 'distribution' && renderDistribution()}
+      {activeTab === 'other' && renderOtherActivities()}
       {activeTab === 'organizations' && renderOrganizations()}
       {activeTab === 'audit' && renderAudit()}
     </div>

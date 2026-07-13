@@ -29,6 +29,7 @@ public class AdminDashboardService {
 
     private final com.carbonfootprint.repository.UserRepository userRepository;
     private final com.carbonfootprint.repository.ActivityLogRepository activityLogRepository;
+    private final com.carbonfootprint.repository.UserSuspensionRepository suspensionRepository;
     private final DashboardMetricsSummaryRepository metricsRepository;
     private final UserEmissionSummaryRepository userEmissionRepository;
     private final DailyEmissionSummaryRepository dailyEmissionRepository;
@@ -46,7 +47,8 @@ public class AdminDashboardService {
         if (totalEmissions == null) totalEmissions = BigDecimal.ZERO;
         
         long totalActivities = activityLogRepository.count();
-        long suspendedUsers = 0L; // Simplified
+        // Count users who are currently actively suspended (isSuspended = true in User table)
+        long suspendedUsers = userRepository.countByIsSuspendedTrue() != null ? userRepository.countByIsSuspendedTrue() : 0L;
         long adminCount = userRepository.countByRole(com.carbonfootprint.entity.Role.ADMIN) + userRepository.countByRole(com.carbonfootprint.entity.Role.SUPER_ADMIN);
         long securityAlerts = adminSecurityEventRepository.count();
 

@@ -283,7 +283,7 @@ export const Dashboard = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={userGrowth || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <LineChart data={userGrowth || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis 
                     dataKey="date" 
                     stroke="#9ca3af" 
@@ -291,17 +291,20 @@ export const Dashboard = () => {
                     tickLine={false} 
                     axisLine={false} 
                     tickFormatter={(val) => val ? format(new Date(val), 'MMM dd') : ''}
+                    dy={10}
                   />
-                  <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                   <Tooltip 
                     labelFormatter={(val) => val ? format(new Date(val), 'MMM dd, yyyy') : ''}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                    contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: '#fff', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#fff', fontWeight: '500' }}
+                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="totalUsers" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Users" />
-                  <Line yAxisId="right" type="monotone" dataKey="newRegistrations" stroke="#10b981" strokeWidth={2} dot={false} name="New Registrations" />
+                  <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
+                  <Line yAxisId="left" type="monotone" dataKey="totalUsers" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }} name="Total Users" />
+                  <Line yAxisId="right" type="monotone" dataKey="newRegistrations" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} name="New Registrations" />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -318,7 +321,7 @@ export const Dashboard = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityTrends || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <BarChart data={activityTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis 
                     dataKey="date" 
                     stroke="#9ca3af" 
@@ -326,15 +329,17 @@ export const Dashboard = () => {
                     tickLine={false} 
                     axisLine={false} 
                     tickFormatter={(val) => val ? format(new Date(val), 'MMM dd') : ''}
+                    dy={10}
                   />
-                  <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                   <Tooltip 
                     labelFormatter={(val) => val ? format(new Date(val), 'MMM dd, yyyy') : ''}
-                    cursor={{fill: '#f3f4f6'}} 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                    cursor={{fill: '#f8fafc'}} 
+                    contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: '#fff', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#fff', fontWeight: '500' }}
                   />
-                  <Bar dataKey="activityCount" fill="#6366f1" radius={[4, 4, 0, 0]} name="Activities" />
+                  <Bar dataKey="activityCount" fill="#6366f1" radius={[4, 4, 0, 0]} name="Activities" maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             )}

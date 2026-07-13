@@ -6,6 +6,7 @@ import com.carbonfootprint.dto.analytics.TimeSeriesDataPointDto;
 import com.carbonfootprint.entity.User;
 import com.carbonfootprint.exception.ResourceNotFoundException;
 import com.carbonfootprint.repository.ActivityLogRepository;
+import com.carbonfootprint.repository.OtherActivityLogRepository;
 import com.carbonfootprint.repository.UserRepository;
 import com.carbonfootprint.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.List;
 public class AnalyticsServiceImpl implements AnalyticsService {
 
     private final ActivityLogRepository activityLogRepository;
+    private final OtherActivityLogRepository otherActivityLogRepository;
     private final UserRepository userRepository;
 
     private User getUserByEmail(String email) {
@@ -95,6 +97,24 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 categoryShares.add(CategoryShareDto.builder().category(cat).emissions(val).build());
             }
         }
+        
+        BigDecimal otherCatSum = otherActivityLogRepository.sumEmissionsByUserIdAndDateRange(user.getId(), LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+        if (otherCatSum != null && otherCatSum.compareTo(BigDecimal.ZERO) > 0) {
+            totalEmissions = totalEmissions.add(otherCatSum);
+            categoryShares.add(CategoryShareDto.builder().category("Other").emissions(otherCatSum).build());
+        }
+
+        List<Object[]> otherMonthlyData = otherActivityLogRepository.sumEmissionsGroupedByMonth(user.getId(), year);
+        java.util.Map<Integer, BigDecimal> mergedMonthlyData = new java.util.TreeMap<>();
+        
+        for (Object[] row : monthlyData) {
+            mergedMonthlyData.put((Integer) row[0], (BigDecimal) row[1]);
+        }
+        for (Object[] row : otherMonthlyData) {
+            Integer m = (Integer) row[0];
+            BigDecimal val = (BigDecimal) row[1];
+            mergedMonthlyData.put(m, mergedMonthlyData.getOrDefault(m, BigDecimal.ZERO).add(val != null ? val : BigDecimal.ZERO));
+        }
 
         // Calculate percentages
         if (totalEmissions.compareTo(BigDecimal.ZERO) > 0) {
@@ -105,18 +125,23 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
 
         List<TimeSeriesDataPointDto> timeline = new ArrayList<>();
-        for (Object[] row : monthlyData) {
-            Integer month = (Integer) row[0];
-            BigDecimal val = (BigDecimal) row[1];
+        for (java.util.Map.Entry<Integer, BigDecimal> entry : mergedMonthlyData.entrySet()) {
+            Integer month = entry.getKey();
+            BigDecimal val = entry.getValue();
             String rawMonthName = java.time.Month.of(month).toString().substring(0, 3);
             String monthName = rawMonthName.substring(0, 1).toUpperCase() + rawMonthName.substring(1).toLowerCase();
             timeline.add(TimeSeriesDataPointDto.builder().label(monthName).emissions(val != null ? val : BigDecimal.ZERO).build());
         }
 
         Long totalActivities = activityLogRepository.countActivitiesByUserIdAndDateRange(user.getId(), LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+        Long otherActivities = otherActivityLogRepository.countActivitiesByUserIdAndDateRange(user.getId(), LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+        if (totalActivities == null) totalActivities = 0L;
+        if (otherActivities != null) totalActivities += otherActivities;
 
         BigDecimal prevEmissions = activityLogRepository.sumEmissionsByUserIdAndDateRange(user.getId(), LocalDate.of(year - 1, 1, 1), LocalDate.of(year - 1, 12, 31));
+        BigDecimal otherPrevEmissions = otherActivityLogRepository.sumEmissionsByUserIdAndDateRange(user.getId(), LocalDate.of(year - 1, 1, 1), LocalDate.of(year - 1, 12, 31));
         if (prevEmissions == null) prevEmissions = BigDecimal.ZERO;
+        if (otherPrevEmissions != null) prevEmissions = prevEmissions.add(otherPrevEmissions);
         
         Double popChange = 0.0;
         if (prevEmissions.compareTo(BigDecimal.ZERO) > 0) {
@@ -138,7 +163,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     @Override
     public List<Integer> getAvailableYears(String userEmail) {
         User user = getUserByEmail(userEmail);
-        return activityLogRepository.findDistinctYearsByUserId(user.getId());
+        List<Integer> years1 = activityLogRepository.findDistinctYearsByUserId(user.getId());
+        List<Integer> years2 = otherActivityLogRepository.findDistinctYearsByUserId(user.getId());
+        java.util.Set<Integer> allYears = new java.util.TreeSet<>(java.util.Collections.reverseOrder());
+        if (years1 != null) allYears.addAll(years1);
+        if (years2 != null) allYears.addAll(years2);
+        return new ArrayList<>(allYears);
     }
 
     private AnalyticsResponseDto calculateAnalytics(Long userId, LocalDate startDate, LocalDate endDate, LocalDate prevStartDate, LocalDate prevEndDate, String timePeriodLabel, boolean includeTimeline) {
@@ -154,6 +184,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 totalEmissions = totalEmissions.add(val);
                 categoryShares.add(CategoryShareDto.builder().category(cat).emissions(val).build());
             }
+        }
+        
+        BigDecimal otherCatSum = otherActivityLogRepository.sumEmissionsByUserIdAndDateRange(userId, startDate, endDate);
+        if (otherCatSum != null && otherCatSum.compareTo(BigDecimal.ZERO) > 0) {
+            totalEmissions = totalEmissions.add(otherCatSum);
+            categoryShares.add(CategoryShareDto.builder().category("Other").emissions(otherCatSum).build());
         }
 
         if (totalEmissions.compareTo(BigDecimal.ZERO) > 0) {
@@ -180,6 +216,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         hourMap.put(hour, hourMap.getOrDefault(hour, BigDecimal.ZERO).add(log.getEmissionValue()));
                     }
                 }
+                
+                java.util.List<com.carbonfootprint.entity.OtherActivityLog> otherDailyLogs = otherActivityLogRepository.findByUserIdAndLogDate(userId, startDate);
+                for (com.carbonfootprint.entity.OtherActivityLog log : otherDailyLogs) {
+                    if (log.getCreatedAt() != null) {
+                        int hour = log.getCreatedAt().atZone(java.time.ZoneOffset.UTC).withZoneSameInstant(localZone).getHour();
+                        hourMap.put(hour, hourMap.getOrDefault(hour, BigDecimal.ZERO).add(log.getCarbonValue() != null ? log.getCarbonValue() : BigDecimal.ZERO));
+                    }
+                }
                 // Always output all 24 hours so the chart is always a full day view
                 for (int h = 0; h < 24; h++) {
                     String label = String.format("%02d:00", h);
@@ -204,6 +248,25 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         if (i == 5 && weekAggregations.getOrDefault(5, BigDecimal.ZERO).compareTo(BigDecimal.ZERO) == 0) continue;
                         timeline.add(TimeSeriesDataPointDto.builder().label("Week " + i).emissions(weekAggregations.getOrDefault(i, BigDecimal.ZERO)).build());
                     }
+                    
+                    // Merge OtherActivityLog emissions into the weekly buckets
+                    List<Object[]> otherDateData = otherActivityLogRepository.sumEmissionsGroupedByDate(userId, startDate, endDate);
+                    java.util.Map<String, BigDecimal> mergedDateData = new java.util.LinkedHashMap<>();
+                    for (TimeSeriesDataPointDto pt : timeline) {
+                        mergedDateData.put(pt.getLabel(), pt.getEmissions());
+                    }
+                    for (Object[] row : otherDateData) {
+                        java.sql.Date sqlDate = (java.sql.Date) row[0];
+                        BigDecimal val = (BigDecimal) row[1];
+                        int dayOfMonth = sqlDate.toLocalDate().getDayOfMonth();
+                        int week = ((dayOfMonth - 1) / 7) + 1;
+                        String label = "Week " + week;
+                        mergedDateData.put(label, mergedDateData.getOrDefault(label, BigDecimal.ZERO).add(val != null ? val : BigDecimal.ZERO));
+                    }
+                    timeline.clear();
+                    for (java.util.Map.Entry<String, BigDecimal> entry : mergedDateData.entrySet()) {
+                        timeline.add(TimeSeriesDataPointDto.builder().label(entry.getKey()).emissions(entry.getValue()).build());
+                    }
                 } else {
                     for (Object[] row : dateData) {
                         java.sql.Date sqlDate = (java.sql.Date) row[0];
@@ -216,14 +279,40 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                         }
                         timeline.add(TimeSeriesDataPointDto.builder().label(label).emissions(val != null ? val : BigDecimal.ZERO).build());
                     }
+                    
+                    List<Object[]> otherDateData = otherActivityLogRepository.sumEmissionsGroupedByDate(userId, startDate, endDate);
+                    java.util.Map<String, BigDecimal> mergedDateData = new java.util.LinkedHashMap<>();
+                    for (TimeSeriesDataPointDto pt : timeline) {
+                        mergedDateData.put(pt.getLabel(), pt.getEmissions());
+                    }
+                    for (Object[] row : otherDateData) {
+                        java.sql.Date sqlDate = (java.sql.Date) row[0];
+                        BigDecimal val = (BigDecimal) row[1];
+                        String label;
+                        if (isWeekly) {
+                            label = sqlDate.toLocalDate().format(DateTimeFormatter.ofPattern("EEE (MMM dd)"));
+                        } else {
+                            label = sqlDate.toLocalDate().format(DateTimeFormatter.ofPattern("MMM dd"));
+                        }
+                        mergedDateData.put(label, mergedDateData.getOrDefault(label, BigDecimal.ZERO).add(val != null ? val : BigDecimal.ZERO));
+                    }
+                    timeline.clear();
+                    for (java.util.Map.Entry<String, BigDecimal> entry : mergedDateData.entrySet()) {
+                        timeline.add(TimeSeriesDataPointDto.builder().label(entry.getKey()).emissions(entry.getValue()).build());
+                    }
                 }
             }
         }
 
         Long totalActivities = activityLogRepository.countActivitiesByUserIdAndDateRange(userId, startDate, endDate);
+        Long otherActivities = otherActivityLogRepository.countActivitiesByUserIdAndDateRange(userId, startDate, endDate);
+        if (totalActivities == null) totalActivities = 0L;
+        if (otherActivities != null) totalActivities += otherActivities;
 
         BigDecimal prevEmissions = activityLogRepository.sumEmissionsByUserIdAndDateRange(userId, prevStartDate, prevEndDate);
+        BigDecimal otherPrevEmissions = otherActivityLogRepository.sumEmissionsByUserIdAndDateRange(userId, prevStartDate, prevEndDate);
         if (prevEmissions == null) prevEmissions = BigDecimal.ZERO;
+        if (otherPrevEmissions != null) prevEmissions = prevEmissions.add(otherPrevEmissions);
         
         Double popChange = 0.0;
         if (prevEmissions.compareTo(BigDecimal.ZERO) > 0) {
@@ -251,8 +340,23 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                             .build());
                 }
             }
+            java.util.List<com.carbonfootprint.entity.OtherActivityLog> otherLogsForRaw = otherActivityLogRepository.findByUserIdAndLogDate(userId, startDate);
+            for (com.carbonfootprint.entity.OtherActivityLog log : otherLogsForRaw) {
+                if (log.getCreatedAt() != null) {
+                    java.time.ZonedDateTime zdt = log.getCreatedAt().atZone(java.time.ZoneId.systemDefault());
+                    rawActivities.add(com.carbonfootprint.dto.analytics.DailyTimelineActivityDto.builder()
+                            .id(log.getId())
+                            .activityName(log.getActivityName())
+                            .categoryName("Other")
+                            .emissionValue(log.getCarbonValue() != null ? log.getCarbonValue() : BigDecimal.ZERO)
+                            .formattedTime(zdt.format(timeFormatter))
+                            .timestamp(zdt.toInstant().toEpochMilli())
+                            .build());
+                }
+            }
+            // Sort combined raw activities by timestamp descending
+            rawActivities.sort((a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
         }
-
         return AnalyticsResponseDto.builder()
                 .timePeriod(timePeriodLabel)
                 .totalEmissions(totalEmissions)

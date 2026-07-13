@@ -20,7 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     Long countByRole(Role role);
-    
+
+    Long countByIsSuspendedTrue();
+
     Long countByCreatedAtAfter(LocalDateTime date);
     
     // Grouping by date for user growth chart (MySQL compatible cast, or JPA function)

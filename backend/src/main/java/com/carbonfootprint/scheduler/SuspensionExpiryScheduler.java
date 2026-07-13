@@ -47,7 +47,7 @@ public class SuspensionExpiryScheduler {
                 // Mark suspension as inactive/revoked by system
                 suspension.setActive(false);
                 suspension.setRevokedDate(now);
-                suspension.setRevokedBy(0L); // 0L represents SYSTEM
+                suspension.setRevokedBy("SYSTEM"); // "SYSTEM" represents SYSTEM
                 userSuspensionRepository.save(suspension);
 
                 // Restore user access

@@ -159,9 +159,14 @@ public class UserSuspensionService {
     }
 
     private UserSuspensionResponse mapToResponse(UserSuspension s) {
+        User user = s.getUser();
         return UserSuspensionResponse.builder()
                 .id(s.getId())
-                .userId(s.getUser().getId())
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
                 .reason(s.getReason())
                 .description(s.getDescription())
                 .evidenceNotes(s.getEvidenceNotes())

@@ -3,6 +3,8 @@ package com.carbonfootprint.controller;
 import com.carbonfootprint.dto.activity.ActivityLogCreateDto;
 import com.carbonfootprint.dto.activity.ActivityLogDto;
 import com.carbonfootprint.dto.activity.ActivityLogUpdateDto;
+import com.carbonfootprint.dto.activity.UserActivityHistoryDTO;
+import com.carbonfootprint.dto.activity.UserActivityHistoryFilterDTO;
 import com.carbonfootprint.entity.ActivityCategory;
 import com.carbonfootprint.response.ApiResponse;
 import com.carbonfootprint.service.ActivityLogService;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Slf4j
 @Validated
@@ -78,6 +81,34 @@ public class ActivityLogController {
         log.info("Dynamic searching activity logs");
         Page<ActivityLogDto> logs = activityLogService.searchActivityLogs(
                 userDetails.getUsername(), category, startDate, endDate, pageable);
+        return ResponseEntity.ok(ApiResponse.success(logs));
+    }
+    
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<Page<UserActivityHistoryDTO>>> getUnifiedHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam(required = false) String searchActivityName,
+            @RequestParam(required = false) BigDecimal minEmission,
+            @RequestParam(required = false) BigDecimal maxEmission,
+            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "DESC") String sortDirection,
+            @PageableDefault(sort = "createdAt") Pageable pageable) {
+            
+        UserActivityHistoryFilterDTO filter = UserActivityHistoryFilterDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .categories(categories)
+                .searchActivityName(searchActivityName)
+                .minEmission(minEmission)
+                .maxEmission(maxEmission)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+                
+        Page<UserActivityHistoryDTO> logs = activityLogService.getUnifiedActivityHistory(userDetails.getUsername(), filter, pageable);
         return ResponseEntity.ok(ApiResponse.success(logs));
     }
 

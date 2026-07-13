@@ -20,6 +20,7 @@ import java.util.Map;
 public class AdminAnalyticsController {
 
     private final AdminAnalyticsService analyticsService;
+    private final com.carbonfootprint.service.admin.AdminOtherAnalyticsService otherAnalyticsService;
 
     // ─── Platform Summary ────────────────────────────────────────
     @GetMapping("/platform")
@@ -143,5 +144,12 @@ public class AdminAnalyticsController {
     public ResponseEntity<ApiResponse<OrganizationAnalyticsResponse>> getOrganizationAnalytics() {
         log.info("Fetching organization analytics");
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getOrganizationAnalytics(), "Organization analytics retrieved"));
+    }
+
+    // ─── Other Activities Analytics ────────────────────────────────
+    @GetMapping("/other-activities")
+    public ResponseEntity<ApiResponse<AdminOtherActivityAnalyticsResponse>> getOtherActivitiesAnalytics(@RequestParam(required = false) Integer year) {
+        log.info("Fetching other activities analytics for year {}", year);
+        return ResponseEntity.ok(ApiResponse.success(otherAnalyticsService.getOtherActivityAnalytics(year), "Other activities analytics retrieved"));
     }
 }

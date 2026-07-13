@@ -96,4 +96,10 @@ export const analyticsApi = {
     const res = await adminAxios.get('/analytics/organizations');
     return res.data.data;
   },
+
+  // Other Activities Analytics
+  getOtherActivityAnalytics: async (year) => {
+    const res = await adminAxios.get('/analytics/other-activities', { params: { year } });
+    return res.data.data;
+  },
 };
