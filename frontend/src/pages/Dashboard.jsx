@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfile } from '../hooks/useProfile';
 import ActivityService from '../services/ActivityService';
+import AnalyticsService from '../services/AnalyticsService';
 import ErrorState from '../components/ErrorState';
+import EnterpriseDistributionChart from '../components/analytics/EnterpriseDistributionChart';
+import EmissionsTrendChart from '../components/analytics/EmissionsTrendChart';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 import { formatActivityType, getActivityIcon } from '../utils/formatters';
 
 const Dashboard = () => {
@@ -11,6 +15,7 @@ const Dashboard = () => {
   const { data: userProfile } = useProfile();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [monthlyData, setMonthlyData] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,54 +24,51 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Fetch stats
-        const statsData = await ActivityService.getDashboardStatistics();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Fetch stats and activities in parallel
+        const [daily, weekly, monthly, activitiesData] = await Promise.all([
+          AnalyticsService.getDailyAnalytics(today),
+          AnalyticsService.getWeeklyAnalytics(today),
+          AnalyticsService.getMonthlyAnalytics(today),
+          ActivityService.getActivities({ page: 0, size: 5, sort: 'logDate,desc' })
+        ]);
         
         // Map the backend structure to our UI structure
         const mappedStats = [
           { 
-            name: 'Total Activities', 
-            value: (statsData?.totalActivities || 0).toString(), 
-            change: 'Lifetime', 
+            name: "Today's Activities", 
+            value: (daily?.totalActivities || 0).toString(), 
+            change: 'Today', 
             trend: 'up',
             icon: ActivityIcon
           },
           { 
-            name: 'Total CO₂ Emissions', 
-            value: `${(statsData?.totalEmissions || 0).toFixed(1)} kg`, 
-            change: 'Lifetime',
+            name: "Today's CO₂ Emissions", 
+            value: `${(daily?.totalEmissions || 0).toFixed(1)} kg`, 
+            change: 'Today',
             trend: 'up',
             icon: CloudIcon
           },
           { 
-            name: 'Monthly Emissions', 
-            value: `${(statsData?.currentMonthEmissions || 0).toFixed(1)} kg`, 
-            change: (statsData?.previousMonthEmissions || 0) > 0 
-              ? `${((((statsData?.currentMonthEmissions || 0) - (statsData?.previousMonthEmissions || 0)) / (statsData?.previousMonthEmissions || 1)) * 100).toFixed(1)}% vs last month`
-              : 'New month started',
-            trend: (statsData?.currentMonthEmissions || 0) >= (statsData?.previousMonthEmissions || 0) ? 'up' : 'down',
-            icon: ChartIcon
-          },
-          { 
             name: 'Weekly Emissions', 
-            value: `${(statsData?.weeklyEmissions || 0).toFixed(1)} kg`, 
+            value: `${(weekly?.totalEmissions || 0).toFixed(1)} kg`, 
             change: 'Past 7 days',
             trend: 'up',
             icon: CloudIcon
           },
           { 
-            name: 'Sustainability Score', 
-            value: (statsData?.sustainabilityScore || 0).toString(), 
-            change: 'Top 20%',
+            name: 'Monthly Emissions', 
+            value: `${(monthly?.totalEmissions || 0).toFixed(1)} kg`, 
+            change: 'This Month',
             trend: 'up',
-            icon: ShieldIcon
-          },
+            icon: ChartIcon
+          }
         ];
+        
         setStats(mappedStats);
-
-        // Fetch recent activities (page 0, size 5)
-        const activitiesData = await ActivityService.getActivities({ page: 0, size: 5, sort: 'logDate,desc' });
-        setRecentActivities(activitiesData.content || []);
+        setMonthlyData(monthly);
+        setRecentActivities(activitiesData?.content || []);
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -85,8 +87,8 @@ const Dashboard = () => {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-8">
             <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-              {[1, 2, 3, 4, 5].map(i => (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map(i => (
                 <div key={i} className="h-32 bg-slate-200 rounded-xl"></div>
               ))}
             </div>
@@ -133,7 +135,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           {stats?.map((stat) => (
             <div key={stat.name} className="bg-white overflow-hidden rounded-2xl border border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
               <div className="p-5">
@@ -160,6 +162,37 @@ const Dashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+            <div className="mb-6">
+              <h3 className="text-base font-semibold text-slate-900">Category Breakdown</h3>
+              <p className="text-sm text-slate-500 mt-1">Your emissions distributed by category this month.</p>
+            </div>
+            <ErrorBoundary>
+              <EnterpriseDistributionChart data={monthlyData?.categoryShares || []} />
+            </ErrorBoundary>
+          </div>
+          
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+            <div className="mb-6">
+              <h3 className="text-base font-semibold text-slate-900">Emissions Trend</h3>
+              <p className="text-sm text-slate-500 mt-1">Your carbon footprint progression this month.</p>
+            </div>
+            <ErrorBoundary>
+              <EmissionsTrendChart
+                data={(monthlyData?.timeline || []).map(pt => ({
+                  label: pt.label,
+                  emissions: Number(pt.emissions || 0)
+                }))}
+                title="Emissions Trend"
+                defaultChartType="labeled"
+                isDaily={false}
+              />
+            </ErrorBoundary>
+          </div>
         </div>
 
         {/* Recent Activities Section */}
