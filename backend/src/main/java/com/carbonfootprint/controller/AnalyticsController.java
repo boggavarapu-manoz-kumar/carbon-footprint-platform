@@ -21,7 +21,7 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    @GetMapping("/daily")
+    @GetMapping({"/daily", "/day"})
     public ResponseEntity<ApiResponse<AnalyticsResponseDto>> getDailyAnalytics(
             Authentication authentication,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -32,7 +32,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getDailyAnalytics(authentication.getName(), date, category)));
     }
 
-    @GetMapping("/weekly")
+    @GetMapping({"/weekly", "/week"})
     public ResponseEntity<ApiResponse<AnalyticsResponseDto>> getWeeklyAnalytics(
             Authentication authentication,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -43,7 +43,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getWeeklyAnalytics(authentication.getName(), date, category)));
     }
 
-    @GetMapping("/monthly")
+    @GetMapping({"/monthly", "/month"})
     public ResponseEntity<ApiResponse<AnalyticsResponseDto>> getMonthlyAnalytics(
             Authentication authentication,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

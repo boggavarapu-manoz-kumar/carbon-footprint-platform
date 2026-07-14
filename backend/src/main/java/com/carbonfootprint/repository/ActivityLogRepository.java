@@ -97,5 +97,29 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     java.util.List<Object[]> getWeeklyBreakdown(
             @org.springframework.data.repository.query.Param("startOfWeek") java.time.LocalDateTime startOfWeek,
             @org.springframework.data.repository.query.Param("endOfWeek") java.time.LocalDateTime endOfWeek);
-}
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT new com.carbonfootprint.dto.FootprintAggregationProjectionDTO(
+            a.logDate,
+            c.name,
+            SUM(a.emissionValue),
+            COUNT(a.id)
+        )
+        FROM ActivityLog a
+        JOIN a.activityType t
+        JOIN t.subCategory sc
+        JOIN sc.category c
+        WHERE a.user.id = :userId
+          AND a.logDate >= :startDate
+          AND a.logDate <= :endDate
+        GROUP BY a.logDate, c.name
+        ORDER BY a.logDate ASC
+    """)
+    java.util.List<com.carbonfootprint.dto.FootprintAggregationProjectionDTO> getOptimizedAggregations(
+        @org.springframework.data.repository.query.Param("userId") Long userId, 
+        @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, 
+        @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate
+    );
 
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.name, a.activityType.subCategory.category.name, SUM(a.emissionValue), COUNT(a) FROM ActivityLog a WHERE a.user.id = :userId GROUP BY a.activityType.name, a.activityType.subCategory.category.name ORDER BY SUM(a.emissionValue) DESC")
+    java.util.List<Object[]> getTopEmissionActivitiesByUser(@org.springframework.data.repository.query.Param("userId") Long userId);
+}

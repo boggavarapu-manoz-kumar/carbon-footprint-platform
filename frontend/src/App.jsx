@@ -31,6 +31,7 @@ const LogElectricity = lazy(() => import('./pages/LogElectricity'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Profile = lazy(() => import('./pages/Profile'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
+const RecommendationCenter = lazy(() => import('./pages/RecommendationCenter'));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -77,6 +78,7 @@ function App() {
                 <Route path="/activity-history" element={<ActivityHistory />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
+                <Route path="/dashboard/recommendations" element={<RecommendationCenter />} />
               </Route>
             </Route>
 

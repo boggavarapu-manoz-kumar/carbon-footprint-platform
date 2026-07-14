@@ -11,9 +11,10 @@ import com.carbonfootprint.repository.UserRepository;
 import com.carbonfootprint.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.concurrent.TimeUnit;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -34,6 +35,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final ActivityLogRepository activityLogRepository;
     private final OtherActivityLogRepository otherActivityLogRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -41,43 +43,102 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analyticsCache", key = "#userEmail + '_daily_' + #date + '_' + #category")
     public AnalyticsResponseDto getDailyAnalytics(String userEmail, LocalDate date, String category) {
         User user = getUserByEmail(userEmail);
+        String cacheKey = "analytics:daily:" + user.getId();
+        
+        AnalyticsResponseDto cachedResponse = null;
+        try {
+            cachedResponse = (AnalyticsResponseDto) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache read for key {}", cacheKey);
+        }
+        
+        if (cachedResponse != null) {
+            log.info("Returning DAILY analytics from Redis cache for user {}", user.getId());
+            return cachedResponse;
+        }
+
         LocalDate startDate = date;
         LocalDate endDate = date;
         LocalDate prevStartDate = date.minusDays(1);
         LocalDate prevEndDate = date.minusDays(1);
 
-        return calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, "Daily - " + date.toString(), true);
+        AnalyticsResponseDto response = calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, "Daily - " + date.toString(), true);
+        
+        try {
+            redisTemplate.opsForValue().set(cacheKey, response, 1, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache write for key {}", cacheKey);
+        }
+        return response;
     }
 
     @Override
-    @Cacheable(value = "analyticsCache", key = "#userEmail + '_weekly_' + #date + '_' + #category")
     public AnalyticsResponseDto getWeeklyAnalytics(String userEmail, LocalDate date, String category) {
         User user = getUserByEmail(userEmail);
+        String cacheKey = "analytics:weekly:" + user.getId();
+        
+        AnalyticsResponseDto cachedResponse = null;
+        try {
+            cachedResponse = (AnalyticsResponseDto) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache read for key {}", cacheKey);
+        }
+
+        if (cachedResponse != null) {
+            log.info("Returning WEEKLY analytics from Redis cache for user {}", user.getId());
+            return cachedResponse;
+        }
+
         LocalDate startDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate endDate = date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
         LocalDate prevStartDate = startDate.minusWeeks(1);
         LocalDate prevEndDate = endDate.minusWeeks(1);
 
-        return calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, "Week of " + startDate.toString(), true);
+        AnalyticsResponseDto response = calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, "Week of " + startDate.toString(), true);
+        
+        try {
+            redisTemplate.opsForValue().set(cacheKey, response, 5, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache write for key {}", cacheKey);
+        }
+        return response;
     }
 
     @Override
-    @Cacheable(value = "analyticsCache", key = "#userEmail + '_monthly_' + #date + '_' + #category")
     public AnalyticsResponseDto getMonthlyAnalytics(String userEmail, LocalDate date, String category) {
         User user = getUserByEmail(userEmail);
+        String cacheKey = "analytics:monthly:" + user.getId();
+        
+        AnalyticsResponseDto cachedResponse = null;
+        try {
+            cachedResponse = (AnalyticsResponseDto) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache read for key {}", cacheKey);
+        }
+
+        if (cachedResponse != null) {
+            log.info("Returning MONTHLY analytics from Redis cache for user {}", user.getId());
+            return cachedResponse;
+        }
+
         LocalDate startDate = date.withDayOfMonth(1);
         LocalDate endDate = date.with(TemporalAdjusters.lastDayOfMonth());
         LocalDate prevStartDate = startDate.minusMonths(1);
         LocalDate prevEndDate = endDate.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
 
-        return calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, date.format(DateTimeFormatter.ofPattern("MMMM yyyy")), true);
+        AnalyticsResponseDto response = calculateAnalytics(user.getId(), startDate, endDate, prevStartDate, prevEndDate, date.format(DateTimeFormatter.ofPattern("MMMM yyyy")), true);
+        
+        try {
+            redisTemplate.opsForValue().set(cacheKey, response, 10, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache write for key {}", cacheKey);
+        }
+        return response;
     }
 
     @Override
-    @Cacheable(value = "analyticsCache", key = "#userEmail + '_yearly_' + #year + '_' + #category")
     public AnalyticsResponseDto getYearlyAnalytics(String userEmail, Integer year, String category) {
         User user = getUserByEmail(userEmail);
         

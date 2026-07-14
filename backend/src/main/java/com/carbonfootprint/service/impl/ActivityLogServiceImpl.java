@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     private final UserActivityMonitorRepositoryCustom userActivityMonitorRepository;
     private final ActivityLogMapper mapper;
     private final com.carbonfootprint.service.EmissionCalculationService calculationService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     @Transactional
@@ -56,7 +58,9 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         
         activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()).getEmission());
         
-        return mapper.toDto(activityLogRepository.save(activityLog));
+        ActivityLogDto savedDto = mapper.toDto(activityLogRepository.save(activityLog));
+        invalidateAnalyticsCache(user.getId());
+        return savedDto;
     }
 
     @Override
@@ -84,6 +88,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         }).collect(Collectors.toList());
         
         List<ActivityLog> savedLogs = activityLogRepository.saveAll(logsToSave);
+        invalidateAnalyticsCache(user.getId());
         return savedLogs.stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
@@ -165,6 +170,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
         if (updated) {
             activityLog = activityLogRepository.save(activityLog);
+            invalidateAnalyticsCache(user.getId());
         }
         return mapper.toDto(activityLog);
     }
@@ -176,6 +182,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());
         activityLogRepository.delete(activityLog);
+        invalidateAnalyticsCache(user.getId());
     }
 
     private User getUserByEmail(String email) {
@@ -186,5 +193,16 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     private ActivityLog findActivityLogOwnedByUser(Long logId, Long userId) {
         return activityLogRepository.findByIdAndUserId(logId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("ActivityLog not found or access denied"));
+    }
+
+    private void invalidateAnalyticsCache(Long userId) {
+        try {
+            redisTemplate.delete("analytics:daily:" + userId);
+            redisTemplate.delete("analytics:weekly:" + userId);
+            redisTemplate.delete("analytics:monthly:" + userId);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache invalidation for user {}", userId);
+        }
+        log.info("Invalidated Redis analytics cache for user {}", userId);
     }
 }
