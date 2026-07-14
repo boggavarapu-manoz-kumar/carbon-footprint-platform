@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class OtherActivityLogServiceImpl implements OtherActivityLogService {
 
     private final OtherActivityLogRepository repository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     @Transactional
@@ -45,6 +47,7 @@ public class OtherActivityLogServiceImpl implements OtherActivityLogService {
                 .build();
 
         OtherActivityLog saved = repository.save(logEntity);
+        invalidateAnalyticsCache(user.getId());
         return mapToDto(saved);
     }
 
@@ -68,7 +71,9 @@ public class OtherActivityLogServiceImpl implements OtherActivityLogService {
     public void deleteOtherActivityLog(Long id, String userEmail) {
         OtherActivityLog logEntity = repository.findByIdAndUserEmail(id, userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("OtherActivityLog not found or access denied"));
+        Long userId = logEntity.getUser().getId();
         repository.delete(logEntity);
+        invalidateAnalyticsCache(userId);
     }
 
     private OtherActivityLogDto mapToDto(OtherActivityLog entity) {
@@ -84,5 +89,16 @@ public class OtherActivityLogServiceImpl implements OtherActivityLogService {
                 .notes(entity.getNotes())
                 .createdAt(entity.getCreatedAt())
                 .build();
+    }
+
+    private void invalidateAnalyticsCache(Long userId) {
+        try {
+            redisTemplate.delete("analytics:daily:" + userId);
+            redisTemplate.delete("analytics:weekly:" + userId);
+            redisTemplate.delete("analytics:monthly:" + userId);
+        } catch (Exception e) {
+            log.warn("Redis is unavailable, skipping cache invalidation for user {}", userId);
+        }
+        log.info("Invalidated Redis analytics cache for user {}", userId);
     }
 }

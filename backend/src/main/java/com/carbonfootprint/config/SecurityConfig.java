@@ -79,16 +79,13 @@ public class SecurityConfig {
 
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/api/v1/admin/auth/**", "/oauth2/**", "/login/oauth2/code/**", "/api/v1/users/check-username", "/api/v1/users/suggest-username", "/error").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/oauth2/code/**", "/api/v1/users/check-username", "/api/v1/users/suggest-username", "/error").permitAll()
                 .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/api/v1/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN", "MODERATOR", "SUPPORT_TEAM", "AUDITOR")
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
-            .addFilterBefore(globalRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(adminJwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(jwtAuthFilter, AdminJwtAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(authEndpoint -> authEndpoint
                     .baseUri("/oauth2/authorization")
