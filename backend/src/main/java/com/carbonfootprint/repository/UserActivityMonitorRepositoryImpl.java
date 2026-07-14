@@ -38,7 +38,7 @@ public class UserActivityMonitorRepositoryImpl implements UserActivityMonitorRep
         cte.append("  JOIN activity_categories c ON sc.category_id = c.id ");
         cte.append("  WHERE u.email = :userEmail ");
         cte.append("  UNION ALL ");
-        cte.append("  SELECT 'OTHER' as logType, o.id as id, o.activity_name as activityName, 'Other Activities' as category, ");
+        cte.append("  SELECT 'OTHER' as logType, o.id as id, o.activity_name as activityName, 'OTHER' as category, ");
         cte.append("         u.email as userEmail, ");
         cte.append("         o.quantity as quantity, o.unit as unit, o.carbon_value as carbonEmission, ");
         cte.append("         o.log_date as logDate, o.log_time as logTime, o.created_at as createdAt ");
