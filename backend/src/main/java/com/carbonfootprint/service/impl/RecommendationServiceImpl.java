@@ -167,7 +167,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             priority = 50;
         }
 
-        String recText = recommendationLibrary.generateRecommendationText(category);
+        String recText = recommendationLibrary.generateRecommendationText(category, emission);
         BigDecimal reductionTarget = recommendationLibrary.getReductionPercentageTarget(category);
         
         BigDecimal monthly = emission.multiply(reductionTarget).setScale(2, java.math.RoundingMode.HALF_UP);
