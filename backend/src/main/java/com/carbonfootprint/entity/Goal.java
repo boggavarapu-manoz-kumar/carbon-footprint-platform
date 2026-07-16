@@ -26,8 +26,34 @@ public class Goal {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "target_emission", nullable = false, precision = 10, scale = 2)
+    @Column(name = "name", nullable = false)
+    private String name = "Default Goal";
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "goal_type", nullable = false)
+    private GoalType goalType = GoalType.TARGET_CARBON_VALUE;
+
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate = LocalDate.now();
+
+    @Column(name = "target_emission", precision = 10, scale = 2)
     private BigDecimal targetEmission;
+
+    @Column(name = "target_reduction_percent", precision = 5, scale = 2)
+    private BigDecimal targetReductionPercent;
+
+    @Column(name = "baseline_emission", precision = 10, scale = 2)
+    private BigDecimal baselineEmission;
+
+    @Column(name = "progress_percent", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal progressPercent = BigDecimal.ZERO;
+
+    @Column(name = "estimated_completion_date")
+    private LocalDate estimatedCompletionDate;
 
     @Column(name = "target_date", nullable = false)
     private LocalDate targetDate;
