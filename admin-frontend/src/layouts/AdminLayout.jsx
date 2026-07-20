@@ -6,27 +6,19 @@ import { Breadcrumbs } from '../components/navigation/Breadcrumbs';
 
 export const AdminLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden w-full">
       {/* Sidebar Navigation */}
       <Sidebar 
         isCollapsed={sidebarCollapsed} 
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        isMobileOpen={mobileMenuOpen}
-        onMobileClose={() => setMobileMenuOpen(false)}
       />
 
       {/* Main Content Wrapper */}
-      <div 
-        className={`
-          flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out
-          ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}
-        `}
-      >
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Top Navbar */}
-        <TopNavbar onMenuClick={() => setMobileMenuOpen(true)} />
+        <TopNavbar />
         
         {/* Breadcrumbs */}
         <Breadcrumbs />

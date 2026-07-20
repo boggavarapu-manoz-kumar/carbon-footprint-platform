@@ -12,7 +12,7 @@ const NAVIGATION = [
   { name: 'System Settings', href: '/settings', icon: Settings, allowedRoles: ['SUPER_ADMIN'] },
 ];
 
-export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }) => {
+export const Sidebar = ({ isCollapsed, onToggleCollapse }) => {
   const location = useLocation();
   const { hasRole } = useAuth();
 
@@ -20,20 +20,10 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isMobileOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-gray-900/80 backdrop-blur-sm lg:hidden transition-opacity" 
-          onClick={onMobileClose}
-          aria-hidden="true"
-        />
-      )}
-
       {/* Sidebar Component */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out
+        relative flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out shrink-0 h-full
         ${isCollapsed ? 'w-20' : 'w-64'}
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
         <div className="flex h-16 shrink-0 items-center justify-between px-6 bg-white border-b border-gray-200">

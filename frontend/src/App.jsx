@@ -26,12 +26,15 @@ const Suspended = lazy(() => import('./pages/Suspended'));
 const OAuth2RedirectHandler = lazy(() => import('./pages/OAuth2RedirectHandler'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const LogActivity = lazy(() => import('./pages/LogActivity'));
 const LogElectricity = lazy(() => import('./pages/LogElectricity'));
-const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Badges = lazy(() => import('./pages/Badges'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Goals = lazy(() => import('./pages/Goals'));
+const GoalDashboard = lazy(() => import('./pages/GoalDashboard'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
-const RecommendationCenter = lazy(() => import('./pages/RecommendationCenter'));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -70,16 +73,20 @@ function App() {
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/analytics" element={<Analytics />} />
-                <Route path="/log-activity" element={<LogActivity />} />
-                <Route path="/log-electricity" element={<LogElectricity />} />
-                <Route path="/activity-history" element={<ActivityHistory />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/complete-profile" element={<CompleteProfile />} />
-                <Route path="/dashboard/recommendations" element={<RecommendationCenter />} />
-              </Route>
+              <Route path="/dashboard" element={<AppLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="activities" element={<ActivityHistory />} />
+          <Route path="activity-history" element={<ActivityHistory />} />
+          <Route path="log-activity" element={<LogActivity />} />
+          <Route path="log-electricity" element={<LogElectricity />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="badges" element={<Badges />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="goals" element={<Goals />} />
+          <Route path="goals/:id" element={<GoalDashboard />} />
+        </Route>
+        <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>
 
             {/* Default Route */}

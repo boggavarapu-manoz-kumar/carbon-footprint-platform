@@ -5,6 +5,7 @@ import ActivityService from '../services/ActivityService';
 import OtherActivityService from '../services/OtherActivityService';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
+import { CheckCircle } from 'lucide-react';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import Bolt from '@mui/icons-material/Bolt';
 import Restaurant from '@mui/icons-material/Restaurant';
@@ -76,6 +77,7 @@ const LogActivity = () => {
   const [calculationBreakdown, setCalculationBreakdown] = useState(null);
   const [calculationError, setCalculationError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedActivity, setSubmittedActivity] = useState(null);
 
   useEffect(() => {
     const fetchCatalog = async () => {
@@ -217,7 +219,7 @@ const LogActivity = () => {
 
     try {
       setIsSubmitting(true);
-      await ActivityService.createActivity({
+      const created = await ActivityService.createActivity({
         activityType: activeActivityType.code,
         quantity: quantity,
         unit: unit,
@@ -225,7 +227,13 @@ const LogActivity = () => {
       });
       await queryClient.invalidateQueries();
       toast.success('Activity logged successfully!');
-      navigate('/activity-history');
+      setSubmittedActivity({
+        emission: created.emissionValue,
+        name: activeActivityType.name,
+        quantity: quantity,
+        unit: unit,
+        date: logDate
+      });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to log activity');
     } finally {
@@ -241,7 +249,7 @@ const LogActivity = () => {
     }
     try {
       setIsSubmitting(true);
-      await OtherActivityService.createLog({
+      const created = await OtherActivityService.createLog({
         activityName: formData.activityName,
         activityDescription: formData.activityDescription,
         quantity: parseFloat(formData.quantity),
@@ -253,7 +261,13 @@ const LogActivity = () => {
       });
       await queryClient.invalidateQueries();
       toast.success('Custom activity logged successfully!');
-      navigate('/activity-history');
+      setSubmittedActivity({
+        emission: created.carbonValue,
+        name: created.activityName,
+        quantity: created.quantity,
+        unit: created.unit,
+        date: created.logDate
+      });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to log custom activity');
     } finally {
@@ -284,6 +298,64 @@ const LogActivity = () => {
 
   if (error) {
     return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  }
+
+  if (submittedActivity) {
+    return (
+      <div className="max-w-3xl mx-auto pb-16 pt-12 px-4 sm:px-6 lg:px-8 animation-fade-in flex flex-col items-center justify-center text-center">
+        <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-xl ring-1 ring-black/5">
+          <CheckCircle className="w-12 h-12 text-green-500" />
+        </div>
+        
+        <h2 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Activity Successfully Logged</h2>
+        <p className="text-slate-500 mb-8 max-w-md">Your carbon footprint has been recalculated and all your goals have been dynamically updated.</p>
+        
+        <div className="w-full bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+          <div className="p-8 pb-6 border-b border-slate-100 flex flex-col items-center">
+            <div className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Total Estimated Impact</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-black tracking-tighter text-slate-900">{submittedActivity.emission?.toFixed(2) || '0.00'}</span>
+              <span className="text-xl font-bold text-slate-400">kg CO₂e</span>
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 p-6 flex flex-col gap-4 text-left">
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Activity</span>
+              <span className="text-slate-900 font-semibold">{submittedActivity.name}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Amount</span>
+              <span className="text-slate-900 font-semibold">{submittedActivity.quantity} {submittedActivity.unit}</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-slate-500 font-medium">Date</span>
+              <span className="text-slate-900 font-semibold">{submittedActivity.date}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <button 
+            onClick={() => {
+              setSubmittedActivity(null);
+              setFormData({});
+              setActiveCategory(null);
+              setSelectedActivityTypeCode('');
+            }}
+            className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex-1 sm:flex-none text-center"
+          >
+            Log Another Activity
+          </button>
+          <button 
+            onClick={() => navigate('/dashboard/activities')}
+            className="px-8 py-4 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-semibold rounded-2xl border border-slate-200 transition-all flex-1 sm:flex-none text-center"
+          >
+            View Activity History
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

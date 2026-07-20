@@ -13,6 +13,12 @@ import java.util.List;
 @Repository
 public interface GoalRepository extends JpaRepository<Goal, Long> {
 
+    List<Goal> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    List<Goal> findByStatus(GoalStatus status);
+
+    List<Goal> findByUserIdAndStatus(Long userId, GoalStatus status);
+
     @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = :status AND g.updatedAt >= :startOfDay AND g.updatedAt <= :endOfDay")
     Long countByStatusAndUpdatedAtBetween(
             @Param("status") GoalStatus status,
