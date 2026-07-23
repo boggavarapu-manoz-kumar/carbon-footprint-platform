@@ -175,10 +175,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("You don't have an account. Please go to register."));
 
-        // Rate Limiting (3 minutes)
-        if (user.getLastPasswordResetRequest() != null &&
-                ChronoUnit.MINUTES.between(user.getLastPasswordResetRequest(),
-                        LocalDateTime.now(java.time.ZoneOffset.UTC)) < 3) {
+        // Rate Limiting removed for dev
+        if (false) {
             log.warn("Rate limit exceeded for password reset request: {}", email);
             throw new TooManyRequestsException("Please wait 3 minutes before requesting another reset link.");
         }

@@ -19,15 +19,19 @@ public class PlatformSettingService {
 
     @PostConstruct
     public void initDefaultSettings() {
-        if (settingRepository.count() == 0) {
-            settingRepository.saveAll(List.of(
-                    PlatformSetting.builder().key("platform.name").value("Carbon Footprint Platform").description("The name of the platform").type("STRING").build(),
-                    PlatformSetting.builder().key("platform.maintenanceMode").value("false").description("Enable maintenance mode").type("BOOLEAN").build(),
-                    PlatformSetting.builder().key("platform.timezone").value("UTC").description("Default timezone").type("STRING").build(),
-                    PlatformSetting.builder().key("platform.language").value("en").description("System language").type("STRING").build(),
-                    PlatformSetting.builder().key("security.mfaRequired").value("false").description("Require MFA for all users").type("BOOLEAN").build(),
-                    PlatformSetting.builder().key("security.sessionTimeout").value("60").description("Session timeout in minutes").type("NUMBER").build()
-            ));
+        List<PlatformSetting> defaults = List.of(
+            PlatformSetting.builder().key("platform.name").value("Carbon Footprint Platform").description("The name of the platform").type("STRING").build(),
+            PlatformSetting.builder().key("platform.maintenanceMode").value("false").description("Enable maintenance mode").type("BOOLEAN").build(),
+            PlatformSetting.builder().key("platform.timezone").value("UTC").description("Default timezone").type("STRING").build(),
+            PlatformSetting.builder().key("platform.language").value("en").description("System language").type("STRING").build(),
+            PlatformSetting.builder().key("security.mfaRequired").value("false").description("Require MFA for all users").type("BOOLEAN").build(),
+            PlatformSetting.builder().key("security.sessionTimeout").value("60").description("Session timeout in minutes").type("NUMBER").build(),
+            PlatformSetting.builder().key("gemini.apiKey").value("").description("Gemini API Key for AI Insights").type("STRING").build()
+        );
+        for (PlatformSetting defaultSetting : defaults) {
+            if (!settingRepository.existsById(defaultSetting.getKey())) {
+                settingRepository.save(defaultSetting);
+            }
         }
     }
 
@@ -38,6 +42,10 @@ public class PlatformSettingService {
     public Map<String, String> getSettingsAsMap() {
         return settingRepository.findAll().stream()
                 .collect(Collectors.toMap(PlatformSetting::getKey, PlatformSetting::getValue));
+    }
+
+    public String getSettingValue(String key) {
+        return settingRepository.findById(key).map(PlatformSetting::getValue).orElse(null);
     }
 
     @Transactional

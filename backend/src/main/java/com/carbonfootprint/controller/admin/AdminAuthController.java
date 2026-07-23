@@ -40,7 +40,7 @@ public class AdminAuthController {
                 .body(loginResponse);
     }
 
-    @PostMapping("/refresh")
+    @RequestMapping(value = "/refresh", method = {RequestMethod.POST, RequestMethod.GET})
     public ResponseEntity<AdminLoginResponse> refresh(
             @CookieValue(value = "admin_refresh_token", required = false) String refreshToken,
             HttpServletRequest httpRequest

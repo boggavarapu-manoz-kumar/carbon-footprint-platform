@@ -52,15 +52,15 @@ const Goals = () => {
   const handleCreateGoal = async (e) => {
     e.preventDefault();
     try {
-      const today = new Date();
-      const targetDate = new Date(today);
+      const startStr = window.goalStartDate || new Date().toISOString().split('T')[0];
+      const targetDate = new Date(startStr);
       targetDate.setDate(targetDate.getDate() + parseInt(periodDays));
 
       const payload = {
         name: goalName,
         description: goalDesc,
         goalType,
-        startDate: today.toISOString().split('T')[0],
+        startDate: startStr,
         targetDate: targetDate.toISOString().split('T')[0],
       };
 
@@ -183,7 +183,17 @@ const Goals = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                  <input 
+                    type="date"
+                    required
+                    value={window.goalStartDate || new Date().toISOString().split('T')[0]}
+                    onChange={e => { window.goalStartDate = e.target.value; setPeriodDays(periodDays); /* force re-render */ }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Time Period</label>
                   <select 
@@ -201,7 +211,7 @@ const Goals = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {goalType === 'PERCENTAGE_REDUCTION' ? 'Target Reduction (%)' : 'Target Carbon Value (kg CO₂e)'}
+                    {goalType === 'PERCENTAGE_REDUCTION' ? 'Target Reduction (%)' : 'Target (kg CO₂e)'}
                   </label>
                   <input 
                     type="number" 
@@ -282,10 +292,6 @@ const Goals = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-slate-900">{goal.progressPercent}%</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Progress</div>
-                  </div>
                 </div>
 
                 {goal.description && (
@@ -293,19 +299,6 @@ const Goals = () => {
                 )}
 
                 <div className="mt-auto space-y-5">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5 text-slate-600 font-medium">
-                      <span>0%</span>
-                      <span>100% Target</span>
-                    </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${barColor} transition-all duration-500`} 
-                        style={{ width: `${Math.min(goal.progressPercent, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-sm">
                     <div>
                       <span className="flex items-center text-slate-500 mb-1 font-medium text-xs uppercase tracking-wider">
@@ -328,11 +321,6 @@ const Goals = () => {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Goal Prediction Widget */}
-                  {!isCompleted && !isFailed && (
-                    <GoalPredictionWidget goalId={goal.id} targetEmission={goal.targetEmission} />
-                  )}
                 </div>
               </div>
             );

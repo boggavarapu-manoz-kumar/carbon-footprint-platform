@@ -4,6 +4,7 @@ import com.carbonfootprint.dto.admin.PlatformSettingsUpdateRequest;
 import com.carbonfootprint.response.ApiResponse;
 import com.carbonfootprint.security.admin.AdminPermissions;
 import com.carbonfootprint.service.admin.PlatformSettingService;
+import com.carbonfootprint.service.impl.GeminiService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class AdminSettingsController {
 
     private final PlatformSettingService settingService;
+    private final GeminiService geminiService;
 
     /**
      * Retrieves all global platform settings as a key→value map from the database.
@@ -33,6 +35,16 @@ public class AdminSettingsController {
         log.info("Fetching all platform settings");
         Map<String, String> settings = settingService.getSettingsAsMap();
         return ResponseEntity.ok(ApiResponse.success(settings, "Settings retrieved successfully"));
+    }
+
+    /**
+     * Retrieves Gemini AI health status.
+     */
+    @GetMapping("/gemini-health")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).SETTINGS_VIEW)")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getGeminiHealth() {
+        log.info("Fetching Gemini AI Health Status");
+        return ResponseEntity.ok(ApiResponse.success(geminiService.getHealthStatus(), "Health retrieved successfully"));
     }
 
     /**

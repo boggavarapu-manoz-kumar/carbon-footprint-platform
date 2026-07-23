@@ -34,6 +34,7 @@ const Badges = lazy(() => import('./pages/Badges'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Goals = lazy(() => import('./pages/Goals'));
 const GoalDashboard = lazy(() => import('./pages/GoalDashboard'));
+const Recommendations = lazy(() => import('./pages/Recommendations'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
 
 // Global Loading Fallback
@@ -85,6 +86,7 @@ function App() {
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="goals" element={<Goals />} />
           <Route path="goals/:id" element={<GoalDashboard />} />
+          <Route path="recommendations" element={<Recommendations />} />
         </Route>
         <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>

@@ -17,7 +17,7 @@ public class GoalEvaluationService {
      * Runs every hour to continuously monitor progress and intelligently determine
      * whether users are on track to achieve their goals using real database data.
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void evaluateAllActiveGoals() {
         log.info("Starting hourly evaluation of active goals...");
         try {

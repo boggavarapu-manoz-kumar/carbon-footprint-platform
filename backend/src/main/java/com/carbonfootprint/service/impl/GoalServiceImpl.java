@@ -282,8 +282,8 @@ public class GoalServiceImpl implements GoalService {
 
     private String mapTypeToCategoryName(GoalType type) {
         switch (type) {
-            case TRANSPORT: return "Transportation";
-            case ELECTRICITY: return "Energy";
+            case TRANSPORT: return "Transport";
+            case ELECTRICITY: return "Home Energy";
             case FOOD: return "Food & Diet";
             case SHOPPING: return "Shopping";
             default: return "Other";
