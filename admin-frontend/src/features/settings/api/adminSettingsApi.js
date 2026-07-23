@@ -25,4 +25,12 @@ export const adminSettingsApi = {
     const { data } = await adminAxios.post('/settings/purge-cache');
     return data;
   },
+
+  /**
+   * Fetch Gemini AI health telemetry.
+   */
+  getGeminiHealth: async () => {
+    const { data } = await adminAxios.get('/settings/gemini-health');
+    return data.data || {};
+  },
 };

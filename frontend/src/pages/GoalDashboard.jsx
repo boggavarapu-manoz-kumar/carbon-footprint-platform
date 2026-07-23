@@ -10,9 +10,16 @@ import {
   CalendarDays, 
   Activity, 
   TrendingUp, 
+  TrendingDown,
+  Minus,
   Clock,
   History,
-  Edit2
+  Edit2,
+  Brain,
+  AlertTriangle,
+  CheckCircle,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
@@ -63,10 +70,9 @@ const GoalDashboard = () => {
 
   // Format data for timeline
   const formattedTimeline = analytics.timeline.map(pt => {
-    const dateObj = new Date(pt.date);
     return {
       ...pt,
-      formattedDate: `${dateObj.getMonth()+1}/${dateObj.getDate()}`
+      displayLabel: pt.label || pt.date
     };
   });
 
@@ -76,7 +82,7 @@ const GoalDashboard = () => {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button 
-            onClick={() => navigate('/dashboard/goals')}
+            onClick={() => navigate('/dashboard')}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -106,7 +112,7 @@ const GoalDashboard = () => {
         {showEdit && <GoalEditModal goal={goal} onClose={() => setShowEdit(false)} onUpdate={refetchGoal} />}
 
         {/* Predictive Engine Widget */}
-        {goal.status !== 'ACHIEVED' && goal.status !== 'FAILED' && goal.status !== 'CANCELLED' && (
+        {goal.status !== 'CANCELLED' && (
           <div className="mb-8">
             <GoalPredictionWidget goalId={goal.id} targetEmission={goal.targetEmission} />
           </div>
@@ -122,7 +128,7 @@ const GoalDashboard = () => {
                 <circle cx="50" cy="50" r="40" className="stroke-slate-100" strokeWidth="8" fill="none" />
                 <circle 
                   cx="50" cy="50" r="40" 
-                  className={`transition-all duration-1500 ease-out ${goal.status === 'FAILED' ? 'stroke-rose-500' : 'stroke-emerald-500'}`} 
+                  className={`transition-all duration-1500 ease-out ${analytics.currentProgress > analytics.targetEmission || goal.status === 'FAILED' ? 'stroke-rose-500' : 'stroke-emerald-500'}`} 
                   strokeWidth="8" fill="none" 
                   strokeDasharray={`${Math.min(analytics.progressPercent, 100) * 2.51} 251`}
                   strokeLinecap="round"
@@ -148,7 +154,10 @@ const GoalDashboard = () => {
               <span className="text-sm text-slate-500 font-semibold">/ {analytics.targetEmission} kg CO₂</span>
             </div>
             <div className="w-full bg-slate-100 h-2 rounded-full mt-5 overflow-hidden z-10">
-              <div className="bg-indigo-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(analytics.progressPercent, 100)}%` }}></div>
+              <div 
+                className={`h-full rounded-full transition-all duration-1000 ease-out ${analytics.currentProgress > analytics.targetEmission ? 'bg-rose-500' : 'bg-indigo-500'}`} 
+                style={{ width: `${Math.min((analytics.currentProgress / Math.max(analytics.targetEmission, 1)) * 100, 100)}%` }}
+              ></div>
             </div>
           </div>
 
@@ -203,7 +212,7 @@ const GoalDashboard = () => {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
-                    dataKey="formattedDate" 
+                    dataKey="displayLabel" 
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} 
@@ -288,22 +297,134 @@ const GoalDashboard = () => {
                   </ResponsiveContainer>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {analytics.categoryShares.map((share, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                        <span className="text-sm font-medium text-slate-700 capitalize">{share.category.replace('_', ' ').toLowerCase()}</span>
+                    <div key={idx} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                          <span className="text-sm font-medium text-slate-700 capitalize">{share.category.replace('_', ' ').toLowerCase()}</span>
+                        </div>
+                        <div className="text-sm font-bold text-slate-900">{share.percentage}%</div>
                       </div>
-                      <div className="text-sm font-semibold text-slate-900">{share.percentage}%</div>
+                      
+                      <div className="flex items-center justify-between pl-5">
+                        <span className="text-xs text-slate-500">{share.emissions} kg CO₂</span>
+                        
+                        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                          share.trend === 'INCREASE' ? 'bg-rose-50 text-rose-600' :
+                          share.trend === 'DECREASE' ? 'bg-emerald-50 text-emerald-600' :
+                          'bg-slate-50 text-slate-500'
+                        }`}>
+                          {share.trend === 'INCREASE' && <TrendingUp className="w-3 h-3" />}
+                          {share.trend === 'DECREASE' && <TrendingDown className="w-3 h-3" />}
+                          {share.trend === 'STABLE' && <Minus className="w-3 h-3" />}
+                          <span>
+                            {share.trend === 'STABLE' ? 'Stable' : 
+                             `${share.trend === 'INCREASE' ? '+' : '-'}${share.trendValue ? share.trendValue.toFixed(2) : '0.00'} kg`}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </>
             )}
           </div>
-
         </div>
+
+        {/* Goal Intelligence Section */}
+        {analytics.intelligence && (
+          <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl border border-indigo-500/30 p-8 shadow-xl relative overflow-hidden mt-8 mb-8">
+            <div className="absolute top-0 right-0 p-12 opacity-10">
+              <Brain className="w-64 h-64 text-indigo-300" />
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-3 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
+                  <Sparkles className="w-6 h-6 text-indigo-300" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight">Goal Intelligence</h2>
+                  <p className="text-indigo-200 text-sm mt-1">AI-powered analytics and dynamic suggestions</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Insights Column */}
+                <div className="space-y-6">
+                  <h3 className="text-sm font-semibold text-indigo-300 uppercase tracking-wider">Key Insights</h3>
+                  
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <AlertTriangle className="w-5 h-5 text-rose-400" />
+                      <span className="text-rose-100 font-medium">Worst Category</span>
+                    </div>
+                    <p className="text-2xl font-bold text-white capitalize">{analytics.intelligence.worstCategory.replace('_', ' ')}</p>
+                    <p className="text-sm text-indigo-200 mt-1">Spiking week-over-week</p>
+                  </div>
+
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      <span className="text-emerald-100 font-medium">Most Improved</span>
+                    </div>
+                    <p className="text-2xl font-bold text-white capitalize">{analytics.intelligence.mostImprovedCategory.replace('_', ' ')}</p>
+                    <p className="text-sm text-indigo-200 mt-1">Dropping week-over-week</p>
+                  </div>
+                </div>
+
+                {/* Priorities Column */}
+                <div className="space-y-6">
+                  <h3 className="text-sm font-semibold text-indigo-300 uppercase tracking-wider">Priority Actions</h3>
+                  
+                  <div className="space-y-3">
+                    {analytics.intelligence.topPriorityActions.map((action, idx) => (
+                      <div key={`top-${idx}`} className="flex items-start gap-3 bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
+                        <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                        <p className="text-sm text-rose-100 leading-relaxed">{action}</p>
+                      </div>
+                    ))}
+                    
+                    {analytics.intelligence.mediumPriorityActions.map((action, idx) => (
+                      <div key={`med-${idx}`} className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                        <Target className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                        <p className="text-sm text-amber-100 leading-relaxed">{action}</p>
+                      </div>
+                    ))}
+
+                    {analytics.intelligence.lowPriorityActions.map((action, idx) => (
+                      <div key={`low-${idx}`} className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
+                        <CheckCircle className="w-5 h-5 text-indigo-300 shrink-0 mt-0.5" />
+                        <p className="text-sm text-indigo-200 leading-relaxed">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Personalized Suggestions Column */}
+                <div className="space-y-6">
+                  <h3 className="text-sm font-semibold text-indigo-300 uppercase tracking-wider">Personalized Suggestions</h3>
+                  
+                  <div className="space-y-4">
+                    {analytics.intelligence.personalizedSuggestions.map((suggestion, idx) => (
+                      <div key={`sug-${idx}`} className="relative bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 rounded-2xl p-6 hover:from-indigo-500/30 hover:to-purple-500/30 transition-colors">
+                        <div className="absolute -top-3 -right-3 bg-indigo-500 rounded-full p-1.5 shadow-lg shadow-indigo-500/50">
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-indigo-50 leading-relaxed text-sm font-medium">
+                          {suggestion}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </ErrorBoundary>
   );

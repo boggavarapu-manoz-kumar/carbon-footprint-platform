@@ -12,9 +12,14 @@ import java.time.LocalDate;
 public class GoalPredictionDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String predictionStatus; // ON_TRACK, SLIGHTLY_BEHIND, BEHIND_SCHEDULE, ACHIEVED, FAILED
-    private LocalDate expectedCompletionDate;
-    private BigDecimal projectedCarbon;
-    private BigDecimal probabilityOfSuccess;
-    private BigDecimal confidenceScore;
+    private BigDecimal currentCarbon;
+    private BigDecimal targetCarbon;
+    private BigDecimal remainingCarbon;
+    private Long daysRemaining;
+    private BigDecimal averageDailyEmission;
+    private BigDecimal averageWeeklyEmission;
+    private BigDecimal currentReductionRate;
+    private BigDecimal projectedFinalCarbon;
+    private LocalDate projectedCompletionDate;
+    private String predictionStatus; // ON_TRACK, AHEAD_OF_SCHEDULE, SLIGHTLY_BEHIND, BEHIND_SCHEDULE, ACHIEVED, FAILED
 }

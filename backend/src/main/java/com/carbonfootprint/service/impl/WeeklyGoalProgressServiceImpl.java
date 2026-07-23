@@ -49,7 +49,7 @@ public class WeeklyGoalProgressServiceImpl implements WeeklyGoalProgressService 
                 .stream().filter(g -> g.getUser().getId().equals(userId))
                 .toList();
         
-        BigDecimal goalTarget = BigDecimal.valueOf(500); // Default placeholder
+        BigDecimal goalTarget;
         if (!activeGoals.isEmpty()) {
             Goal goal = activeGoals.get(0);
             if (goal.getTargetEmission() != null && goal.getTargetEmission().compareTo(BigDecimal.ZERO) > 0) {
@@ -61,7 +61,11 @@ public class WeeklyGoalProgressServiceImpl implements WeeklyGoalProgressService 
                 } else {
                     goalTarget = goal.getTargetEmission();
                 }
+            } else {
+                goalTarget = previousWeekCarbon.multiply(BigDecimal.valueOf(0.9));
             }
+        } else {
+            goalTarget = previousWeekCarbon.multiply(BigDecimal.valueOf(0.9));
         }
 
         BigDecimal weeklyReduction = previousWeekCarbon.subtract(currentWeekCarbon);

@@ -59,6 +59,9 @@ public class EmailServiceImpl implements EmailService {
 
             mailSender.send(message);
             log.info("Password reset HTML email sent successfully to {}", toEmail);
+            log.info("=========================================================================");
+            log.info("PASSWORD RESET LINK (DEV MODE): {}", resetUrl);
+            log.info("=========================================================================");
         } catch (Exception e) {
             log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
             log.info("=========================================================================");

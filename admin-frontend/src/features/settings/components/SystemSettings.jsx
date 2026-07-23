@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminSettingsApi } from '../api/adminSettingsApi';
 import { Toggle } from '../../../components/ui/Toggle';
 import { Button } from '../../../components/ui/Button';
-import { AlertTriangle, Trash2, Loader2, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Trash2, Loader2, CheckCircle, Activity, ServerCrash } from 'lucide-react';
 
 export const SystemSettings = ({ onChange }) => {
   const queryClient = useQueryClient();
@@ -13,6 +13,12 @@ export const SystemSettings = ({ onChange }) => {
   const { data: settings = {}, isLoading } = useQuery({
     queryKey: ['admin', 'settings'],
     queryFn: adminSettingsApi.getSettings,
+  });
+
+  const { data: geminiHealth = {} } = useQuery({
+    queryKey: ['admin', 'gemini-health'],
+    queryFn: adminSettingsApi.getGeminiHealth,
+    refetchInterval: 10000, // Poll every 10 seconds
   });
 
   const updateMutation = useMutation({
@@ -44,6 +50,8 @@ export const SystemSettings = ({ onChange }) => {
       </div>
     );
   }
+
+  const isGeminiOnline = geminiHealth.status === 'ONLINE';
 
   return (
     <div className="space-y-6">
@@ -165,6 +173,68 @@ export const SystemSettings = ({ onChange }) => {
           </div>
         </div>
       )}
+
+      {/* AI Integrations */}
+      <div className="bg-white rounded-xl shadow-sm border border-emerald-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-emerald-50 bg-emerald-50/30 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-medium leading-6 text-gray-900">AI Integration</h3>
+            <p className="mt-1 text-sm text-gray-500">Configure the Gemini AI engine for smart user recommendations.</p>
+          </div>
+          {geminiHealth.status && (
+            <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${isGeminiOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+              {isGeminiOnline ? <Activity className="w-3.5 h-3.5 mr-1" /> : <ServerCrash className="w-3.5 h-3.5 mr-1" />}
+              {isGeminiOnline ? 'Gemini Online & Active' : 'Gemini Offline - Local AI Active'}
+            </div>
+          )}
+        </div>
+
+        {!isGeminiOnline && geminiHealth.status === 'OFFLINE' && (
+          <div className="px-6 py-4 bg-red-50 border-b border-red-100">
+            <h4 className="text-sm font-semibold text-red-800 flex items-center mb-1">
+              <AlertTriangle className="w-4 h-4 mr-1" /> AI Engine Failover Engaged
+            </h4>
+            <div className="text-xs text-red-700 mt-2 space-y-1">
+              <p><span className="font-medium">Reason:</span> {geminiHealth.reason}</p>
+              <p><span className="font-medium">Last Error:</span> {geminiHealth.lastError}</p>
+              <p><span className="font-medium">Time:</span> {new Date(geminiHealth.time).toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 py-6 space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const key = e.target.elements.geminiApiKey.value;
+            updateMutation.mutate({ 'gemini.apiKey': key });
+          }}>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="flex-1 w-full max-w-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gemini API Key
+                </label>
+                <input
+                  type="password"
+                  name="geminiApiKey"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                  placeholder="AIzaSy..."
+                  defaultValue={settings['gemini.apiKey'] || ''}
+                />
+                <p className="mt-2 text-xs text-gray-500">Leave blank to use the static recommendation fallback engine.</p>
+              </div>
+              <Button
+                type="submit"
+                variant="primary"
+                className="bg-emerald-600 hover:bg-emerald-700"
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Save Key
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

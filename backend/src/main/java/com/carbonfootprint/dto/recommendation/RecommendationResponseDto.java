@@ -22,4 +22,10 @@ public class RecommendationResponseDto {
     private BigDecimal reductionPercentageTarget;
     private String difficultyLevel;
     private Integer priorityScore;
+    
+    // Timeframe-based AI Recommendations
+    private String dailyTip;
+    private String weeklyTip;
+    private String monthlyTip;
+    private String yearlyTip;
 }

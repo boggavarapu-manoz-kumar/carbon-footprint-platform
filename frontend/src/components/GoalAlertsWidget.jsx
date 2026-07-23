@@ -51,11 +51,14 @@ const GoalAlertsWidget = () => {
             </div>
             <div className="flex-1">
               <h4 className={`text-sm font-semibold mb-1 ${textColor}`}>
-                {alert.alertType === 'ENCOURAGEMENT' ? 'Encouraging Progress' : 'Goal Correction Needed'}
+                {alert.alertType === 'ENCOURAGEMENT' ? 'Encouraging Progress' :
+                 alert.alertType === 'MILESTONE' ? 'Goal Update' :
+                 alert.alertType === 'WEEKLY_UPDATE' ? 'Weekly Progress' :
+                 'Goal Correction Needed'}
               </h4>
               <p className={`text-sm leading-relaxed ${textColor} opacity-90`}>{alert.message}</p>
             </div>
-            <Link to="/goals" className={`text-xs font-semibold px-3 py-1.5 rounded-lg border bg-white ${textColor} hover:bg-slate-50 transition-colors shadow-sm`}>
+            <Link to="/dashboard/goals" className={`text-xs font-semibold px-3 py-1.5 rounded-lg border bg-white ${textColor} hover:bg-slate-50 transition-colors shadow-sm`}>
               View Goals
             </Link>
           </div>
