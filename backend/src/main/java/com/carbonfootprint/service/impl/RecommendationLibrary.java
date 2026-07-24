@@ -33,32 +33,33 @@ public class RecommendationLibrary {
         if (catLower.contains("transport") || catLower.contains("car") || catLower.contains("vehicle")) {
             BigDecimal kmToReduceMonthly = targetReductionKg.divide(TRANSPORT_CO2_PER_KM, 0, RoundingMode.HALF_UP);
             BigDecimal kmToReduceWeekly = kmToReduceMonthly.divide(new BigDecimal("4"), 0, RoundingMode.HALF_UP);
-            rec.append("Transport contributes ").append(percentageStr).append(" of your monthly emissions. ");
+            rec.append("- Transport contributes ").append(percentageStr).append(" of your monthly emissions. ");
             rec.append("Reducing ").append(kmToReduceWeekly).append(" km of private vehicle travel each week may reduce approximately ");
             rec.append(targetReductionKg).append(" kg CO₂ monthly.");
         } else if (catLower.contains("electricity") || catLower.contains("power") || catLower.contains("energy") || catLower.contains("ac usage")) {
             BigDecimal kwhToReduceMonthly = targetReductionKg.divide(ELECTRICITY_CO2_PER_KWH, 0, RoundingMode.HALF_UP);
             BigDecimal kwhToReduceDaily = kwhToReduceMonthly.divide(new BigDecimal("30"), 0, RoundingMode.HALF_UP);
-            rec.append("Electricity usage contributes ").append(percentageStr).append(" of your footprint. ");
+            rec.append("- Electricity usage contributes ").append(percentageStr).append(" of your footprint. ");
             rec.append("Reducing daily usage by ").append(kwhToReduceDaily).append(" kWh can save approximately ");
             rec.append(targetReductionKg).append(" kg CO₂e monthly.");
         } else if (catLower.contains("food") || catLower.contains("diet") || catLower.contains("meat")) {
             BigDecimal mealsToSwapMonthly = targetReductionKg.divide(FOOD_CO2_PER_MEAL, 0, RoundingMode.HALF_UP);
             BigDecimal mealsToSwapWeekly = mealsToSwapMonthly.divide(new BigDecimal("4"), 0, RoundingMode.HALF_UP);
-            rec.append("Diet choices contribute ").append(percentageStr).append(" of your emissions. ");
+            rec.append("- Diet choices contribute ").append(percentageStr).append(" of your emissions. ");
             rec.append("Swapping ").append(mealsToSwapWeekly).append(" meat-heavy meals to plant-based per week could prevent ");
             rec.append(targetReductionKg).append(" kg CO₂e this month.");
         } else if (catLower.contains("flight") || catLower.contains("air")) {
-            rec.append("Air travel constitutes ").append(percentageStr).append(" of your footprint. ");
+            rec.append("- Air travel constitutes ").append(percentageStr).append(" of your footprint. ");
             rec.append("Replacing 1 short-haul flight with train travel or virtual meetings can reduce approximately ");
             rec.append(FLIGHT_CO2_PER_SHORT_HAUL).append(" kg CO₂e.");
         } else {
-            rec.append("This activity contributes ").append(percentageStr).append(" of your footprint. ");
+            rec.append("- This activity contributes ").append(percentageStr).append(" of your footprint. ");
             rec.append("A ").append(reductionTarget.multiply(new BigDecimal("100")).setScale(0, RoundingMode.HALF_UP)).append("% reduction ");
             rec.append("will save ").append(targetReductionKg).append(" kg CO₂e monthly.");
         }
 
         // Weave in Goal context if applicable
+        String goalContext = "Continue tracking your activities to establish a baseline.";
         for (Goal goal : activeGoals) {
             if (goal.getName().toLowerCase().contains(catLower) || (goal.getDescription() != null && goal.getDescription().toLowerCase().contains(catLower))) {
                 
@@ -79,21 +80,25 @@ public class RecommendationLibrary {
                     }
                 }
 
-                rec.append("\n\nYou are currently at ").append(goal.getProgressPercent() != null ? goal.getProgressPercent().setScale(0, RoundingMode.HALF_UP) : 0)
-                   .append("% of your '").append(goal.getName()).append("' goal. ");
+                String progressStr = goal.getProgressPercent() != null ? goal.getProgressPercent().setScale(0, RoundingMode.HALF_UP).toString() : "0";
                 
                 if (trajectoryStatus.equals("AHEAD")) {
-                    rec.append("You are currently AHEAD of schedule! Keep up the excellent work and maintain these positive habits.");
+                    goalContext = "You are currently AHEAD of schedule (" + progressStr + "%) on your '" + goal.getName() + "' goal. Keep up the excellent work!";
                 } else if (trajectoryStatus.equals("ON TRACK")) {
-                    rec.append("You are perfectly ON TRACK. Continue optimizing your routine to hit your target smoothly.");
+                    goalContext = "You are perfectly ON TRACK (" + progressStr + "%) for your '" + goal.getName() + "' goal. Continue optimizing your routine.";
                 } else if (trajectoryStatus.equals("BEHIND")) {
-                    rec.append("You are currently BEHIND schedule. Immediate corrective action in this area is recommended to get back on track.");
+                    goalContext = "You are currently BEHIND schedule (" + progressStr + "%) on your '" + goal.getName() + "' goal. Immediate action is recommended.";
                 } else if (trajectoryStatus.equals("FAILED")) {
-                    rec.append("This goal has FAILED. It is highly recommended to implement a strict recovery plan to prevent further overages.");
+                    goalContext = "Your '" + goal.getName() + "' goal has FAILED. Implement a strict recovery plan to prevent further overages.";
                 }
                 break;
             }
         }
+        
+        rec.append("\n- ").append(goalContext);
+        rec.append("\n- Monitor your daily patterns and identify peak emission activities.");
+        rec.append("\n- Review alternative sustainable options available in your local area.");
+        rec.append("\n- Set micro-goals to steadily decrease your footprint week over week.");
 
         return rec.toString();
     }

@@ -131,10 +131,15 @@ const Recommendations = () => {
                     </div>
                   </div>
 
-                  <div className="flex-grow relative z-10 mb-8 flex items-center">
-                    <p className="text-slate-700 leading-relaxed text-lg font-medium">
-                      {tipContent || rec.recommendation}
-                    </p>
+                  <div className="flex-grow relative z-10 mb-8 flex items-start">
+                    <ul className="space-y-4">
+                      {(tipContent || rec.recommendation).split('\n').filter(line => line.trim().length > 0).map((line, idx) => (
+                        <li key={idx} className="flex gap-3 text-slate-700 leading-relaxed text-base font-medium">
+                          <Zap className={`w-5 h-5 flex-shrink-0 mt-0.5 ${iconColor.split(' ')[0]}`} />
+                          <span>{line.replace(/^[-*]\s*/, '')}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   <div className="mt-auto relative z-10 pt-6 border-t border-slate-100 flex items-center justify-between">
@@ -163,9 +168,17 @@ const Recommendations = () => {
              </div>
              <div className="space-y-3">
                {recommendations.map((rec, idx) => (
-                 <p key={idx} className="text-slate-600 text-sm">
-                   <span className="font-bold capitalize text-slate-700">{rec.activity}:</span> {rec.recommendation}
-                 </p>
+                 <div key={idx} className="text-slate-600 text-sm mb-4">
+                   <div className="font-bold capitalize text-slate-700 mb-2">{rec.activity}:</div>
+                   <ul className="space-y-2 pl-2">
+                     {(rec.recommendation || '').split('\n').filter(line => line.trim().length > 0).map((line, lIdx) => (
+                       <li key={lIdx} className="flex gap-2 items-start">
+                         <span className="text-indigo-400 mt-0.5">•</span>
+                         <span>{line.replace(/^[-*]\s*/, '')}</span>
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
                ))}
              </div>
           </div>

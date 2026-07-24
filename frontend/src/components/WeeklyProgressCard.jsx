@@ -52,20 +52,25 @@ const WeeklyProgressCard = () => {
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
           <Target className="w-5 h-5 text-emerald-600" />
-          Current Goal Progress
+          Weekly Performance
         </h3>
-        <span className="text-sm font-bold text-slate-900">{progressPercent.toFixed(1)}%</span>
       </div>
-
-      <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden">
-        <div 
-          className={`h-full ${progressColor} transition-all duration-1000 ease-out`}
-          style={{ width: `${Math.min(progressPercent, 100)}%` }}
-        />
+      
+      <div className="flex items-end gap-3 mb-2">
+        <span className="text-4xl font-bold text-slate-900">{currentWeekCarbon.toFixed(1)} <span className="text-lg font-medium text-slate-500">kg CO₂</span></span>
       </div>
-      <p className="text-sm text-slate-500 mt-3 text-center flex items-center justify-center gap-1">
-        Click to view detailed goal projection and intelligence <span aria-hidden="true">&rarr;</span>
-      </p>
+      
+      {isImproving ? (
+        <p className="text-sm text-emerald-600 flex items-center gap-1 font-medium">
+          <TrendingDown className="w-4 h-4" />
+          Down {Math.abs(weeklyImprovementPercent).toFixed(1)}% from last week
+        </p>
+      ) : (
+        <p className="text-sm text-rose-600 flex items-center gap-1 font-medium">
+          <TrendingUp className="w-4 h-4" />
+          Up {Math.abs(weeklyImprovementPercent).toFixed(1)}% from last week
+        </p>
+      )}
     </div>
   );
 };

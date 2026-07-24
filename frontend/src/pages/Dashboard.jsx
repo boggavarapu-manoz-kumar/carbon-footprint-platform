@@ -12,7 +12,9 @@ import { formatActivityType, getActivityIcon } from '../utils/formatters';
 import RecommendationService from '../services/RecommendationService';
 import { CheckCircle2 } from 'lucide-react';
 import WeeklyProgressCard from '../components/WeeklyProgressCard';
-import GoalAlertsWidget from '../components/GoalAlertsWidget';
+
+import AchievementBanner from '../components/AchievementBanner';
+import FailureBanner from '../components/FailureBanner';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -139,18 +141,23 @@ const Dashboard = () => {
             <p className="mt-1 text-sm text-slate-500">Here's your carbon footprint overview for today.</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => navigate('/log-activity')} className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+            <button onClick={() => navigate('/dashboard/log-activity')} className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               Log Activity
             </button>
-            <button onClick={() => navigate('/activity-history')} className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+            <button onClick={() => navigate('/dashboard/activity-history')} className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
               View History
             </button>
           </div>
         </div>
 
-        {/* Goal Alerts Widget */}
-        <GoalAlertsWidget />
+        {/* Achievement Banner */}
+        <AchievementBanner />
+        
+        {/* Failure Banner */}
+        <FailureBanner />
+
+        {/* Removed Goal Alerts Widget as per user request */}
 
         {/* Weekly Progress Card */}
         <div className="mb-8">
@@ -222,7 +229,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
             <h3 className="text-base font-semibold leading-6 text-slate-900">Recent Activities</h3>
-            <button onClick={() => navigate('/activity-history')} className="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all</button>
+            <button onClick={() => navigate('/dashboard/activity-history')} className="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all</button>
           </div>
           <div className="divide-y divide-slate-100">
             {recentActivities.length === 0 ? (
@@ -231,7 +238,7 @@ const Dashboard = () => {
                 <h3 className="text-sm font-medium text-slate-900">No activities</h3>
                 <p className="mt-1 text-sm text-slate-500">Get started by logging your first activity.</p>
                 <div className="mt-6">
-                  <button onClick={() => navigate('/log-activity')} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
+                  <button onClick={() => navigate('/dashboard/log-activity')} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
                     Log Activity
                   </button>
                 </div>

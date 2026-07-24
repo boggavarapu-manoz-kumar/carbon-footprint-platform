@@ -35,4 +35,19 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
             @Param("status") GoalStatus status,
             @Param("startOfWeek") LocalDateTime startOfWeek,
             @Param("endOfWeek") LocalDateTime endOfWeek);
+
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'COMPLETED'")
+    Long countTotalCompleted();
+
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'FAILED'")
+    Long countTotalFailed();
+
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'IN_PROGRESS' AND g.targetDate >= :today AND g.targetDate <= :nextWeek")
+    Long countNearDeadline(
+            @Param("today") java.time.LocalDate today,
+            @Param("nextWeek") java.time.LocalDate nextWeek);
+
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'IN_PROGRESS' AND g.targetDate < :today")
+    Long countOverdue(
+            @Param("today") java.time.LocalDate today);
 }

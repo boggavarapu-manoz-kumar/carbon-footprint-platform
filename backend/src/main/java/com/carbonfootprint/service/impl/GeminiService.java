@@ -27,8 +27,11 @@ import com.carbonfootprint.service.admin.PlatformSettingService;
 @Slf4j
 public class GeminiService {
 
-    @Value("${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent}")
+    @Value("${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent}")
     private String geminiApiUrl;
+
+    @Value("${GEMINI_API_KEY:}")
+    private String envApiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper;
@@ -51,10 +54,11 @@ public class GeminiService {
     }
 
     public String generateAIResponse(String prompt) {
-        String geminiApiKey = platformSettingService.getSettingValue("gemini.apiKey");
+        String dbApiKey = platformSettingService.getSettingValue("gemini.apiKey");
+        String geminiApiKey = (dbApiKey != null && !dbApiKey.trim().isEmpty()) ? dbApiKey : envApiKey;
         
         if (geminiApiKey == null || geminiApiKey.trim().isEmpty()) {
-            log.warn("GEMINI_API_KEY is not configured in settings. Falling back to local generation.");
+            log.warn("GEMINI_API_KEY is not configured in settings or environment. Falling back to local generation.");
             return null;
         }
 

@@ -92,6 +92,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             checkCacheOrNeed(user.getId(), category, "WEEKLY", lastWeeklyActivity, needed, cachedTips.get(category));
             checkCacheOrNeed(user.getId(), category, "MONTHLY", lastMonthlyActivity, needed, cachedTips.get(category));
             checkCacheOrNeed(user.getId(), category, "YEARLY", lastYearlyActivity, needed, cachedTips.get(category));
+            checkCacheOrNeed(user.getId(), category, "MAIN", lastMonthlyActivity, needed, cachedTips.get(category));
 
             if (!needed.isEmpty()) {
                 neededTips.put(category, needed);
@@ -157,13 +158,15 @@ public class RecommendationServiceImpl implements RecommendationService {
 
 
                 prompt.append("\nGenerate ONLY the requested timeframe recommendations for the categories listed below. ");
-                prompt.append("Never generate duplicate recommendations. Always generate personalized, actionable tips mathematically linked to their footprint and goals.\n");
+                prompt.append("Never generate duplicate recommendations. ALWAYS make sure the Overall Context (recommendationText), Daily, Weekly, Monthly, and Yearly tips are COMPLETELY DIFFERENT from each other.\n");
+                prompt.append("CRITICAL: For each timeframe AND recommendationText, generate EXACTLY 5 distinct, highly actionable bullet points. Format the points as a single text block with each point on a new line starting with a '-' character.\n");
                 prompt.append("Requested Tips:\n");
                 for (java.util.Map.Entry<String, List<String>> entry : neededTips.entrySet()) {
                     prompt.append("- ").append(entry.getKey()).append(": ").append(String.join(", ", entry.getValue())).append("\n");
                 }
 
-                prompt.append("\nFormat STRICTLY as a JSON array where each object has 'category', 'recommendationText' (a main overarching analysis), and the requested timeframe tips ('dailyTip', 'weeklyTip', 'monthlyTip', 'yearlyTip' - only include the ones requested). Do NOT wrap in markdown block.");
+                prompt.append("\nFormat STRICTLY as a JSON array where each object has 'category', 'recommendationText' (a main overarching analysis), and the requested timeframe tips ('dailyTip', 'weeklyTip', 'monthlyTip', 'yearlyTip' - only include the ones requested). Do NOT wrap in markdown block. Return ONLY the raw JSON string.\n");
+                prompt.append("Example format:\n[\n  {\n    \"category\": \"Category Name\",\n    \"recommendationText\": \"- Point 1\\n- Point 2\\n- Point 3\\n- Point 4\\n- Point 5\",\n    \"dailyTip\": \"- Point 1\\n- Point 2\\n- Point 3\\n- Point 4\\n- Point 5\"\n  }\n]");
 
                 String aiResponse = geminiService.generateAIResponse(prompt.toString());
                 if (aiResponse != null && !aiResponse.trim().isEmpty()) {
@@ -218,7 +221,21 @@ public class RecommendationServiceImpl implements RecommendationService {
         java.util.Optional<com.carbonfootprint.entity.RecommendationCache> cacheOpt = recommendationCacheRepository.findByUserIdAndCategoryAndTimeframe(userId, category, timeframe);
         if (cacheOpt.isPresent()) {
             com.carbonfootprint.entity.RecommendationCache cache = cacheOpt.get();
-            if (lastActivity == null || (cache.getLastActivityDate() != null && !lastActivity.isAfter(cache.getLastActivityDate()))) {
+            boolean isExpired = false;
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            if ("DAILY".equals(timeframe) && cache.getUpdatedAt() != null && cache.getUpdatedAt().isBefore(now.minusHours(6))) {
+                isExpired = true;
+            } else if ("WEEKLY".equals(timeframe) && cache.getUpdatedAt() != null && cache.getUpdatedAt().isBefore(now.minusDays(7))) {
+                isExpired = true;
+            } else if ("MONTHLY".equals(timeframe) && cache.getUpdatedAt() != null && cache.getUpdatedAt().isBefore(now.minusDays(30))) {
+                isExpired = true;
+            } else if ("YEARLY".equals(timeframe) && cache.getUpdatedAt() != null && cache.getUpdatedAt().isBefore(now.minusDays(365))) {
+                isExpired = true;
+            } else if ("MAIN".equals(timeframe) && cache.getUpdatedAt() != null && cache.getUpdatedAt().isBefore(now.minusDays(30))) {
+                isExpired = true;
+            }
+
+            if (!isExpired && (lastActivity == null || (cache.getLastActivityDate() != null && !lastActivity.isAfter(cache.getLastActivityDate())))) {
                 cachedTips.put(timeframe, cache.getTipText());
                 return;
             }

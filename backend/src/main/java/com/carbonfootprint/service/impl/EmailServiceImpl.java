@@ -1,72 +1,79 @@
 package com.carbonfootprint.service.impl;
 
 import com.carbonfootprint.service.EmailService;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
-
-import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
-    private final ResourceLoader resourceLoader;
+    private final com.carbonfootprint.repository.EmailLogRepository emailLogRepository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    @Value("${app.frontend.url:http://localhost:5174}")
+    @Value("${app.frontend.url:http://localhost:5173}")
     private String frontendUrl;
 
-    @Value("${spring.mail.username:}")
-    private String mailUsername;
+    private void enqueueEmail(String toEmail, String subject, String templateName, java.util.Map<String, Object> emailData) {
+        try {
+            Long goalId = null;
+            if (emailData != null && emailData.containsKey("goalId")) {
+                Object gid = emailData.get("goalId");
+                if (gid instanceof Number) {
+                    goalId = ((Number) gid).longValue();
+                } else if (gid instanceof String) {
+                    try { goalId = Long.parseLong((String) gid); } catch (NumberFormatException ignored) {}
+                }
+            }
+            
+            String payload = emailData != null ? objectMapper.writeValueAsString(emailData) : "{}";
+
+            com.carbonfootprint.entity.EmailLog emailLog = com.carbonfootprint.entity.EmailLog.builder()
+                    .toEmail(toEmail)
+                    .subject(subject)
+                    .templateName(templateName)
+                    .status("QUEUED")
+                    .trackingId(java.util.UUID.randomUUID().toString())
+                    .goalId(goalId)
+                    .payloadData(payload)
+                    .build();
+            emailLogRepository.save(emailLog);
+            log.info("Email queued successfully for {} using template {}", toEmail, templateName);
+        } catch (Exception e) {
+            log.error("Failed to enqueue email: {}", e.getMessage());
+        }
+    }
 
     @Override
-    @Async
     public void sendPasswordResetEmail(String toEmail, String token) {
         String resetUrl = frontendUrl + "/reset-password?token=" + token;
+        enqueueEmail(toEmail, "Password Reset Request - Carbon Footprint Platform", "password-reset", java.util.Map.of("resetLink", resetUrl));
+    }
 
-        log.info("Sending HTML password reset email to: {}", toEmail);
+    @Override
+    public void sendGoalNotificationEmail(String toEmail, String title, java.util.Map<String, Object> emailData) {
+        String subject = title + " - Carbon Footprint Platform";
+        enqueueEmail(toEmail, subject, "goal-notification", emailData);
+    }
 
-        if (mailUsername == null || mailUsername.isEmpty() || mailUsername.equals("your-email@example.com")) {
-            log.warn("SMTP credentials not fully configured. Email was not actually sent via network.");
-            log.info("=========================================================================");
-            log.info("PASSWORD RESET LINK: {}", resetUrl);
-            log.info("=========================================================================");
-            return;
-        }
+    @Override
+    public void sendGoalCompletedEmail(String toEmail, String title, java.util.Map<String, Object> emailData) {
+        String subject = title + " - Carbon Footprint Platform";
+        enqueueEmail(toEmail, subject, "goal-completed", emailData);
+    }
 
-        try {
-            Resource resource = resourceLoader.getResource("classpath:templates/password-reset.html");
-            String htmlTemplate = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-            String htmlContent = htmlTemplate.replace("{{RESET_LINK}}", resetUrl);
+    @Override
+    public void sendGoalFailedEmail(String toEmail, String title, java.util.Map<String, Object> emailData) {
+        String subject = title + " - Carbon Footprint Platform";
+        enqueueEmail(toEmail, subject, "goal-failed", emailData);
+    }
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(mailUsername);
-            helper.setTo(toEmail);
-            helper.setSubject("Password Reset Request - Carbon Footprint Platform");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            log.info("Password reset HTML email sent successfully to {}", toEmail);
-            log.info("=========================================================================");
-            log.info("PASSWORD RESET LINK (DEV MODE): {}", resetUrl);
-            log.info("=========================================================================");
-        } catch (Exception e) {
-            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
-            log.info("=========================================================================");
-            log.info("PASSWORD RESET LINK (FALLBACK): {}", resetUrl);
-            log.info("=========================================================================");
-        }
+    @Override
+    public void sendGoalCreatedEmail(String toEmail, String title, java.util.Map<String, Object> emailData) {
+        String subject = title + " - Carbon Footprint Platform";
+        enqueueEmail(toEmail, subject, "goal-created", emailData);
     }
 }

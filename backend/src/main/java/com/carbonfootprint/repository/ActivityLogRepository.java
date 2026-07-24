@@ -127,4 +127,12 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     java.util.List<Object[]> getTopEmissionActivitiesByUser(@org.springframework.data.repository.query.Param("userId") Long userId);
     @org.springframework.data.jpa.repository.Query("SELECT MAX(a.createdAt) FROM ActivityLog a WHERE a.user.id = :userId AND a.logDate >= :startDate AND a.logDate <= :endDate")
     java.time.LocalDateTime getMaxCreatedAtByUserIdAndDateRange(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    // --- BENCHMARKING QUERIES ---
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> sumEmissionsGroupedByUserAndDateRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.name, a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.name, a.user.id")
+    java.util.List<Object[]> sumEmissionsGroupedByCategoryAndUserAndDateRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 }

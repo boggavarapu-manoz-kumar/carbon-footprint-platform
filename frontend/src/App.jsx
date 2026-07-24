@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 import { Toaster } from 'react-hot-toast';
@@ -36,6 +37,7 @@ const Goals = lazy(() => import('./pages/Goals'));
 const GoalDashboard = lazy(() => import('./pages/GoalDashboard'));
 const Recommendations = lazy(() => import('./pages/Recommendations'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
+const Benchmarking = lazy(() => import('./pages/Benchmarking'));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -49,6 +51,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
+          <NotificationProvider>
         <Toaster 
           position="top-right"
           toastOptions={{
@@ -87,6 +90,7 @@ function App() {
           <Route path="goals" element={<Goals />} />
           <Route path="goals/:id" element={<GoalDashboard />} />
           <Route path="recommendations" element={<Recommendations />} />
+          <Route path="benchmarking" element={<Benchmarking />} />
         </Route>
         <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>
@@ -96,6 +100,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+          </NotificationProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>
