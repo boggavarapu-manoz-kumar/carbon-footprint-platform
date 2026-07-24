@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Goal Created</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #374151; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #F3F4F6; }
+        .container { background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #059669 0%, #10B981 100%); padding: 40px 20px; text-align: center; color: white; }
+        .header-icon { font-size: 48px; margin-bottom: 10px; line-height: 1; }
+        h1 { color: #ffffff; font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+        .content { padding: 40px 30px; }
+        p { font-size: 16px; color: #4B5563; margin-top: 0; margin-bottom: 24px; }
+        .greeting { font-size: 20px; font-weight: 600; color: #111827; }
+        .data-card { background-color: #F9FAFB; padding: 24px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #E5E7EB; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
+        .data-row:last-child { margin-bottom: 0; }
+        .data-label { font-weight: 600; color: #6B7280; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .data-value { font-weight: 700; color: #111827; font-size: 16px; text-align: right; }
+        .badge { background-color: #D1FAE5; color: #065F46; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 600; }
+        .btn-container { text-align: center; margin-top: 40px; }
+        .btn { display: inline-block; padding: 14px 32px; background-color: #10B981; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25); transition: background-color 0.2s; }
+        .btn:hover { background-color: #059669; }
+        .footer { text-align: center; font-size: 13px; color: #9CA3AF; padding: 30px; background-color: #F9FAFB; border-top: 1px solid #F3F4F6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">🎯</div>
+            <h1>New Goal Activated!</h1>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Hi {{userName}},</p>
+            <p>You have successfully launched a new carbon reduction goal. Every great environmental journey begins with a target, and you've just taken a massive step forward.</p>
+            
+            <div class="data-card">
+                <div class="data-row">
+                    <span class="data-label">Goal Target</span>
+                    <span class="data-value">{{goalName}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Emission Cap</span>
+                    <span class="badge">{{targetEmissions}}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Target Date</span>
+                    <span class="data-value">{{targetDate}}</span>
+                </div>
+            </div>
+
+            <p>Our platform is now actively monitoring your progress. Make sure to log your activities regularly to ensure you stay on track!</p>
+            
+            <div class="btn-container">
+                <a href="{{actionLink}}" class="btn">View My Dashboard</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Carbon Footprint Platform &copy; 2026<br>Making the world greener, one goal at a time.</p>
+        </div>
+    </div>
+</body>
+</html>

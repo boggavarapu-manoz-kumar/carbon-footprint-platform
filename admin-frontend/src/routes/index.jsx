@@ -17,6 +17,7 @@ const SettingsLayout = React.lazy(() => import('../features/settings/components/
 const AdminAnalytics = React.lazy(() => import('../features/analytics/components/AdminAnalytics').then(module => ({ default: module.AdminAnalytics })));
 const SuspensionsPage = React.lazy(() => import('../features/suspensions/components/SuspensionsPage'));
 const ActivityMonitor = React.lazy(() => import('../features/activities/components/ActivityMonitor'));
+const AdminGoalMonitor = React.lazy(() => import('../features/goals/components/AdminGoalMonitor').then(m => ({ default: m.AdminGoalMonitor })));
 
 /**
  * If a password-reset email link accidentally points to the admin port,
@@ -137,6 +138,16 @@ export const router = createBrowserRouter([
               <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'AUDITOR']}>
                 <Suspense fallback={<PageLoader />}>
                   <ActivityMonitor />
+                </Suspense>
+              </RoleRoute>
+            ),
+          },
+          {
+            path: '/goals',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'AUDITOR']}>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminGoalMonitor />
                 </Suspense>
               </RoleRoute>
             ),

@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public class PlatformSettingService {
 
     private final PlatformSettingRepository settingRepository;
+    private final com.carbonfootprint.repository.RecommendationCacheRepository recommendationCacheRepository;
 
     @PostConstruct
     public void initDefaultSettings() {
@@ -60,7 +61,7 @@ public class PlatformSettingService {
 
     @Transactional
     public void purgeCache() {
-        // Mocking cache purge operation
-        System.out.println("Executing system cache purge...");
+        System.out.println("Executing system cache purge... Deleting AI Recommendation Cache.");
+        recommendationCacheRepository.deleteAll();
     }
 }

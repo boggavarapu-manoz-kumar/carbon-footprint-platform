@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity } from 'lucide-react';
+import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity, Target } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 
 const NAVIGATION = [
@@ -7,6 +7,7 @@ const NAVIGATION = [
   { name: 'User Management', href: '/users', icon: Users, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT'] },
   { name: 'Suspensions', href: '/suspensions', icon: Ban, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'] },
   { name: 'Activity Monitor', href: '/activities', icon: Activity, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
+  { name: 'Goal Monitoring', href: '/goals', icon: Target, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert, allowedRoles: ['SUPER_ADMIN', 'AUDITOR'] },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'System Settings', href: '/settings', icon: Settings, allowedRoles: ['SUPER_ADMIN'] },

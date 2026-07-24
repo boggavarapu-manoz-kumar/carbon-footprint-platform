@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal Notification</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #374151; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #F3F4F6; }
+        .container { background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); padding: 40px 20px; text-align: center; color: white; position: relative; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; position: relative; z-index: 2; }
+        .content { padding: 40px 30px; }
+        .greeting { font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 20px; }
+        .notification-title { font-size: 20px; font-weight: 700; color: #4F46E5; margin: 0 0 15px 0; }
+        .notification-desc { font-size: 16px; color: #4B5563; margin-bottom: 25px; }
+        .stats-box { background-color: #F9FAFB; border: 1px solid #E5E7EB; border-left: 4px solid #6366F1; padding: 24px; border-radius: 8px; margin-bottom: 30px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; }
+        .stat-row:last-child { margin-bottom: 0; }
+        .stat-label { font-weight: 600; color: #6B7280; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
+        .stat-value { font-weight: 700; color: #111827; }
+        .recommendation { background-color: #EEF2FF; border-left: 4px solid #4F46E5; padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 35px; color: #4338CA; font-size: 15px; }
+        .recommendation strong { display: block; margin-bottom: 8px; color: #3730A3; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .action-button-container { text-align: center; margin-bottom: 10px; }
+        .action-button { display: inline-block; background-color: #4F46E5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25); transition: background-color 0.2s; }
+        .action-button:hover { background-color: #4338CA; }
+        .footer { text-align: center; font-size: 13px; color: #9CA3AF; padding: 30px; background-color: #F9FAFB; border-top: 1px solid #F3F4F6; }
+        
+        /* Priority colors */
+        .priority-SUCCESS .header { background: linear-gradient(135deg, #059669 0%, #10B981 100%); }
+        .priority-SUCCESS .notification-title { color: #059669; }
+        .priority-SUCCESS .stats-box { border-left-color: #10B981; }
+        .priority-SUCCESS .recommendation { background-color: #ECFDF5; border-left-color: #10B981; color: #065F46; }
+        .priority-SUCCESS .action-button { background-color: #10B981; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25); }
+        .priority-SUCCESS .action-button:hover { background-color: #059669; }
+
+        .priority-WARNING .header { background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%); }
+        .priority-WARNING .notification-title { color: #D97706; }
+        .priority-WARNING .stats-box { border-left-color: #F59E0B; }
+        .priority-WARNING .recommendation { background-color: #FFFBEB; border-left-color: #F59E0B; color: #92400E; }
+        .priority-WARNING .action-button { background-color: #F59E0B; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.25); }
+        .priority-WARNING .action-button:hover { background-color: #D97706; }
+
+        .priority-FAILURE .header { background: linear-gradient(135deg, #E11D48 0%, #F43F5E 100%); }
+        .priority-FAILURE .notification-title { color: #E11D48; }
+        .priority-FAILURE .stats-box { border-left-color: #F43F5E; }
+        .priority-FAILURE .recommendation { background-color: #FFF1F2; border-left-color: #F43F5E; color: #9F1239; }
+        .priority-FAILURE .action-button { background-color: #F43F5E; box-shadow: 0 4px 6px rgba(244, 63, 94, 0.25); }
+        .priority-FAILURE .action-button:hover { background-color: #E11D48; }
+    </style>
+</head>
+<body class="priority-{{priority}}">
+    <div class="container">
+        <div class="header">
+            <h1>Carbon Footprint Platform</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hi {{userName}},</div>
+            
+            <h2 class="notification-title">{{title}}</h2>
+            
+            <div class="notification-desc">
+                {{description}}
+            </div>
+            
+            <div class="stats-box">
+                <div class="stat-row">
+                    <span class="stat-label">Goal</span>
+                    <span class="stat-value">{{goalName}}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Current Progress</span>
+                    <span class="stat-value">{{currentProgress}}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Remaining Carbon</span>
+                    <span class="stat-value">{{remainingCarbon}}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Time Remaining</span>
+                    <span class="stat-value">{{remainingDays}}</span>
+                </div>
+            </div>
+            
+            <div class="recommendation">
+                <strong>AI Recommendation</strong>
+                {{recommendation}}
+            </div>
+            
+            <div class="action-button-container">
+                <a href="{{actionLink}}" class="action-button">{{nextAction}}</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>You received this email because you have active goals on the Carbon Footprint Platform.</p>
+            <p>&copy; 2026 Carbon Footprint Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

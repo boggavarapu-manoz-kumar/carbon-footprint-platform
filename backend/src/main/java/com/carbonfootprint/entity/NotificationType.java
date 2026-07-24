@@ -1,0 +1,18 @@
+package com.carbonfootprint.entity;
+
+public enum NotificationType {
+    GOAL_CREATED,
+    GOAL_STARTED,
+    GOAL_REMINDER,
+    WEEKLY_PROGRESS,
+    MONTHLY_PROGRESS,
+    GOAL_UPDATED,
+    GOAL_EXTENDED,
+    GOAL_PAUSED,
+    GOAL_RESUMED,
+    GOAL_NEAR_DEADLINE,
+    GOAL_COMPLETED,
+    GOAL_FAILED,
+    GOAL_CANCELLED,
+    GOAL_DELETED
+}
