@@ -5,6 +5,8 @@ import { useProfile } from '../hooks/useProfile';
 import { getAvatarUrl } from '../utils/formatters';
 import { useNotifications } from '../contexts/NotificationContext';
 import NotificationPanel from './NotificationPanel';
+import GamificationService from '../services/GamificationService';
+import { Flame } from 'lucide-react';
 
 const Navbar = ({ onOpenSidebar }) => {
   const { logout } = useAuth();
@@ -14,6 +16,17 @@ const Navbar = ({ onOpenSidebar }) => {
   const [navAvatarError, setNavAvatarError] = useState(false);
   const { data: userProfile } = useProfile();
   const { unreadCount } = useNotifications();
+  const [points, setPoints] = useState({ totalPoints: 0, currentLevel: "Eco Beginner", currentStreak: 0, longestStreak: 0 });
+
+  React.useEffect(() => {
+    const fetchPoints = async () => {
+      const p = await GamificationService.getCurrentPoints();
+      setPoints(p);
+    };
+    if (userProfile) {
+      fetchPoints();
+    }
+  }, [userProfile]);
 
   const isProfileIncomplete = userProfile && (!userProfile.username || !userProfile.mobileNumber || !userProfile.gender);
 
@@ -78,6 +91,33 @@ const Navbar = ({ onOpenSidebar }) => {
               onClose={() => setIsNotificationsOpen(false)} 
             />
           </div>
+        </div>
+
+        {/* Gamification Displays */}
+        <div className="hidden sm:flex items-center gap-3">
+          
+          {/* Streak Indicator (Only show if streak > 0) */}
+          {points.currentStreak > 0 && (
+            <div 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-full shadow-sm cursor-help"
+              title={`Longest Streak: ${points.longestStreak} days`}
+            >
+              <span className="text-base animate-pulse">🔥</span>
+              <span className="font-bold text-red-600 text-sm">{points.currentStreak}</span>
+            </div>
+          )}
+
+          {/* Points Display */}
+          <button
+            onClick={() => navigate('/dashboard/points-history')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 border border-emerald-200 rounded-full transition-all group shadow-sm"
+            title={`Level: ${points.currentLevel}`}
+          >
+            <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black group-hover:scale-110 transition-transform">
+              ★
+            </div>
+            <span className="font-bold text-emerald-700 text-sm">{points.totalPoints.toLocaleString()} pts</span>
+          </button>
         </div>
 
         {/* Profile Dropdown */}

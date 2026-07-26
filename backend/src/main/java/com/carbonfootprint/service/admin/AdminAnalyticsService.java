@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
+import com.carbonfootprint.repository.BadgeRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class AdminAnalyticsService {
     private final UserBadgeRepository userBadgeRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final BadgeRepository badgeRepository;
 
     private static final String[] MONTH_NAMES = {
         "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -60,6 +62,80 @@ public class AdminAnalyticsService {
             return now;
         }
         return LocalDate.of(year, 12, 31);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BADGE ANALYTICS
+    // ─────────────────────────────────────────────────────────────
+
+    public AdminBadgeAnalyticsResponse getBadgeAnalytics(Integer year) {
+        log.info("Fetching Badge Analytics for year: {}", year);
+
+        long totalBadges = badgeRepository.count();
+        long totalBadgesAwarded = userBadgeRepository.count();
+
+        // Most and Least Earned
+        AdminBadgeAnalyticsResponse.BadgeStat mostEarned = null;
+        List<Object[]> mostEarnedResults = userBadgeRepository.findMostEarnedBadges(PageRequest.of(0, 1));
+        if (!mostEarnedResults.isEmpty()) {
+            Object[] row = mostEarnedResults.get(0);
+            mostEarned = new AdminBadgeAnalyticsResponse.BadgeStat((String) row[0], ((Number) row[1]).longValue(), (String) row[2]);
+        }
+
+        AdminBadgeAnalyticsResponse.BadgeStat leastEarned = null;
+        List<Object[]> leastEarnedResults = userBadgeRepository.findLeastEarnedBadges(PageRequest.of(0, 1));
+        if (!leastEarnedResults.isEmpty()) {
+            Object[] row = leastEarnedResults.get(0);
+            leastEarned = new AdminBadgeAnalyticsResponse.BadgeStat((String) row[0], ((Number) row[1]).longValue(), (String) row[2]);
+        }
+
+        // Distributions (We fetch all badges and count by difficulty/category)
+        List<com.carbonfootprint.entity.Badge> allBadges = badgeRepository.findAll();
+        Map<String, Long> difficultyCount = new HashMap<>();
+        Map<String, Long> categoryCount = new HashMap<>();
+        for (com.carbonfootprint.entity.Badge b : allBadges) {
+            String diff = b.getDifficulty() != null ? b.getDifficulty() : "Unspecified";
+            String cat = b.getCategory() != null ? b.getCategory() : "Unspecified";
+            difficultyCount.put(diff, difficultyCount.getOrDefault(diff, 0L) + 1);
+            categoryCount.put(cat, categoryCount.getOrDefault(cat, 0L) + 1);
+        }
+
+        List<AdminBadgeAnalyticsResponse.DistributionDataPoint> diffDist = new ArrayList<>();
+        difficultyCount.forEach((k, v) -> diffDist.add(new AdminBadgeAnalyticsResponse.DistributionDataPoint(k, v)));
+        
+        List<AdminBadgeAnalyticsResponse.DistributionDataPoint> catDist = new ArrayList<>();
+        categoryCount.forEach((k, v) -> catDist.add(new AdminBadgeAnalyticsResponse.DistributionDataPoint(k, v)));
+
+        // Monthly Awards
+        int queryYear = year != null ? year : LocalDate.now().getYear();
+        List<Object[]> monthlyResults = userBadgeRepository.getMonthlyBadgeAwards(queryYear);
+        Map<Integer, Long> monthlyMap = new HashMap<>();
+        for (Object[] row : monthlyResults) {
+            monthlyMap.put(((Number) row[0]).intValue(), ((Number) row[1]).longValue());
+        }
+        List<AdminBadgeAnalyticsResponse.TrendDataPoint> monthlyAwards = new ArrayList<>();
+        for (int m = 1; m <= 12; m++) {
+            monthlyAwards.add(new AdminBadgeAnalyticsResponse.TrendDataPoint(MONTH_NAMES[m], monthlyMap.getOrDefault(m, 0L)));
+        }
+
+        // Yearly Awards
+        List<Object[]> yearlyResults = userBadgeRepository.getYearlyBadgeAwards();
+        List<AdminBadgeAnalyticsResponse.TrendDataPoint> yearlyAwards = new ArrayList<>();
+        for (Object[] row : yearlyResults) {
+            yearlyAwards.add(new AdminBadgeAnalyticsResponse.TrendDataPoint(String.valueOf(row[0]), ((Number) row[1]).longValue()));
+        }
+
+        return AdminBadgeAnalyticsResponse.builder()
+                .totalBadges(totalBadges)
+                .totalBadgesAwarded(totalBadgesAwarded)
+                .mostEarnedBadge(mostEarned)
+                .leastEarnedBadge(leastEarned)
+                .difficultyDistribution(diffDist)
+                .categoryDistribution(catDist)
+                .monthlyAwards(monthlyAwards)
+                .yearlyAwards(yearlyAwards)
+                .badgeGrowth(monthlyAwards) // Using monthly awards for growth graph simplicity
+                .build();
     }
 
     // ─────────────────────────────────────────────────────────────

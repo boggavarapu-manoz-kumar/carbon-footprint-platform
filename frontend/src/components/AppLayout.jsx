@@ -11,8 +11,10 @@ const AppLayout = () => {
     { name: 'Dashboard', path: '/dashboard', icon: HomeIcon, exact: true },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChartIcon },
     { name: 'Peer Benchmarking', path: '/dashboard/benchmarking', icon: GlobeIcon },
+    { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: TrophyIcon },
     { name: 'AI Recommendations', path: '/dashboard/recommendations', icon: SparklesIcon },
     { name: 'Goals', path: '/dashboard/goals', icon: TargetIcon },
+    { name: 'Achievements', path: '/dashboard/badges', icon: AwardIcon },
     { name: 'Log Activity', path: '/dashboard/log-activity', icon: PlusIcon },
     { name: 'Activity History', path: '/dashboard/activity-history', icon: ListIcon },
     { name: 'Profile Settings', path: '/dashboard/profile', icon: UserIcon },
@@ -136,6 +138,12 @@ const SettingsIcon = (props) => (
 );
 const GlobeIcon = (props) => (
   <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+);
+const TrophyIcon = (props) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M19 3v4M5 7h14a2 2 0 01-2 2H7a2 2 0 01-2-2zM8 9v2a4 4 0 008 0V9M12 15v6M8 21h8" /></svg>
+);
+const AwardIcon = (props) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 );
 
 export default AppLayout;

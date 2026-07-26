@@ -12,7 +12,12 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"activityType", "activityType.subCategory", "activityType.subCategory.category"})
     Optional<ActivityLog> findByIdAndUserId(Long id, Long userId);
     
+    Optional<ActivityLog> findFirstByUserIdOrderByLogDateAsc(Long userId);
+    
     Long countByUserId(Long userId);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) FROM ActivityLog a WHERE a.user.id = :userId AND a.activityType.subCategory.category.name = :category")
+    Long countByUserIdAndCategory(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("category") String category);
     
     @org.springframework.data.jpa.repository.Query("SELECT SUM(a.emissionValue) FROM ActivityLog a WHERE a.user.id = :userId")
     java.math.BigDecimal sumEmissionsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
@@ -135,4 +140,38 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
 
     @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.name, a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.name, a.user.id")
     java.util.List<Object[]> sumEmissionsGroupedByCategoryAndUserAndDateRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    // --- LEADERBOARD QUERIES ---
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(a) FROM ActivityLog a GROUP BY a.user.id")
+    java.util.List<Object[]> countActivitiesGroupedByUser();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(a) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> countActivitiesGroupedByUserAndDateRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(DISTINCT function('WEEK', a.logDate)) FROM ActivityLog a GROUP BY a.user.id")
+    java.util.List<Object[]> countActiveWeeksGroupedByUser();
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(DISTINCT function('WEEK', a.logDate)) FROM ActivityLog a WHERE a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> countActiveWeeksGroupedByUserAndDateRange(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    // --- LEADERBOARD QUERIES (CATEGORY FILTERED) ---
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(a) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category GROUP BY a.user.id")
+    java.util.List<Object[]> countActivitiesGroupedByUserAndCategory(@org.springframework.data.repository.query.Param("category") String category);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(a) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> countActivitiesGroupedByUserAndDateRangeAndCategory(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate, @org.springframework.data.repository.query.Param("category") String category);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(DISTINCT function('WEEK', a.logDate)) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category GROUP BY a.user.id")
+    java.util.List<Object[]> countActiveWeeksGroupedByUserAndCategory(@org.springframework.data.repository.query.Param("category") String category);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, COUNT(DISTINCT function('WEEK', a.logDate)) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> countActiveWeeksGroupedByUserAndDateRangeAndCategory(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate, @org.springframework.data.repository.query.Param("category") String category);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.user.id")
+    java.util.List<Object[]> sumEmissionsGroupedByUserAndDateRangeAndCategory(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate, @org.springframework.data.repository.query.Param("category") String category);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category GROUP BY a.user.id")
+    java.util.List<Object[]> sumEmissionsGroupedByUserAndCategory(@org.springframework.data.repository.query.Param("category") String category);
 }

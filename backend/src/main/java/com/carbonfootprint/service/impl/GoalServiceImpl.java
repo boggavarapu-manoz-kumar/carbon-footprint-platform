@@ -9,6 +9,7 @@ import com.carbonfootprint.entity.User;
 import com.carbonfootprint.repository.ActivityLogRepository;
 import com.carbonfootprint.repository.GoalRepository;
 import com.carbonfootprint.repository.GoalHistoryRepository;
+import com.carbonfootprint.repository.UserSustainabilityProfileRepository;
 import com.carbonfootprint.repository.UserRepository;
 import com.carbonfootprint.entity.GoalHistory;
 import com.carbonfootprint.dto.GoalUpdateRequest;
@@ -18,6 +19,10 @@ import com.carbonfootprint.entity.NotificationType;
 import com.carbonfootprint.service.GoalService;
 import com.carbonfootprint.service.NotificationService;
 import com.carbonfootprint.service.EmailService;
+import com.carbonfootprint.service.impl.GeminiService;
+import com.carbonfootprint.event.UserMetricsUpdatedEvent;
+import com.carbonfootprint.event.GamificationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +49,8 @@ public class GoalServiceImpl implements GoalService {
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final GeminiService geminiService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final UserSustainabilityProfileRepository profileRepository;
 
     @Override
     @Transactional
@@ -99,6 +106,16 @@ public class GoalServiceImpl implements GoalService {
                 "Start logging activities to see progress on your new goal.", 
                 "Log Activity",
                 null);
+
+        eventPublisher.publishEvent(new GamificationEvent(
+                this,
+                userId,
+                GamificationEvent.EventType.GOAL_CREATED,
+                "GOAL_CREATED",
+                "GOAL",
+                "goal_" + savedGoal.getId(),
+                null
+        ));
 
         return mapToResponse(savedGoal);
     }
@@ -275,6 +292,16 @@ public class GoalServiceImpl implements GoalService {
                          goal.setStatus(GoalStatus.ACHIEVED);
                          goal.setProgressPercent(BigDecimal.valueOf(100));
                          triggerEvaluationNotification(goal, NotificationType.GOAL_COMPLETED, currentEmissions, today);
+                         
+                         eventPublisher.publishEvent(new GamificationEvent(
+                                 this,
+                                 userId,
+                                 GamificationEvent.EventType.GOAL_COMPLETED,
+                                 "GOAL_COMPLETED",
+                                 "GOAL",
+                                 "goal_comp_" + goal.getId(),
+                                 null
+                         ));
                     } else {
                          BigDecimal progress = currentEmissions.divide(goal.getTargetEmission(), 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
                          goal.setProgressPercent(progress.min(BigDecimal.valueOf(100)));
@@ -285,6 +312,16 @@ public class GoalServiceImpl implements GoalService {
                  if (today.isAfter(goal.getTargetDate())) {
                       goal.setStatus(GoalStatus.ACHIEVED);
                       triggerEvaluationNotification(goal, NotificationType.GOAL_COMPLETED, currentEmissions, today);
+                      
+                      eventPublisher.publishEvent(new GamificationEvent(
+                          this, 
+                          goal.getUser().getId(), 
+                          GamificationEvent.EventType.GOAL_COMPLETED,
+                          "GOAL_COMPLETED",
+                          "GOAL",
+                          "goal_comp_" + goal.getId(), 
+                          null
+                      ));
                  }
             }
             goalRepository.save(goal);
@@ -333,6 +370,16 @@ public class GoalServiceImpl implements GoalService {
                     if (today.isAfter(goal.getTargetDate())) {
                         goal.setStatus(GoalStatus.ACHIEVED); // Stayed under cap!
                         triggerEvaluationNotification(goal, NotificationType.GOAL_COMPLETED, currentEmissions, today);
+                        
+                        eventPublisher.publishEvent(new GamificationEvent(
+                              this,
+                              goal.getUser().getId(),
+                              GamificationEvent.EventType.GOAL_COMPLETED,
+                              "GOAL_COMPLETED",
+                              "GOAL",
+                              "goal_comp_" + goal.getId(),
+                              null
+                      ));
                     } else {
                         triggerProgressNotificationIfNeeded(goal, currentEmissions, today);
                     }
@@ -341,6 +388,16 @@ public class GoalServiceImpl implements GoalService {
                  if (today.isAfter(goal.getTargetDate())) {
                       goal.setStatus(GoalStatus.ACHIEVED);
                       triggerEvaluationNotification(goal, NotificationType.GOAL_COMPLETED, currentEmissions, today);
+                      
+                      eventPublisher.publishEvent(new GamificationEvent(
+                          this, 
+                          goal.getUser().getId(), 
+                          GamificationEvent.EventType.GOAL_COMPLETED,
+                          "GOAL_COMPLETED",
+                          "GOAL",
+                          "goal_comp_" + goal.getId(), 
+                          null
+                      ));
                  }
             }
             goalRepository.save(goal);
@@ -389,6 +446,24 @@ public class GoalServiceImpl implements GoalService {
             emailData.put("actionLink", "/dashboard");
             
             emailService.sendGoalCompletedEmail(goal.getUser().getEmail(), "Goal Achieved: " + goal.getName(), emailData);
+            
+            // Fire generic metrics updated event for Rule Engine
+            eventPublisher.publishEvent(new UserMetricsUpdatedEvent(
+                this, 
+                goal.getUser().getId()
+            ));
+            // Update UserSustainabilityProfile with total carbon saved
+            java.util.Optional<com.carbonfootprint.entity.UserSustainabilityProfile> profileOpt = profileRepository.findByUserId(goal.getUser().getId());
+            if (profileOpt.isPresent()) {
+                com.carbonfootprint.entity.UserSustainabilityProfile profile = profileOpt.get();
+                if (profile.getTotalCarbonSaved() == null) {
+                    profile.setTotalCarbonSaved(java.math.BigDecimal.ZERO);
+                }
+                profile.setTotalCarbonSaved(profile.getTotalCarbonSaved().add(saved));
+                profileRepository.save(profile);
+                // Publish metric update for rule engine to evaluate carbon saved rules
+                eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, goal.getUser().getId()));
+            }
         } else if (type == NotificationType.GOAL_FAILED) {
             BigDecimal target = goal.getTargetEmission() != null ? goal.getTargetEmission() : BigDecimal.ZERO;
             BigDecimal overage = currentEmissions.subtract(target).max(BigDecimal.ZERO);

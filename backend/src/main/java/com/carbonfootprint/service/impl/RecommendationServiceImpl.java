@@ -13,6 +13,8 @@ import com.carbonfootprint.repository.RecommendationCacheRepository;
 import com.carbonfootprint.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.carbonfootprint.event.UserMetricsUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,6 +34,9 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final RecommendationLibrary recommendationLibrary;
     private final GeminiService geminiService;
     private final RecommendationCacheRepository recommendationCacheRepository;
+    private final com.carbonfootprint.repository.UserSustainabilityProfileRepository profileRepository;
+    private final com.carbonfootprint.service.GoalService goalService;
+    private final ApplicationEventPublisher eventPublisher;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Override
@@ -241,6 +246,21 @@ public class RecommendationServiceImpl implements RecommendationService {
             }
         }
         needed.add(timeframe);
+    }
+
+    public void adoptRecommendation(String userEmail, String recommendationText) {
+        log.info("User {} adopting recommendation: {}", userEmail, recommendationText);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        
+        com.carbonfootprint.entity.UserSustainabilityProfile profile = profileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found for userId: " + user.getId()));
+        
+        profile.setAdoptedRecommendationsCount(profile.getAdoptedRecommendationsCount() + 1);
+        profileRepository.save(profile);
+        
+        // Fire event to trigger rules engine
+        eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
     }
 
     private void saveTipToCacheIfPresent(com.fasterxml.jackson.databind.JsonNode node, String jsonKey, String timeframe, Long userId, String category, java.time.LocalDateTime lastActivity, java.util.Map<String, java.util.Map<String, String>> cachedTips) {

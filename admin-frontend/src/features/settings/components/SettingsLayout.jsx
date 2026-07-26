@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { Settings, Shield, Mail, Bell, HardDrive, CheckCircle2 } from 'lucide-react';
+import { Settings, Shield, Mail, Bell, HardDrive, CheckCircle2, Trophy } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
 // Placeholder Components - will implement next
 import { GeneralSettings } from './GeneralSettings';
 import { SecuritySettings } from './SecuritySettings';
 import { SystemSettings } from './SystemSettings';
+import { GamificationSettings } from './GamificationSettings';
 
 const TABS = [
   { id: 'general', name: 'General', icon: Settings },
   { id: 'security', name: 'Security', icon: Shield },
   { id: 'email', name: 'Email (SMTP)', icon: Mail },
   { id: 'notifications', name: 'Notifications', icon: Bell },
+  { id: 'gamification', name: 'Gamification', icon: Trophy },
   { id: 'system', name: 'System', icon: HardDrive },
 ];
 
@@ -41,6 +43,7 @@ export const SettingsLayout = () => {
     switch (activeTab) {
       case 'general': return <GeneralSettings onChange={handleFormChange} />;
       case 'security': return <SecuritySettings onChange={handleFormChange} />;
+      case 'gamification': return <GamificationSettings onChange={handleFormChange} />;
       case 'system': return <SystemSettings onChange={handleFormChange} />;
       default: return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">

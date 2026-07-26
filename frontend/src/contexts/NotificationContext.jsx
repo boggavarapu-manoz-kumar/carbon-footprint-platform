@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import NotificationService from '../services/NotificationService';
 import { useAuth } from './AuthContext';
+import BadgeUnlockModal from '../components/BadgeUnlockModal';
 
 const NotificationContext = createContext(null);
 
@@ -9,6 +10,7 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeAchievementNotification, setActiveAchievementNotification] = useState(null);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -25,7 +27,16 @@ export const NotificationProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await NotificationService.getNotifications(false, 0, 50);
-      setNotifications(data.content || []);
+      const fetchedNotifications = data.content || [];
+      setNotifications(fetchedNotifications);
+      
+      // Look for unread achievements to pop up
+      if (!activeAchievementNotification) {
+        const unreadAchievement = fetchedNotifications.find(n => !n.read && n.notificationType === 'ACHIEVEMENT_UNLOCKED');
+        if (unreadAchievement) {
+          setActiveAchievementNotification(unreadAchievement);
+        }
+      }
     } catch (error) {
       console.error('Error fetching notifications', error);
     } finally {
@@ -68,6 +79,15 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={{ unreadCount, notifications, loading, fetchNotifications, markAsRead, markAllAsRead }}>
       {children}
+      {activeAchievementNotification && (
+        <BadgeUnlockModal 
+          notification={activeAchievementNotification}
+          onClose={() => {
+            markAsRead(activeAchievementNotification.id);
+            setActiveAchievementNotification(null);
+          }}
+        />
+      )}
     </NotificationContext.Provider>
   );
 };

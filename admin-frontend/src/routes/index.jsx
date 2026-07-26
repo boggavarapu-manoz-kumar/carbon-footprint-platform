@@ -18,7 +18,8 @@ const AdminAnalytics = React.lazy(() => import('../features/analytics/components
 const SuspensionsPage = React.lazy(() => import('../features/suspensions/components/SuspensionsPage'));
 const ActivityMonitor = React.lazy(() => import('../features/activities/components/ActivityMonitor'));
 const AdminGoalMonitor = React.lazy(() => import('../features/goals/components/AdminGoalMonitor').then(m => ({ default: m.AdminGoalMonitor })));
-
+const BenchmarkingDashboard = React.lazy(() => import('../features/benchmarking/components/BenchmarkingDashboard'));
+const BadgeManagement = React.lazy(() => import('../features/gamification/components/BadgeManagement').then(m => ({ default: m.BadgeManagement })));
 /**
  * If a password-reset email link accidentally points to the admin port,
  * this component safely bounces the visitor to the correct user-facing app
@@ -171,6 +172,26 @@ export const router = createBrowserRouter([
                 </Suspense>
               </RoleRoute>
             ),
+          },
+          {
+            path: 'benchmarking',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'AUDITOR']}>
+                <Suspense fallback={<PageLoader />}>
+                  <BenchmarkingDashboard />
+                </Suspense>
+              </RoleRoute>
+            )
+          },
+          {
+            path: 'badges',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+                <Suspense fallback={<PageLoader />}>
+                  <BadgeManagement />
+                </Suspense>
+              </RoleRoute>
+            )
           },
           {
             path: '*',

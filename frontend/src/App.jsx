@@ -38,6 +38,10 @@ const GoalDashboard = lazy(() => import('./pages/GoalDashboard'));
 const Recommendations = lazy(() => import('./pages/Recommendations'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
 const Benchmarking = lazy(() => import('./pages/Benchmarking'));
+const PointsHistory = lazy(() => import('./pages/PointsHistory'));
+const PointsGuide = lazy(() => import('./pages/PointsGuide'));
+const AdminBadgeManagement = lazy(() => import('./pages/admin/AdminBadgeManagement'));
+const AdminBadgeForm = lazy(() => import('./pages/admin/AdminBadgeForm'));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -91,6 +95,13 @@ function App() {
           <Route path="goals/:id" element={<GoalDashboard />} />
           <Route path="recommendations" element={<Recommendations />} />
           <Route path="benchmarking" element={<Benchmarking />} />
+          <Route path="points-history" element={<PointsHistory />} />
+          <Route path="points-guide" element={<PointsGuide />} />
+          
+          {/* Admin Routes */}
+          <Route path="admin/badges" element={<AdminBadgeManagement />} />
+          <Route path="admin/badges/create" element={<AdminBadgeForm />} />
+          <Route path="admin/badges/edit/:id" element={<AdminBadgeForm />} />
         </Route>
         <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>

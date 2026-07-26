@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "Starting Backend (Spring Boot)..."
 cd backend
+set -a
+source .env
+set +a
 mvn spring-boot:run &
 BACKEND_PID=$!
 cd ..

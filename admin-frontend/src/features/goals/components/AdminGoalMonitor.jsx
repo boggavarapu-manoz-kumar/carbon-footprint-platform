@@ -38,10 +38,11 @@ export const AdminGoalMonitor = () => {
       width: 80,
     },
     {
-      title: 'User ID',
-      dataIndex: ['user', 'id'],
-      key: 'userId',
-      width: 100,
+      title: 'User',
+      dataIndex: 'userName',
+      key: 'userName',
+      width: 140,
+      render: (name, record) => name || `User #${record.userId}`,
     },
     {
       title: 'Goal Name',
