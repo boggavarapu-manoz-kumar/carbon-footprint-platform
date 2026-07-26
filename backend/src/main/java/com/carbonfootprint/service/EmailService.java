@@ -6,4 +6,6 @@ public interface EmailService {
     void sendGoalCompletedEmail(String toEmail, String title, java.util.Map<String, Object> emailData);
     void sendGoalFailedEmail(String toEmail, String title, java.util.Map<String, Object> emailData);
     void sendGoalCreatedEmail(String toEmail, String title, java.util.Map<String, Object> emailData);
+    void sendAchievementEmail(String toEmail, String title, java.util.Map<String, Object> emailData);
+    void queueEmail(String toEmail, String subject, String body);
 }

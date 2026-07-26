@@ -99,7 +99,17 @@ const NotificationPanel = ({ isOpen, onClose }) => {
               >
                 <div className="flex gap-3">
                   <div className="mt-1 flex-shrink-0 text-xl">
-                    {getPriorityIcon(notification.priority)}
+                    {(() => {
+                      if (notification.notificationType === 'ACHIEVEMENT_UNLOCKED' && notification.metaData) {
+                        try {
+                          const meta = JSON.parse(notification.metaData);
+                          if (meta.imageUrl) {
+                            return <img src={meta.imageUrl} alt="Badge" className="w-8 h-8 rounded-full border-2 border-emerald-400" />;
+                          }
+                        } catch (e) {}
+                      }
+                      return getPriorityIcon(notification.priority);
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 mb-1">

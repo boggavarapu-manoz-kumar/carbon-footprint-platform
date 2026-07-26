@@ -1,18 +1,18 @@
-import api from './api';
+import api from '../api/axiosConfig';
 
 const BenchmarkingService = {
   getMonthlyBenchmarking: async () => {
-    const response = await api.get('/benchmarking/compare/monthly');
+    const response = await api.get('/v1/benchmarking/compare/monthly');
     return response.data;
   },
 
   getYearlyBenchmarking: async () => {
-    const response = await api.get('/benchmarking/compare/yearly');
+    const response = await api.get('/v1/benchmarking/compare/yearly');
     return response.data;
   },
 
   getComprehensiveDashboard: async () => {
-    const response = await api.get('/benchmarking/dashboard');
+    const response = await api.get('/v1/benchmarking/dashboard');
     return response.data;
   }
 };

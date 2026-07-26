@@ -6,4 +6,5 @@ public interface BenchmarkingService {
     BenchmarkingResultDto getMonthlyBenchmarking(Long userId);
     BenchmarkingResultDto getYearlyBenchmarking(Long userId);
     com.carbonfootprint.dto.benchmarking.ComprehensiveBenchmarkDashboardDto getComprehensiveBenchmarkingDashboard(Long userId);
+    com.carbonfootprint.dto.benchmarking.BenchmarkingStatsDto calculateStats(java.util.List<java.math.BigDecimal> allEmissions);
 }

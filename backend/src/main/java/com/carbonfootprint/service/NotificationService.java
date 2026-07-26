@@ -10,6 +10,8 @@ public interface NotificationService {
     
     Notification createNotification(User user, NotificationType type, Long goalId, String goalName, String goalStatus, String currentProgress, String remainingCarbon, String remainingDays, String recommendation, String nextAction, String metaData);
     
+    Notification createAchievementNotification(User user, String title, String message, String metaData);
+    
     Page<Notification> getUserNotifications(Long userId, Pageable pageable);
     
     Page<Notification> getUnreadUserNotifications(Long userId, Pageable pageable);

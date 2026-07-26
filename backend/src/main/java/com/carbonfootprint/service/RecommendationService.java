@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface RecommendationService {
     List<RecommendationResponseDto> getPersonalizedRecommendations(String userEmail);
+    void adoptRecommendation(String userEmail, String recommendationText);
     List<RecommendationEffectivenessDto> trackRecommendationEffectiveness(String userEmail);
 }

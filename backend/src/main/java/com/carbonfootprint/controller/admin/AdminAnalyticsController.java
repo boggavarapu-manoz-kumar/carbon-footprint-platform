@@ -139,6 +139,13 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getYearlyAnalytics(year), "Yearly analytics retrieved"));
     }
 
+    // ─── Badge Analytics ──────────────────────────────────────────
+    @GetMapping("/badges")
+    public ResponseEntity<ApiResponse<com.carbonfootprint.dto.admin.AdminBadgeAnalyticsResponse>> getBadgeAnalytics(@RequestParam(required = false) Integer year) {
+        log.info("Fetching badge analytics");
+        return ResponseEntity.ok(ApiResponse.success(analyticsService.getBadgeAnalytics(year), "Badge analytics retrieved"));
+    }
+
     // ─── Organization Analytics ────────────────────────────────────
     @GetMapping("/organizations")
     public ResponseEntity<ApiResponse<OrganizationAnalyticsResponse>> getOrganizationAnalytics() {

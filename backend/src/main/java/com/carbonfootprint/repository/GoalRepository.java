@@ -15,9 +15,13 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
 
     List<Goal> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    Long countByUserId(Long userId);
+
     List<Goal> findByStatus(GoalStatus status);
 
     List<Goal> findByUserIdAndStatus(Long userId, GoalStatus status);
+
+    java.util.Optional<Goal> findFirstByUserIdAndStatusOrderByCreatedAtAsc(Long userId, GoalStatus status);
 
     @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = :status AND g.updatedAt >= :startOfDay AND g.updatedAt <= :endOfDay")
     Long countByStatusAndUpdatedAtBetween(
@@ -36,7 +40,7 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
             @Param("startOfWeek") LocalDateTime startOfWeek,
             @Param("endOfWeek") LocalDateTime endOfWeek);
 
-    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'COMPLETED'")
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'ACHIEVED'")
     Long countTotalCompleted();
 
     @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'FAILED'")
@@ -50,4 +54,10 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     @Query("SELECT COUNT(g) FROM Goal g WHERE g.status = 'IN_PROGRESS' AND g.targetDate < :today")
     Long countOverdue(
             @Param("today") java.time.LocalDate today);
+
+    @Query("SELECT g.user.id, COUNT(g) FROM Goal g WHERE g.status = 'ACHIEVED' GROUP BY g.user.id")
+    java.util.List<Object[]> countCompletedGoalsGroupedByUser();
+
+    @Query("SELECT g.user.id, COUNT(g) FROM Goal g WHERE g.status = 'COMPLETED' AND g.updatedAt >= :startDate AND g.updatedAt <= :endDate GROUP BY g.user.id")
+    java.util.List<Object[]> countCompletedGoalsGroupedByUserAndDateRange(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
 }

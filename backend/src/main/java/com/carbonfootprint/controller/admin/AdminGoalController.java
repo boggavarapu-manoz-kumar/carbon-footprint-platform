@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
-@RequestMapping("/api/admin/goals")
+@RequestMapping("/api/v1/admin/goals")
 @RequiredArgsConstructor
 @Slf4j
 public class AdminGoalController {
@@ -64,8 +64,23 @@ public class AdminGoalController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'AUDITOR')")
-    public ResponseEntity<Page<Goal>> getAllGoals(Pageable pageable) {
-        return ResponseEntity.ok(goalRepository.findAll(pageable));
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<Page<Map<String, Object>>> getAllGoals(Pageable pageable) {
+        Page<Goal> goals = goalRepository.findAll(pageable);
+        Page<Map<String, Object>> dtoPage = goals.map(g -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", g.getId());
+            map.put("userId", g.getUser() != null ? g.getUser().getId() : null);
+            map.put("userName", g.getUser() != null ? (g.getUser().getFirstName() + " " + (g.getUser().getLastName() != null ? g.getUser().getLastName() : "")).trim() : "User #" + (g.getUser() != null ? g.getUser().getId() : "?"));
+            map.put("name", g.getName());
+            map.put("description", g.getDescription());
+            map.put("status", g.getStatus() != null ? g.getStatus().name() : "IN_PROGRESS");
+            map.put("progressPercent", g.getProgressPercent() != null ? g.getProgressPercent() : 0);
+            map.put("targetDate", g.getTargetDate());
+            map.put("createdAt", g.getCreatedAt());
+            return map;
+        });
+        return ResponseEntity.ok(dtoPage);
     }
 
     @GetMapping("/{id}")

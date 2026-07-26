@@ -99,6 +99,24 @@ public class NotificationServiceImpl implements NotificationService {
 
         return saved;
     }
+    
+    @Override
+    @Transactional
+    public Notification createAchievementNotification(User user, String title, String message, String metaData) {
+        Notification notification = Notification.builder()
+                .user(user)
+                .title(title)
+                .description(message)
+                .date(LocalDate.now())
+                .time(LocalTime.now())
+                .priority(NotificationPriority.ACHIEVEMENT)
+                .actionLink("/dashboard")
+                .notificationType(NotificationType.ACHIEVEMENT_UNLOCKED)
+                .metaData(metaData)
+                .build();
+                
+        return notificationRepository.save(notification);
+    }
 
     private NotificationPriority determinePriority(NotificationType type) {
         switch (type) {

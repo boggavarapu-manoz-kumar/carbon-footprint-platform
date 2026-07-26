@@ -76,4 +76,15 @@ public class EmailServiceImpl implements EmailService {
         String subject = title + " - Carbon Footprint Platform";
         enqueueEmail(toEmail, subject, "goal-created", emailData);
     }
+
+    @Override
+    public void sendAchievementEmail(String toEmail, String title, java.util.Map<String, Object> emailData) {
+        String subject = title + " - Carbon Footprint Platform";
+        enqueueEmail(toEmail, subject, "achievement-unlocked", emailData);
+    }
+
+    @Override
+    public void queueEmail(String toEmail, String subject, String body) {
+        enqueueEmail(toEmail, subject, "general-notification", java.util.Map.of("body", body));
+    }
 }

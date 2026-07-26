@@ -9,6 +9,9 @@ import com.carbonfootprint.entity.User;
 import com.carbonfootprint.exception.ResourceNotFoundException;
 import com.carbonfootprint.mapper.ActivityLogMapper;
 import com.carbonfootprint.repository.ActivityLogRepository;
+import com.carbonfootprint.event.GamificationEvent;
+import com.carbonfootprint.event.UserMetricsUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.carbonfootprint.repository.ActivityLogSpecification;
 import com.carbonfootprint.repository.ActivityTypeRepository;
 import com.carbonfootprint.repository.UserRepository;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 public class ActivityLogServiceImpl implements ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final ActivityTypeRepository activityTypeRepository;
     private final UserRepository userRepository;
     private final UserActivityMonitorRepositoryCustom userActivityMonitorRepository;
@@ -60,9 +64,22 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         
         activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()).getEmission());
         
-        ActivityLogDto savedDto = mapper.toDto(activityLogRepository.save(activityLog));
+        ActivityLog savedActivity = activityLogRepository.save(activityLog);
+        
+        eventPublisher.publishEvent(new GamificationEvent(
+            this, 
+            user.getId(), 
+            GamificationEvent.EventType.ACTIVITY_LOGGED, 
+            "FIRST_ACTIVITY_LOGGED", // Will be checked in Service
+            "ACTIVITY_LOG",
+            "activity_" + savedActivity.getId(), 
+            null
+        ));
+
+        ActivityLogDto savedDto = mapper.toDto(savedActivity);
         invalidateAnalyticsCache(user.getId());
         goalService.evaluateUserGoals(user.getId());
+        eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
         return savedDto;
     }
 
@@ -91,6 +108,19 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         }).collect(Collectors.toList());
         
         List<ActivityLog> savedLogs = activityLogRepository.saveAll(logsToSave);
+        
+        savedLogs.forEach(savedActivity -> {
+            eventPublisher.publishEvent(new GamificationEvent(
+                this, 
+                user.getId(), 
+                GamificationEvent.EventType.ACTIVITY_LOGGED, 
+                "FIRST_ACTIVITY_LOGGED", // Will be checked in Service
+                "ACTIVITY_LOG",
+                "activity_" + savedActivity.getId(), 
+                null
+            ));
+        });
+
         invalidateAnalyticsCache(user.getId());
         goalService.evaluateUserGoals(user.getId());
         return savedLogs.stream().map(mapper::toDto).collect(Collectors.toList());
@@ -187,6 +217,17 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());
         activityLogRepository.delete(activityLog);
+        
+        eventPublisher.publishEvent(new GamificationEvent(
+            this, 
+            user.getId(), 
+            GamificationEvent.EventType.ACTIVITY_DELETED, 
+            "ACTIVITY_DELETED", 
+            "ACTIVITY_LOG",
+            "activity_" + id, 
+            null
+        ));
+
         invalidateAnalyticsCache(user.getId());
         goalService.evaluateUserGoals(user.getId());
     }

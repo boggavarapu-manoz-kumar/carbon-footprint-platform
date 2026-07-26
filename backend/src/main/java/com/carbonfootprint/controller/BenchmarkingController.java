@@ -20,20 +20,20 @@ public class BenchmarkingController {
 
     @GetMapping("/compare/monthly")
     public ResponseEntity<BenchmarkingResultDto> getMonthlyComparison(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
-        com.carbonfootprint.entity.User user = userRepository.findByUsername(userDetails.getUsername())
+        com.carbonfootprint.entity.User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return ResponseEntity.ok(benchmarkingService.getMonthlyBenchmarking(user.getId()));
     }
 
     @GetMapping("/compare/yearly")
     public ResponseEntity<BenchmarkingResultDto> getYearlyComparison(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
-        com.carbonfootprint.entity.User user = userRepository.findByUsername(userDetails.getUsername())
+        com.carbonfootprint.entity.User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return ResponseEntity.ok(benchmarkingService.getYearlyBenchmarking(user.getId()));
     }
     @GetMapping("/dashboard")
     public ResponseEntity<com.carbonfootprint.dto.benchmarking.ComprehensiveBenchmarkDashboardDto> getComprehensiveDashboard(@org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
-        com.carbonfootprint.entity.User user = userRepository.findByUsername(userDetails.getUsername())
+        com.carbonfootprint.entity.User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return ResponseEntity.ok(benchmarkingService.getComprehensiveBenchmarkingDashboard(user.getId()));
     }

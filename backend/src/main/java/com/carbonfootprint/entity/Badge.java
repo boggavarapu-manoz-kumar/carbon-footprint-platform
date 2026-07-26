@@ -23,11 +23,50 @@ public class Badge {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, length = 255)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rule_type", length = 50)
+    private MilestoneRuleType ruleType;
+
+    @Column(name = "rule_target")
+    private Integer ruleTarget;
+
+    @Column(length = 255)
     private String criteria;
 
     @Column(name = "image_url", length = 255)
     private String imageUrl;
+
+    @Column(length = 50)
+    private String icon;
+
+    @Column(length = 20)
+    private String color;
+
+    @Column(length = 50)
+    private String category;
+
+    @Column(length = 50)
+    private String difficulty;
+
+    @Column
+    private Long points;
+
+    @Column
+    private Long xp;
+
+    @Column
+    private Integer level;
+
+    @Column(name = "badge_type", length = 50)
+    private String badgeType;
+
+    @Column(length = 20)
+    private String visibility;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private BadgeStatus status = BadgeStatus.ACTIVE;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

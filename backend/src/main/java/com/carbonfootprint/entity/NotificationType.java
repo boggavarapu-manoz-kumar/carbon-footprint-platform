@@ -14,5 +14,6 @@ public enum NotificationType {
     GOAL_COMPLETED,
     GOAL_FAILED,
     GOAL_CANCELLED,
-    GOAL_DELETED
+    GOAL_DELETED,
+    ACHIEVEMENT_UNLOCKED
 }

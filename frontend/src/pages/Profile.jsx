@@ -4,10 +4,12 @@ import { useProfile, useUpdateProfile } from '../hooks/useProfile';
 import api from '../api/axiosConfig';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
-import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf, CheckCircle2, XCircle, Loader2, Camera } from 'lucide-react';
+import { Calendar, Mail, Phone, User as UserIcon, Settings, Leaf, CheckCircle2, XCircle, Loader2, Camera, Trophy, TrendingUp, TrendingDown, Minus, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAvatarUrl, AVATAR_OPTIONS } from '../utils/formatters';
 import PhoneInput from 'react-phone-number-input';
+import LeaderboardService from '../services/LeaderboardService';
+import BadgeShowcase from '../components/BadgeShowcase';
 
 const Profile = () => {
   const { refreshUser } = useAuth();
@@ -32,6 +34,22 @@ const Profile = () => {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+  const [leaderboardStats, setLeaderboardStats] = useState(null);
+  const [activeTab, setActiveTab] = useState('settings');
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const stats = await LeaderboardService.getUserStats();
+        setLeaderboardStats(stats);
+      } catch (err) {
+        console.error("Failed to fetch user leaderboard stats", err);
+      }
+    };
+    if (fetchedProfile) {
+      fetchStats();
+    }
+  }, [fetchedProfile]);
 
   const liveAvatarUrl = getAvatarUrl(profileData.profilePictureUrl);
   const fallbackAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent((profileData.firstName || 'U') + '+' + (profileData.lastName || ''))}&background=10b981&color=fff&size=128&bold=true`;
@@ -146,30 +164,42 @@ const Profile = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-16">
+    <div className="min-h-screen bg-slate-50/50 font-sans pb-16">
       {/* Premium Hero Banner */}
-      <div className="bg-emerald-600 h-64 w-full relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 opacity-90"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+      <div className="h-72 w-full relative overflow-hidden bg-emerald-900">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-900 opacity-90"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+        {/* Animated Orbs */}
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-20 -left-20 w-96 h-96 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30"
+        />
+        <motion.div 
+          animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute -bottom-40 -right-20 w-[30rem] h-[30rem] bg-emerald-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+        />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-10">
-        <div className="flex flex-col md:flex-row gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 md:-mt-32 relative z-10">
+        <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* Left Column: Avatar & Summary */}
-          <div className="w-full md:w-1/3">
+          {/* Left Column: Avatar & User Summary */}
+          <div className="w-full lg:w-1/3 lg:sticky lg:top-24 self-start">
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-xl p-6 border border-slate-100 sticky top-24"
+              transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
+              className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 border border-white/60"
             >
               {/* Avatar with change button */}
-              <div className="flex justify-center -mt-16 mb-4">
+              <div className="flex justify-center -mt-20 md:-mt-24 mb-6">
                 <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-md opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
                   <img
                     key={liveAvatarUrl}
-                    className="h-32 w-32 rounded-full border-4 border-white shadow-lg object-cover bg-slate-100 transition-all duration-300"
+                    className="relative h-36 w-36 rounded-full border-4 border-white shadow-2xl object-cover bg-slate-100 transition-transform duration-500 group-hover:scale-105"
                     src={avatarLoadError ? fallbackAvatarUrl : liveAvatarUrl}
                     alt={`${profileData.firstName} Avatar`}
                     onError={() => setAvatarLoadError(true)}
@@ -178,10 +208,10 @@ const Profile = () => {
                   <button
                     type="button"
                     onClick={() => setShowAvatarPicker(true)}
-                    className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    className="absolute inset-0 rounded-full bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm"
                     title="Change Avatar"
                   >
-                    <Camera className="h-7 w-7 text-white" />
+                    <Camera className="h-8 w-8 text-white drop-shadow-md" />
                   </button>
                 </div>
               </div>
@@ -202,7 +232,7 @@ const Profile = () => {
                 </p>
               </div>
 
-              <div className="space-y-4 text-sm text-slate-600 mb-6 border-t border-slate-100 pt-6">
+              <div className="space-y-4 text-sm text-slate-600 border-t border-slate-100 pt-6">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-slate-400" />
                   <span className="truncate">{profileData.email}</span>
@@ -219,171 +249,301 @@ const Profile = () => {
             </motion.div>
           </div>
 
-          {/* Right Column: Edit Form */}
-          <div className="w-full md:w-2/3">
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
-            >
-              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-                <Settings className="h-5 w-5 text-emerald-600" />
-                <h2 className="text-xl font-bold text-slate-800">Account Settings</h2>
-              </div>
+          {/* Right Column: Tabbed Content */}
+          <div className="w-full lg:w-2/3 space-y-6">
+            
+            {/* Tab Navigation Header */}
+            <div className="flex items-center gap-2 p-1.5 bg-white/80 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm overflow-x-auto">
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
+                  activeTab === 'settings'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                    : 'text-slate-600 hover:bg-slate-100/60'
+                }`}
+              >
+                <Settings className="w-4 h-4" /> Account Settings
+              </button>
 
-              <form onSubmit={handleSaveChanges} className="p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* First Name */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <UserIcon className="h-4 w-4 text-slate-400" />
+              <button
+                onClick={() => setActiveTab('badges')}
+                className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
+                  activeTab === 'badges'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                    : 'text-slate-600 hover:bg-slate-100/60'
+                }`}
+              >
+                <Award className="w-4 h-4" /> Achievements
+              </button>
+
+              <button
+                onClick={() => setActiveTab('leaderboard')}
+                className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
+                  activeTab === 'leaderboard'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
+                    : 'text-slate-600 hover:bg-slate-100/60'
+                }`}
+              >
+                <Trophy className="w-4 h-4" /> Standing
+              </button>
+            </div>
+            {activeTab === 'settings' && (
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/40 overflow-hidden"
+              >
+                <div className="px-10 py-8 border-b border-slate-100/50 bg-slate-50/30 flex items-center gap-4">
+                  <div className="p-2.5 bg-emerald-100 rounded-xl">
+                    <Settings className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800">Account Settings</h2>
+                </div>
+
+                <form onSubmit={handleSaveChanges} className="p-8 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* First Name */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <UserIcon className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={profileData.firstName}
+                          onChange={handleInputChange}
+                          className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+                          placeholder="John"
+                          required
+                        />
                       </div>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={profileData.firstName}
+                    </div>
+
+                    {/* Last Name */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <UserIcon className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={profileData.lastName}
+                          onChange={handleInputChange}
+                          className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+                          placeholder="Doe"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Username */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Username</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-slate-400 font-semibold text-sm">@</span>
+                        </div>
+                        <input
+                          type="text"
+                          name="username"
+                          value={profileData.username}
+                          onChange={handleInputChange}
+                          className={`pl-10 pr-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors ${usernameAvailable === false ? 'border-red-400 focus:ring-red-500' : ''}`}
+                          placeholder="john_doe"
+                          required
+                        />
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          {checkingUsername && <Loader2 className="h-4 w-4 text-emerald-600 animate-spin" />}
+                          {!checkingUsername && usernameAvailable === true && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                          {!checkingUsername && usernameAvailable === false && <XCircle className="h-4 w-4 text-red-500" />}
+                        </div>
+                      </div>
+                      {usernameAvailable === false && (
+                        <p className="mt-1.5 text-xs text-red-500 font-medium">This username is already taken.</p>
+                      )}
+                    </div>
+
+                    {/* Mobile Number */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
+                      <div className="relative">
+                        <PhoneInput
+                          international
+                          defaultCountry="US"
+                          value={profileData.mobileNumber}
+                          onChange={(value) => handleInputChange({ target: { name: 'mobileNumber', value: value || '' } })}
+                          className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus-within:ring-emerald-500 focus-within:border-emerald-500 sm:text-sm transition-colors custom-phone-input"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gender */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Gender</label>
+                      <select
+                        name="gender"
+                        value={profileData.gender}
                         onChange={handleInputChange}
+                        className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                      <div className="relative opacity-60">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Mail className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          type="email"
+                          disabled
+                          value={profileData.email}
+                          className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-100 border py-3 px-4 text-slate-900 sm:text-sm cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sustainability Preferences */}
+                  <div className="pt-4">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Sustainability Preferences</label>
+                    <div className="relative">
+                      <div className="absolute top-3 left-3 pointer-events-none">
+                        <Leaf className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      <textarea
+                        name="sustainabilityPreferences"
+                        value={profileData.sustainabilityPreferences}
+                        onChange={handleInputChange}
+                        rows={4}
+                        placeholder="Share your eco-friendly lifestyle choices (e.g., Vegan diet, drive an EV, use renewable energy at home...)"
                         className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
-                        placeholder="John"
-                        required
                       />
                     </div>
                   </div>
 
-                  {/* Last Name */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <UserIcon className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={profileData.lastName}
-                        onChange={handleInputChange}
-                        className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Username */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Username</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-slate-400 font-semibold text-sm">@</span>
-                      </div>
-                      <input
-                        type="text"
-                        name="username"
-                        value={profileData.username}
-                        onChange={handleInputChange}
-                        className={`pl-10 pr-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors ${usernameAvailable === false ? 'border-red-400 focus:ring-red-500' : ''}`}
-                        placeholder="john_doe"
-                        required
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        {checkingUsername && <Loader2 className="h-4 w-4 text-emerald-600 animate-spin" />}
-                        {!checkingUsername && usernameAvailable === true && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-                        {!checkingUsername && usernameAvailable === false && <XCircle className="h-4 w-4 text-red-500" />}
-                      </div>
-                    </div>
-                    {usernameAvailable === false && (
-                      <p className="mt-1.5 text-xs text-red-500 font-medium">This username is already taken.</p>
-                    )}
-                  </div>
-
-                  {/* Mobile Number */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
-                    <div className="relative">
-                      <PhoneInput
-                        international
-                        defaultCountry="US"
-                        value={profileData.mobileNumber}
-                        onChange={(value) => handleInputChange({ target: { name: 'mobileNumber', value: value || '' } })}
-                        className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus-within:ring-emerald-500 focus-within:border-emerald-500 sm:text-sm transition-colors custom-phone-input"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Gender */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Gender</label>
-                    <select
-                      name="gender"
-                      value={profileData.gender}
-                      onChange={handleInputChange}
-                      className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+                  {/* Action Buttons */}
+                  <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                      onClick={() => window.location.reload()}
                     >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updateProfileMutation.isPending || usernameAvailable === false}
+                      className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-100 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
+                    >
+                      {updateProfileMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
+                    </button>
                   </div>
+                </form>
+              </motion.div>
+            )}
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
-                    <div className="relative opacity-60">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-4 w-4 text-slate-400" />
+            {/* Achievements Tab */}
+            {activeTab === 'badges' && (
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/40"
+              >
+                <BadgeShowcase />
+              </motion.div>
+            )}
+
+            {/* Leaderboard Standing Tab */}
+            {activeTab === 'leaderboard' && (
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {leaderboardStats && (
+                  <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl shadow-2xl p-8 border border-emerald-500/30 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                      <Trophy className="w-48 h-48 text-emerald-400 transform rotate-12" />
+                    </div>
+
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                      <h3 className="text-2xl font-black text-white flex items-center gap-3 tracking-wide">
+                        <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-yellow-400">
+                          <Award className="w-7 h-7" />
+                        </div>
+                        Leaderboard Performance
+                      </h3>
+                      <span className="text-xs font-bold px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Live Standing
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 relative z-10">
+                      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">Current Rank</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-black text-white">#{leaderboardStats.currentRank || '-'}</span>
+                          {leaderboardStats.trend === 'IMPROVED' && <span className="flex items-center text-xs font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30"><TrendingUp className="w-3.5 h-3.5 mr-0.5"/> Up</span>}
+                          {leaderboardStats.trend === 'DROPPED' && <span className="flex items-center text-xs font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/30"><TrendingDown className="w-3.5 h-3.5 mr-0.5"/> Down</span>}
+                        </div>
                       </div>
-                      <input
-                        type="email"
-                        disabled
-                        value={profileData.email}
-                        className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-100 border py-3 px-4 text-slate-900 sm:text-sm cursor-not-allowed"
-                      />
+
+                      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">Best Rank</p>
+                        <span className="text-4xl font-black text-yellow-400">#{leaderboardStats.bestRank || '-'}</span>
+                      </div>
+
+                      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Previous Rank</p>
+                        <span className="text-3xl font-bold text-slate-300">#{leaderboardStats.previousRank || '-'}</span>
+                      </div>
+
+                      <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Total Score</p>
+                        <span className="text-3xl font-black text-emerald-400">{leaderboardStats.currentScore?.toLocaleString() || '0'}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10 relative z-10 text-sm font-semibold text-center">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <span className="text-slate-400 text-xs block mb-1">Weekly</span>
+                        <span className="font-bold text-white text-lg">{leaderboardStats.weeklyScore?.toLocaleString() || '0'} pts</span>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <span className="text-slate-400 text-xs block mb-1">Monthly</span>
+                        <span className="font-bold text-white text-lg">{leaderboardStats.monthlyScore?.toLocaleString() || '0'} pts</span>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <span className="text-slate-400 text-xs block mb-1">Yearly</span>
+                        <span className="font-bold text-white text-lg">{leaderboardStats.yearlyScore?.toLocaleString() || '0'} pts</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Sustainability Preferences */}
-                <div className="pt-4">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Sustainability Preferences</label>
-                  <div className="relative">
-                    <div className="absolute top-3 left-3 pointer-events-none">
-                      <Leaf className="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <textarea
-                      name="sustainabilityPreferences"
-                      value={profileData.sustainabilityPreferences}
-                      onChange={handleInputChange}
-                      rows={4}
-                      placeholder="Share your eco-friendly lifestyle choices (e.g., Vegan diet, drive an EV, use renewable energy at home...)"
-                      className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
-                    />
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-                    onClick={() => window.location.reload()}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={updateProfileMutation.isPending || usernameAvailable === false}
-                    className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-100 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
-                  >
-                    {updateProfileMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                )}
+              </motion.div>
+            )}
           </div>
+        </div>
+      </div>
+
+      {/* Professional Badge Showcase */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="bg-slate-900 rounded-3xl p-6 shadow-xl">
+          <BadgeShowcase />
         </div>
       </div>
 

@@ -10,8 +10,10 @@ import EmissionsTrendChart from '../components/analytics/EmissionsTrendChart';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { formatActivityType, getActivityIcon } from '../utils/formatters';
 import RecommendationService from '../services/RecommendationService';
-import { CheckCircle2 } from 'lucide-react';
+import GamificationService from '../services/GamificationService';
+import { CheckCircle2, Flame, Award } from 'lucide-react';
 import WeeklyProgressCard from '../components/WeeklyProgressCard';
+import BadgeShowcase from '../components/BadgeShowcase';
 
 import AchievementBanner from '../components/AchievementBanner';
 import FailureBanner from '../components/FailureBanner';
@@ -24,6 +26,7 @@ const Dashboard = () => {
   const [monthlyData, setMonthlyData] = useState(null);
   const [recentActivities, setRecentActivities] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [points, setPoints] = useState({ totalPoints: 0, currentLevel: "Eco Beginner", currentStreak: 0, longestStreak: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,12 +37,13 @@ const Dashboard = () => {
         const today = new Date().toISOString().split('T')[0];
         
         // Fetch stats and activities in parallel
-        const [daily, weekly, monthly, activitiesData, recsData] = await Promise.all([
+        const [daily, weekly, monthly, activitiesData, recsData, pointsData] = await Promise.all([
           AnalyticsService.getDailyAnalytics(today),
           AnalyticsService.getWeeklyAnalytics(today),
           AnalyticsService.getMonthlyAnalytics(today),
           ActivityService.getActivities({ page: 0, size: 5, sort: 'logDate,desc' }),
-          RecommendationService.getPersonalizedRecommendations()
+          RecommendationService.getPersonalizedRecommendations(),
+          GamificationService.getCurrentPoints()
         ]);
         
         // Map the backend structure to our UI structure
@@ -86,6 +90,7 @@ const Dashboard = () => {
           return bP - aP;
         });
         setRecommendations(sortedRecs);
+        setPoints(pointsData);
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -157,11 +162,42 @@ const Dashboard = () => {
         {/* Failure Banner */}
         <FailureBanner />
 
-        {/* Removed Goal Alerts Widget as per user request */}
+        {/* Gamification Row (Streak & Progress) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Streak Manager Card */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-red-500/20 blur-2xl group-hover:bg-red-500/30 transition-all"></div>
+            
+            <div className="flex justify-between items-start mb-4 relative z-10">
+              <div>
+                <h3 className="font-bold text-slate-200">Daily Streak</h3>
+                <p className="text-sm text-slate-400 mt-1">Keep it alive for bonus points!</p>
+              </div>
+              <div className="p-2 bg-slate-800 rounded-xl border border-slate-700">
+                <Flame className="w-6 h-6 text-orange-500 animate-pulse" />
+              </div>
+            </div>
 
-        {/* Weekly Progress Card */}
-        <div className="mb-8">
-          <WeeklyProgressCard />
+            <div className="flex items-end gap-3 mb-6 relative z-10">
+              <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-orange-500 drop-shadow-sm">
+                {points.currentStreak || 0}
+              </span>
+              <span className="text-lg text-slate-300 mb-1 font-medium">Days</span>
+            </div>
+
+            <div className="bg-slate-800/50 rounded-xl p-3 flex justify-between items-center border border-slate-700/50 relative z-10">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-slate-400" />
+                <span className="text-sm text-slate-300">Longest Streak</span>
+              </div>
+              <span className="font-bold text-slate-200">{points.longestStreak || 0}</span>
+            </div>
+          </div>
+
+          {/* Weekly Progress Card */}
+          <div className="lg:col-span-2">
+            <WeeklyProgressCard />
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -192,6 +228,11 @@ const Dashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Trophy Room Section */}
+        <div className="mb-8">
+          <BadgeShowcase />
         </div>
 
         {/* Charts Grid */}
