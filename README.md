@@ -1,6 +1,11 @@
 <div align="center">
   <h1>🌱 EcoTrack - Carbon Footprint Monitoring Platform</h1>
   <p>
+    <a href="https://github.com/boggavarapu-manoz-kumar/carbon-footprint-platform/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status"></a>
+    <a href="https://github.com/boggavarapu-manoz-kumar/carbon-footprint-platform/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+    <a href="https://github.com/boggavarapu-manoz-kumar/carbon-footprint-platform/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+  </p>
+  <p>
     <strong>An intelligent platform for tracking, analyzing, and reducing your carbon footprint through data-driven sustainability insights.</strong>
   </p>
 </div>
