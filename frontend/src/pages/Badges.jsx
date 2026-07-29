@@ -5,131 +5,92 @@ import { Award, Lock, Star, Shield, Crown, Zap, TrendingUp, Calendar, Loader2 } 
 import axiosInstance from '../api/axiosConfig';
 import AchievementTimeline from '../components/AchievementTimeline';
 
-// A dynamic icon mapping to map backend icon names to Lucide components
-const IconMap = {
-  Award, Star, Shield, Crown, Zap, TrendingUp, Lock, Calendar
-};
-
-const getDynamicIcon = (iconName, className) => {
-  const IconComponent = IconMap[iconName] || Award;
-  return <IconComponent className={className} />;
-};
-
 const fetchBadgeShowcase = async () => {
   const { data } = await axiosInstance.get('/v1/badges/showcase');
   return data;
 };
 
-const getBadgeImageUrl = (badge) => {
-  if (badge.imageUrl && !badge.imageUrl.includes('flaticon.com')) {
-    return badge.imageUrl;
-  }
-  const iconNameMap = {
-    'Star': 'lucide:star',
-    'Zap': 'lucide:zap',
-    'Award': 'lucide:award',
-    'Shield': 'lucide:shield',
-    'Leaf': 'lucide:leaf',
-    'Crown': 'lucide:crown',
-    'FaSeedling': 'lucide:sprout',
-    'FaBullseye': 'lucide:target',
-    'FaTrophy': 'lucide:trophy',
-    'FaFire': 'lucide:flame',
-    'FaGem': 'lucide:gem',
-    'FaCar': 'lucide:car',
-    'FaBolt': 'lucide:zap',
-    'FaLeaf': 'lucide:leaf',
-    'FaShoppingBag': 'lucide:shopping-bag',
-    'FaGlobe': 'lucide:globe',
-    'FaRocket': 'lucide:rocket',
-    'FaMedal': 'lucide:medal',
-    'FaCrown': 'lucide:crown',
-    'FaStar': 'lucide:star'
-  };
-  const icon = iconNameMap[badge.icon] || iconNameMap[badge.iconName] || 'lucide:award';
-  const hexColor = (badge.color || '#10b981').replace('#', '%23');
-  return `https://api.iconify.design/${icon}.svg?color=${hexColor}&width=96&height=96`;
-};
-
 const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
-  const [imageError, setImageError] = React.useState(false);
-  const imageUrl = getBadgeImageUrl(badge);
-
   const percentage = badge.targetProgress > 0 
     ? Math.min(100, Math.round((badge.currentProgress / badge.targetProgress) * 100)) 
     : 0;
 
+  // If no imageUrl is provided, use a simple local placeholder or empty string
+  const imageUrl = (badge.imageUrl && badge.imageUrl.trim() !== '') 
+    ? badge.imageUrl 
+    : '/vite.svg'; // Fallback to a local asset if missing
+
   return (
     <motion.div
-      whileHover={{ y: -10, scale: 1.02 }}
-      className={`relative overflow-hidden rounded-3xl p-6 transition-all duration-500 shadow-lg ${
+      whileHover={{ y: -4, scale: 1.01 }}
+      className={`relative overflow-hidden rounded-3xl p-6 transition-all duration-300 border ${
         isLocked 
-          ? 'bg-slate-50/80 backdrop-blur-md border border-slate-200/50 grayscale-[0.5]' 
-          : 'bg-white/90 backdrop-blur-xl border border-emerald-100 shadow-[0_8px_30px_rgb(16,185,129,0.12)]'
+          ? 'bg-slate-50 border-slate-200 shadow-sm opacity-80 grayscale-[0.6]' 
+          : 'bg-white border-emerald-100 shadow-md hover:shadow-lg'
       }`}
     >
-      {/* Background glow for earned badges */}
-      {!isLocked && (
-        <div className="absolute -top-20 -right-20 w-48 h-48 bg-gradient-to-br from-emerald-300 to-teal-400 opacity-20 blur-3xl rounded-full pointer-events-none" />
-      )}
-
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex gap-5">
-          <div className={`flex items-center justify-center w-20 h-20 rounded-3xl flex-shrink-0 shadow-inner p-3 ${
-            isLocked ? 'bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500' : 'bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+      <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start text-center sm:text-left relative z-10">
+        
+        {/* Simple Badge Image */}
+        <div className="relative shrink-0">
+          <div className={`w-24 h-24 flex items-center justify-center rounded-full border-4 shadow-inner p-2 overflow-hidden ${
+            isLocked ? 'bg-slate-100 border-slate-200' : 'bg-emerald-50 border-emerald-100'
           }`}>
             <img 
               src={imageUrl} 
               alt={badge.name} 
-              className={`w-12 h-12 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 ${isLocked ? 'opacity-50 grayscale' : ''}`}
-              onError={() => setImageError(true)}
+              className={`w-full h-full object-contain ${isLocked ? 'opacity-60' : ''}`}
             />
           </div>
-          <div className="flex-1 pt-1">
-            <h3 className={`text-xl font-extrabold leading-tight tracking-tight mb-1 ${isLocked ? 'text-slate-600' : 'text-slate-900'}`}>
+          
+          {isLocked && (
+            <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow border border-slate-200">
+              <Lock className="w-4 h-4 text-slate-400" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 pt-1 w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start mb-2 gap-2">
+            <h3 className={`text-lg font-bold leading-tight ${isLocked ? 'text-slate-600' : 'text-slate-900'}`}>
               {badge.name}
             </h3>
-            <p className="text-sm font-medium text-slate-500 line-clamp-2 leading-relaxed">{badge.description}</p>
+            {!isLocked && (
+              <span className="inline-flex items-center justify-center font-bold text-xs bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100">
+                +{badge.points} XP
+              </span>
+            )}
           </div>
+          
+          <p className="text-sm text-slate-500 leading-relaxed mb-4">{badge.description}</p>
+          
+          {/* Progress Bar for Locked Badges */}
+          {isLocked && badge.targetProgress > 0 && (
+            <div className="mt-2 w-full">
+              <div className="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
+                <span>Progress</span>
+                <span>{badge.currentProgress} / {badge.targetProgress}</span>
+              </div>
+              <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percentage}%` }}
+                  transition={{ duration: 1, delay: 0.2 }}
+                  className="h-full bg-slate-400 rounded-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Earned Date */}
+          {!isLocked && badge.earnedAt && (
+            <div className="mt-4 flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-400 font-medium border-t border-slate-100 pt-3">
+              <Calendar className="w-3.5 h-3.5" />
+              Unlocked {new Date(badge.earnedAt).toLocaleDateString()}
+            </div>
+          )}
         </div>
-        {isLocked ? (
-          <div className="p-2 bg-slate-100 rounded-full">
-            <Lock className="w-5 h-5 text-slate-400" />
-          </div>
-        ) : (
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-black text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full shadow-sm">
-              +{badge.points} XP
-            </span>
-          </div>
-        )}
       </div>
-
-      {/* Progress Bar for Locked Badges */}
-      {isLocked && badge.targetProgress > 0 && (
-        <div className="mt-6">
-          <div className="flex justify-between text-xs font-medium text-slate-500 mb-2">
-            <span>Progress: {badge.currentProgress} / {badge.targetProgress}</span>
-            <span>{percentage}%</span>
-          </div>
-          <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${percentage}%` }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="h-full bg-emerald-500 rounded-full"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Earned Date */}
-      {!isLocked && badge.earnedAt && (
-        <div className="mt-5 flex items-center gap-1.5 text-xs text-slate-400 font-medium border-t border-slate-100 pt-3">
-          <Calendar className="w-3.5 h-3.5" />
-          Earned on {new Date(badge.earnedAt).toLocaleDateString()}
-        </div>
-      )}
     </motion.div>
   );
 };
