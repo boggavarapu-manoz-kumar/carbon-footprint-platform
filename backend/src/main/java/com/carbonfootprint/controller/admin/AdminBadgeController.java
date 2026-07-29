@@ -3,11 +3,14 @@ package com.carbonfootprint.controller.admin;
 import com.carbonfootprint.entity.Badge;
 import com.carbonfootprint.entity.BadgeStatus;
 import com.carbonfootprint.repository.BadgeRepository;
+import com.carbonfootprint.repository.UserBadgeRepository;
 import com.carbonfootprint.response.ApiResponse;
+import com.carbonfootprint.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +31,8 @@ import java.util.Objects;
 public class AdminBadgeController {
 
     private final BadgeRepository badgeRepository;
+    private final UserBadgeRepository userBadgeRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Value("${app.upload.dir:uploads/badges}")
     private String uploadDir;
@@ -74,8 +79,10 @@ public class AdminBadgeController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).SETTINGS_UPDATE) or hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @Transactional
     public ResponseEntity<ApiResponse<Void>> deleteBadge(@PathVariable Long id) {
         log.info("Deleting badge: {}", id);
+        userBadgeRepository.deleteByBadgeId(id);
         badgeRepository.deleteById(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Badge deleted successfully"));
     }
@@ -97,28 +104,18 @@ public class AdminBadgeController {
                 return ResponseEntity.badRequest().body(ApiResponse.error("File is empty"));
             }
 
-            // Validate extension (PNG, SVG, WEBP)
+            // Validate extension (PNG, SVG, WEBP, JPG, JPEG)
             String filename = file.getOriginalFilename();
             if (filename == null) filename = "image.png";
             String extension = filename.substring(filename.lastIndexOf(".")).toLowerCase();
-            if (!Arrays.asList(".png", ".svg", ".webp").contains(extension)) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Only PNG, SVG, and WEBP files are allowed"));
+            if (!Arrays.asList(".png", ".svg", ".webp", ".jpg", ".jpeg").contains(extension)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Only PNG, SVG, WEBP, JPG, and JPEG files are allowed"));
             }
 
-            // Create directory if not exists
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            String newFilename = UUID.randomUUID().toString() + extension;
-            Path filePath = uploadPath.resolve(newFilename);
-            Files.copy(file.getInputStream(), filePath);
-
-            String fileUrl = "/uploads/badges/" + newFilename;
-            return ResponseEntity.ok(ApiResponse.success(fileUrl, "File uploaded successfully"));
-        } catch (IOException e) {
-            log.error("Failed to upload file", e);
+            String fileUrl = cloudinaryService.uploadFile(file, "badges");
+            return ResponseEntity.ok(ApiResponse.success(fileUrl, "File uploaded successfully to Cloudinary"));
+        } catch (Exception e) {
+            log.error("Failed to upload file to Cloudinary", e);
             return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to upload file"));
         }
     }

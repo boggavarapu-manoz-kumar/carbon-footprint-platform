@@ -14,6 +14,10 @@ public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
     boolean existsByUserAndBadge(com.carbonfootprint.entity.User user, com.carbonfootprint.entity.Badge badge);
     List<UserBadge> findByUserId(Long userId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM UserBadge ub WHERE ub.badge.id = :badgeId")
+    void deleteByBadgeId(@Param("badgeId") Long badgeId);
+
     @Query("SELECT COUNT(b) FROM UserBadge b WHERE b.awardedAt >= :startOfDay AND b.awardedAt <= :endOfDay")
     Long countBadgesEarnedToday(
             @Param("startOfDay") LocalDateTime startOfDay,
