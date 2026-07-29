@@ -57,7 +57,7 @@ const AdminBadgeForm = () => {
           imageUrl: badge.imageUrl || ''
         });
         if (badge.imageUrl) {
-          setPreviewImage(badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('/') ? badge.imageUrl : `http://localhost:8080${badge.imageUrl}`);
+          setPreviewImage(badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('data:') ? badge.imageUrl : `http://localhost:8080${badge.imageUrl}`);
         }
       }
     } catch (error) {
@@ -76,8 +76,8 @@ const AdminBadgeForm = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!['image/png', 'image/svg+xml', 'image/webp'].includes(file.type)) {
-      toast.error('Only PNG, SVG, and WEBP files are allowed');
+    if (!['image/png', 'image/svg+xml', 'image/webp', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      toast.error('Only PNG, SVG, WEBP, and JPEG files are allowed');
       return;
     }
 
@@ -85,7 +85,7 @@ const AdminBadgeForm = () => {
       const response = await AdminBadgeService.uploadImage(file);
       const url = response.data;
       setFormData(prev => ({ ...prev, imageUrl: url }));
-      setPreviewImage(`http://localhost:8080${url}`);
+      setPreviewImage(url.startsWith('http') ? url : `http://localhost:8080${url}`);
       toast.success('Image uploaded successfully');
     } catch (error) {
       toast.error('Failed to upload image');

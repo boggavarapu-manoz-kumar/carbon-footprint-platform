@@ -10,39 +10,33 @@ const fetchBadgeShowcase = async () => {
   return data;
 };
 
-const getBadgeImageUrl = (badge) => {
-  if (badge.imageUrl && !badge.imageUrl.includes('flaticon.com')) {
-    return badge.imageUrl;
-  }
-  const iconNameMap = {
-    'Star': 'lucide:star',
-    'Zap': 'lucide:zap',
-    'Award': 'lucide:award',
-    'Shield': 'lucide:shield',
-    'Leaf': 'lucide:leaf',
-    'Crown': 'lucide:crown'
-  };
-  const icon = iconNameMap[badge.icon] || iconNameMap[badge.iconName] || 'lucide:award';
-  const hexColor = (badge.color || '#10b981').replace('#', '%23');
-  return `https://api.iconify.design/${icon}.svg?color=${hexColor}&width=64&height=64`;
-};
-
 // Mini badge preview card
-const MiniBadge = ({ badge }) => (
-  <motion.div
-    whileHover={{ y: -2 }}
-    className="relative group bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-all"
-  >
-    <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-    <div className="relative z-10 w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-2 p-1.5">
-      <img src={getBadgeImageUrl(badge)} alt={badge.name} className="w-8 h-8 object-contain" />
-    </div>
-    <h4 className="text-xs font-bold text-slate-800 text-center line-clamp-1">{badge.name}</h4>
-    <div className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full mt-1">
-      +{badge.points} XP
-    </div>
-  </motion.div>
-);
+const MiniBadge = ({ badge }) => {
+  // If no imageUrl is provided, use a simple local placeholder or empty string
+  const imageUrl = (badge.imageUrl && badge.imageUrl.trim() !== '') 
+    ? badge.imageUrl 
+    : '/vite.svg'; // Fallback to a local asset if missing
+
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      className="relative group bg-white border border-slate-200 rounded-2xl p-3 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer"
+      title={`${badge.name}: ${badge.description || ''}`}
+    >
+      <div className="relative z-10 w-16 h-16 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-3 shadow-inner p-2 overflow-hidden">
+        <img 
+          src={imageUrl} 
+          alt={badge.name} 
+          className="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-300"
+        />
+      </div>
+      <h4 className="text-xs font-bold text-slate-800 text-center line-clamp-1 mb-1">{badge.name}</h4>
+      <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+        +{badge.points} XP
+      </div>
+    </motion.div>
+  );
+};
 
 const BadgeShowcase = () => {
   const navigate = useNavigate();
