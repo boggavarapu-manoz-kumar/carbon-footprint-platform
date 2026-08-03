@@ -15,8 +15,10 @@ import Button from '../components/common/Button';
 import GoalPredictionWidget from '../components/GoalPredictionWidget';
 import GoalActions from '../components/goals/GoalActions';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Goals = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ const Goals = () => {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch goals', err);
-      setError('Could not load goals. Please try again.');
+      setError(t('goals.error_load'));
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ const Goals = () => {
       fetchGoals();
     } catch (err) {
       console.error('Failed to create goal', err);
-      alert('Failed to create goal. Check your inputs.');
+      alert(t('goals.error_create'));
     }
   };
 
@@ -89,7 +91,7 @@ const Goals = () => {
   };
 
   if (loading && goals.length === 0) {
-    return <div className="p-8 flex justify-center text-slate-500">Loading goals...</div>;
+    return <div className="p-8 flex justify-center text-slate-500">{t('goals.loading')}</div>;
   }
 
   return (
@@ -98,15 +100,15 @@ const Goals = () => {
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Your Goals</h1>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t('goals.title')}</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Track your carbon reduction targets and stay motivated.
+              {t('goals.subtitle')}
             </p>
           </div>
           {!showWizard && (
             <Button onClick={() => setShowWizard(true)} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              New Goal
+              {t('goals.new_goal')}
             </Button>
           )}
         </div>
@@ -132,7 +134,7 @@ const Goals = () => {
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}
                 `}
               >
-                {tab.charAt(0) + tab.slice(1).toLowerCase()}
+                {t(`goals.tabs.${tab}`)}
               </button>
             ))}
           </div>
@@ -140,52 +142,52 @@ const Goals = () => {
 
         {showWizard && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8 transition-all">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Create a New Goal</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('goals.create_new')}</h2>
             <form onSubmit={handleCreateGoal} className="space-y-4 max-w-2xl">
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Goal Name</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('goals.goal_name')}</label>
                   <input 
                     type="text" 
                     required 
                     value={goalName}
                     onChange={e => setGoalName(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                    placeholder="e.g. Cut transport emissions"
+                    placeholder={t('goals.goal_name_placeholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Goal Type</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('goals.goal_type')}</label>
                   <select 
                     value={goalType}
                     onChange={e => setGoalType(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white"
                   >
-                    <option value="PERCENTAGE_REDUCTION">% Reduction</option>
-                    <option value="TARGET_CARBON_VALUE">Target Carbon Value</option>
-                    <option value="TRANSPORT">Transport Specific</option>
-                    <option value="ELECTRICITY">Electricity Specific</option>
-                    <option value="FOOD">Food Specific</option>
-                    <option value="SHOPPING">Shopping Specific</option>
+                    <option value="PERCENTAGE_REDUCTION">{t('goals.types.PERCENTAGE_REDUCTION')}</option>
+                    <option value="TARGET_CARBON_VALUE">{t('goals.types.TARGET_CARBON_VALUE')}</option>
+                    <option value="TRANSPORT">{t('goals.types.TRANSPORT')}</option>
+                    <option value="ELECTRICITY">{t('goals.types.ELECTRICITY')}</option>
+                    <option value="FOOD">{t('goals.types.FOOD')}</option>
+                    <option value="SHOPPING">{t('goals.types.SHOPPING')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description (Optional)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('goals.description')}</label>
                 <textarea 
                   value={goalDesc}
                   onChange={e => setGoalDesc(e.target.value)}
                   rows="2"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                  placeholder="Why this goal?"
+                  placeholder={t('goals.description_placeholder')}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('goals.start_date')}</label>
                   <input 
                     type="date"
                     required
@@ -195,23 +197,23 @@ const Goals = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Time Period</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('goals.time_period')}</label>
                   <select 
                     value={periodDays}
                     onChange={e => setPeriodDays(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white"
                   >
-                    <option value="7">7 Days</option>
-                    <option value="30">30 Days</option>
-                    <option value="60">60 Days</option>
-                    <option value="90">90 Days</option>
-                    <option value="180">180 Days</option>
-                    <option value="365">1 Year</option>
+                    <option value="7">{t('goals.periods.7')}</option>
+                    <option value="30">{t('goals.periods.30')}</option>
+                    <option value="60">{t('goals.periods.60')}</option>
+                    <option value="90">{t('goals.periods.90')}</option>
+                    <option value="180">{t('goals.periods.180')}</option>
+                    <option value="365">{t('goals.periods.365')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {goalType === 'PERCENTAGE_REDUCTION' ? 'Target Reduction (%)' : 'Target (kg CO₂e)'}
+                    {goalType === 'PERCENTAGE_REDUCTION' ? t('goals.target_reduction') : t('goals.target_kg')}
                   </label>
                   <input 
                     type="number" 
@@ -221,14 +223,14 @@ const Goals = () => {
                     value={targetVal}
                     onChange={e => setTargetVal(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-                    placeholder={goalType === 'PERCENTAGE_REDUCTION' ? 'e.g. 15' : 'e.g. 50'}
+                    placeholder={goalType === 'PERCENTAGE_REDUCTION' ? t('goals.target_placeholder_percent') : t('goals.target_placeholder_kg')}
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <Button variant="outline" type="button" onClick={() => setShowWizard(false)}>Cancel</Button>
-                <Button type="submit">Create Goal</Button>
+                <Button variant="outline" type="button" onClick={() => setShowWizard(false)}>{t('goals.cancel')}</Button>
+                <Button type="submit">{t('goals.create_btn')}</Button>
               </div>
             </form>
           </div>
@@ -284,11 +286,11 @@ const Goals = () => {
                     </div>
                     <div className="flex items-center gap-3 mt-2 text-xs font-medium">
                       <span className={`px-2.5 py-1 rounded-full border ${statusColor}`}>
-                        {goal.status.replace('_', ' ')}
+                        {t(`goals.tabs.${goal.status}`)}
                       </span>
                       <span className="flex items-center text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                         <Target className="w-3.5 h-3.5 mr-1" />
-                        {goal.goalType.replace('_', ' ')}
+                        {t(`goals.types.${goal.goalType}`)}
                       </span>
                     </div>
                   </div>
@@ -302,13 +304,13 @@ const Goals = () => {
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-sm">
                     <div>
                       <span className="flex items-center text-slate-500 mb-1 font-medium text-xs uppercase tracking-wider">
-                        <Calendar className="w-3.5 h-3.5 mr-1.5" /> Start
+                        <Calendar className="w-3.5 h-3.5 mr-1.5" /> {t('goals.start')}
                       </span>
                       <span className="text-slate-900 font-semibold">{goal.startDate}</span>
                     </div>
                     <div>
                       <span className="flex items-center text-slate-500 mb-1 font-medium text-xs uppercase tracking-wider">
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Target Date
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {t('goals.target_date_label')}
                       </span>
                       <span className="text-slate-900 font-semibold">{goal.targetDate}</span>
                     </div>
@@ -316,7 +318,7 @@ const Goals = () => {
                       <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100 mt-2">
                         <span className="flex items-center text-blue-700 font-medium text-xs">
                           <Clock className="w-4 h-4 mr-1.5" /> 
-                          Est. Completion: {goal.estimatedCompletionDate}
+                          {t('goals.est_completion')} {goal.estimatedCompletionDate}
                         </span>
                       </div>
                     )}
@@ -329,9 +331,9 @@ const Goals = () => {
           {goals.length === 0 && !showWizard && !loading && (
             <div className="col-span-1 lg:col-span-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-12 text-center">
               <Target className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">No goals yet</h3>
-              <p className="text-slate-500 mb-6">Create a goal to start tracking your reduction progress.</p>
-              <Button onClick={() => setShowWizard(true)}>Create First Goal</Button>
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">{t('goals.no_goals')}</h3>
+              <p className="text-slate-500 mb-6">{t('goals.no_goals_subtitle')}</p>
+              <Button onClick={() => setShowWizard(true)}>{t('goals.create_first_goal')}</Button>
             </div>
           )}
         </div>

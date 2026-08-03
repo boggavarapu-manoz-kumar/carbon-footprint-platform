@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Modal, Form, Input, Select, InputNumber, Tag, Space, message, Popconfirm, Card, Typography } from 'antd';
-import { Plus, Edit, Trash2, Award, Upload } from 'lucide-react';
+import { Table, Button, Modal, Form, Input, Select, InputNumber, Tag, Space, message, Popconfirm, Card, Typography, Upload } from 'antd';
+import { Plus, Edit, Trash2, Award, Upload as UploadIcon } from 'lucide-react';
+import ImgCrop from 'antd-img-crop';
 import { badgeService } from '../api/badgeService';
 
 const { Title } = Typography;
@@ -22,6 +23,8 @@ export const BadgeManagement = () => {
   const [editingBadge, setEditingBadge] = useState(null);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
+  const imageUrlValue = Form.useWatch('imageUrl', form);
+  const [uploading, setUploading] = useState(false);
 
   const { data: badges, isLoading } = useQuery({
     queryKey: ['adminBadges'],
@@ -92,6 +95,21 @@ export const BadgeManagement = () => {
       updateMutation.mutate({ id: editingBadge.id, data: payload });
     } else {
       createMutation.mutate(payload);
+    }
+  };
+
+  const handleCustomRequest = async ({ file, onSuccess, onError }) => {
+    try {
+      setUploading(true);
+      const url = await badgeService.uploadBadgeImage(file);
+      form.setFieldsValue({ imageUrl: url });
+      onSuccess("ok");
+      message.success("Image uploaded successfully");
+    } catch (error) {
+      onError(error);
+      message.error("Failed to upload image");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -235,8 +253,24 @@ export const BadgeManagement = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="imageUrl" label="Image URL">
-              <Input placeholder="https://example.com/badge.png" prefix={<Upload className="w-4 h-4 text-gray-400" />} />
+            <Form.Item name="imageUrl" label="Badge Image">
+              <ImgCrop rotationSlider cropShape="round" quality={0.6}>
+                <Upload
+                  customRequest={handleCustomRequest}
+                  listType="picture-card"
+                  maxCount={1}
+                  showUploadList={false}
+                >
+                  {imageUrlValue ? (
+                    <img src={imageUrlValue} alt="badge" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <UploadIcon className="w-5 h-5 text-gray-400 mb-2" />
+                      <div className="text-xs text-gray-500">{uploading ? 'Uploading...' : 'Upload'}</div>
+                    </div>
+                  )}
+                </Upload>
+              </ImgCrop>
             </Form.Item>
             <Form.Item name="icon" label="Lucide Icon (Fallback)">
               <Input placeholder="e.g. TreePine" />

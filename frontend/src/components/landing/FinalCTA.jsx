@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { MagneticButton } from '../motion/MagneticButton';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const FinalCTA = () => {
+  const { t } = useTranslation();
   return (
     <section className="relative py-40 overflow-hidden bg-slate-50 flex items-center justify-center min-h-[80vh]">
       
@@ -46,10 +48,10 @@ export const FinalCTA = () => {
 
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
         <h2 className="text-5xl md:text-7xl font-medium text-slate-900 tracking-tighter mb-6">
-          Start Measuring Your Impact Today.
+          {t('landing.start_measuring')}
         </h2>
         <p className="text-xl text-slate-600 font-light mb-12">
-          Join a movement towards a greener future. Deploy the CarbonSync platform in minutes.
+          {t('landing.join_movement')}
         </p>
 
         <MagneticButton damping={15}>
@@ -57,7 +59,7 @@ export const FinalCTA = () => {
             to="/register"
             className="group flex items-center justify-center gap-2 px-10 py-5 bg-emerald-500 text-white rounded-full font-medium text-lg transition-transform hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/20"
           >
-            Create Free Account
+            {t('landing.create_free_account')}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </MagneticButton>

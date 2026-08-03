@@ -20,6 +20,8 @@ const ActivityMonitor = React.lazy(() => import('../features/activities/componen
 const AdminGoalMonitor = React.lazy(() => import('../features/goals/components/AdminGoalMonitor').then(m => ({ default: m.AdminGoalMonitor })));
 const BenchmarkingDashboard = React.lazy(() => import('../features/benchmarking/components/BenchmarkingDashboard'));
 const BadgeManagement = React.lazy(() => import('../features/gamification/components/BadgeManagement').then(m => ({ default: m.BadgeManagement })));
+const SupportTicketManagement = React.lazy(() => import('../features/support/components/SupportTicketManagement').then(m => ({ default: m.SupportTicketManagement })));
+const AdminTicketDetail = React.lazy(() => import('../features/support/components/AdminTicketDetail').then(m => ({ default: m.AdminTicketDetail })));
 /**
  * If a password-reset email link accidentally points to the admin port,
  * this component safely bounces the visitor to the correct user-facing app
@@ -189,6 +191,26 @@ export const router = createBrowserRouter([
               <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
                 <Suspense fallback={<PageLoader />}>
                   <BadgeManagement />
+                </Suspense>
+              </RoleRoute>
+            )
+          },
+          {
+            path: 'support',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'SUPPORT_TEAM']}>
+                <Suspense fallback={<PageLoader />}>
+                  <SupportTicketManagement />
+                </Suspense>
+              </RoleRoute>
+            )
+          },
+          {
+            path: 'support/:id',
+            element: (
+              <RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'SUPPORT_TEAM']}>
+                <Suspense fallback={<PageLoader />}>
+                  <AdminTicketDetail />
                 </Suspense>
               </RoleRoute>
             )

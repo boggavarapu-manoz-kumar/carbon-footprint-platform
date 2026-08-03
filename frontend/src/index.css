@@ -334,3 +334,37 @@ body {
   margin-right: 5px;
 }
 
+
+/* ────────────────────────────────────────────
+   HIDE GOOGLE TRANSLATE NATIVE UI
+──────────────────────────────────────────── */
+.goog-te-banner-frame.skiptranslate, 
+.goog-te-gadget-icon, 
+.goog-te-gadget-simple, 
+.goog-logo-link, 
+#google_translate_element, 
+.goog-te-combo, 
+.goog-tooltip {
+    display: none !important;
+}
+body {
+    top: 0px !important;
+}
+.goog-text-highlight {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Force hide all Google iframes */
+iframe.goog-te-banner-frame {
+    display: none !important;
+}
+iframe[id=":1.container"] {
+    display: none !important;
+}
+body {
+    position: static !important;
+    min-height: 100vh !important;
+    top: 0 !important;
+}

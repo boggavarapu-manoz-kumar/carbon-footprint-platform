@@ -12,6 +12,8 @@ public interface NotificationService {
     
     Notification createAchievementNotification(User user, String title, String message, String metaData);
     
+    Notification createSupportTicketNotification(User user, String ticketNumber, String status, String metaData);
+    
     Page<Notification> getUserNotifications(Long userId, Pageable pageable);
     
     Page<Notification> getUnreadUserNotifications(Long userId, Pageable pageable);

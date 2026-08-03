@@ -84,6 +84,24 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendSupportTicketEmail(String toEmail, String ticketNumber, String title) {
+        String subject = "Support Ticket Created: " + ticketNumber;
+        enqueueEmail(toEmail, subject, "support-ticket-created", java.util.Map.of("ticketNumber", ticketNumber, "title", title));
+    }
+
+    @Override
+    public void sendSupportTicketUpdateEmail(String toEmail, String ticketNumber, String subject, String status, String latestReply, String ticketLink, String templateName) {
+        java.util.Map<String, Object> emailData = new java.util.HashMap<>();
+        emailData.put("ticketNumber", ticketNumber);
+        emailData.put("subject", subject);
+        emailData.put("status", status);
+        emailData.put("latestReply", latestReply != null ? latestReply : "");
+        emailData.put("ticketLink", ticketLink);
+        
+        enqueueEmail(toEmail, "Update on Support Ticket #" + ticketNumber, templateName, emailData);
+    }
+
+    @Override
     public void queueEmail(String toEmail, String subject, String body) {
         enqueueEmail(toEmail, subject, "general-notification", java.util.Map.of("body", body));
     }

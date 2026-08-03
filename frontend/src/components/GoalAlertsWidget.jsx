@@ -10,7 +10,6 @@ const GoalAlertsWidget = () => {
   const { data: alerts, isLoading, isError } = useQuery({
     queryKey: ['goalAlerts'],
     queryFn: () => GoalService.getGoalAlerts(),
-    refetchInterval: 300000, // Refresh every 5 mins
   });
 
   const allDismissed = alerts && alerts.every((_, i) => dismissedAlerts.has(i));

@@ -7,7 +7,7 @@ const GoalPredictionWidget = ({ goalId, targetEmission }) => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['goalPrediction', goalId],
     queryFn: () => GoalService.getGoalPrediction(goalId),
-    refetchInterval: 300000, // Refresh every 5 mins
+    staleTime: 60000,
   });
 
   if (isLoading) {

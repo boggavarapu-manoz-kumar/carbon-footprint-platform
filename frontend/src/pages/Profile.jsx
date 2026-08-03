@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getAvatarUrl, AVATAR_OPTIONS } from '../utils/formatters';
 import PhoneInput from 'react-phone-number-input';
 import LeaderboardService from '../services/LeaderboardService';
-import BadgeShowcase from '../components/BadgeShowcase';
+import { useTranslation } from 'react-i18next';
 
 const Profile = () => {
+  const { t } = useTranslation();
   const { refreshUser } = useAuth();
   const { data: fetchedProfile, isLoading: loading, error: fetchError } = useProfile();
   const updateProfileMutation = useUpdateProfile();
@@ -107,7 +108,7 @@ const Profile = () => {
   const handleSaveChanges = async (e) => {
     e.preventDefault();
     if (usernameAvailable === false) {
-      toast.error('Please choose an available username.');
+      toast.error(t('profile.toast_username_taken'));
       return;
     }
     
@@ -126,11 +127,11 @@ const Profile = () => {
           setOriginalUsername(profileData.username);
           setUsernameAvailable(null);
           if (refreshUser) await refreshUser();
-          toast.success('Profile updated successfully!');
+          toast.success(t('profile.toast_update_success'));
         },
         onError: (err) => {
           console.error('Error updating profile:', err);
-          const errorMessage = err.response?.data?.message || 'Failed to update profile. Please try again.';
+          const errorMessage = err.response?.data?.message || t('profile.toast_update_error');
           toast.error(errorMessage);
         }
       }
@@ -149,8 +150,8 @@ const Profile = () => {
     return (
       <div className="min-h-screen font-sans bg-slate-50 text-slate-900 pb-12 pt-8">
         <ErrorState
-          title="Unable to load profile"
-          message="Failed to load profile data."
+          title={t('profile.error_title')}
+          message={t('profile.error_subtitle')}
           onRetry={() => window.location.reload()}
         />
       </div>
@@ -222,7 +223,7 @@ const Profile = () => {
                 className="w-full mb-4 py-2 px-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
               >
                 <Camera className="h-4 w-4" />
-                Change Avatar
+                {t('profile.change_avatar')}
               </button>
 
               <div className="text-center mb-6">
@@ -239,11 +240,11 @@ const Profile = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-slate-400" />
-                  <span>{profileData.mobileNumber || 'Not provided'}</span>
+                  <span>{profileData.mobileNumber || t('profile.not_provided')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-slate-400" />
-                  <span>Member since {joinDate}</span>
+                  <span>{t('profile.member_since')} {joinDate}</span>
                 </div>
               </div>
             </motion.div>
@@ -262,19 +263,10 @@ const Profile = () => {
                     : 'text-slate-600 hover:bg-slate-100/60'
                 }`}
               >
-                <Settings className="w-4 h-4" /> Account Settings
+                <Settings className="w-4 h-4" /> {t('profile.account_settings')}
               </button>
 
-              <button
-                onClick={() => setActiveTab('badges')}
-                className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
-                  activeTab === 'badges'
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-                    : 'text-slate-600 hover:bg-slate-100/60'
-                }`}
-              >
-                <Award className="w-4 h-4" /> Achievements
-              </button>
+
 
               <button
                 onClick={() => setActiveTab('leaderboard')}
@@ -284,7 +276,7 @@ const Profile = () => {
                     : 'text-slate-600 hover:bg-slate-100/60'
                 }`}
               >
-                <Trophy className="w-4 h-4" /> Standing
+                <Trophy className="w-4 h-4" /> {t('profile.standing')}
               </button>
             </div>
             {activeTab === 'settings' && (
@@ -298,14 +290,14 @@ const Profile = () => {
                   <div className="p-2.5 bg-emerald-100 rounded-xl">
                     <Settings className="h-6 w-6 text-emerald-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-800">Account Settings</h2>
+                  <h2 className="text-2xl font-bold text-slate-800">{t('profile.account_settings')}</h2>
                 </div>
 
                 <form onSubmit={handleSaveChanges} className="p-8 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* First Name */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.first_name')}</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <UserIcon className="h-4 w-4 text-slate-400" />
@@ -324,7 +316,7 @@ const Profile = () => {
 
                     {/* Last Name */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.last_name')}</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <UserIcon className="h-4 w-4 text-slate-400" />
@@ -342,7 +334,7 @@ const Profile = () => {
                     
                     {/* Username */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Username</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.username')}</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <span className="text-slate-400 font-semibold text-sm">@</span>
@@ -363,13 +355,13 @@ const Profile = () => {
                         </div>
                       </div>
                       {usernameAvailable === false && (
-                        <p className="mt-1.5 text-xs text-red-500 font-medium">This username is already taken.</p>
+                        <p className="mt-1.5 text-xs text-red-500 font-medium">{t('profile.username_taken')}</p>
                       )}
                     </div>
 
                     {/* Mobile Number */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Mobile Number</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.mobile_number')}</label>
                       <div className="relative">
                         <PhoneInput
                           international
@@ -383,24 +375,24 @@ const Profile = () => {
 
                     {/* Gender */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Gender</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.gender')}</label>
                       <select
                         name="gender"
                         value={profileData.gender}
                         onChange={handleInputChange}
                         className="block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
                       >
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
+                        <option value="">{t('profile.select_gender')}</option>
+                        <option value="Male">{t('profile.male')}</option>
+                        <option value="Female">{t('profile.female')}</option>
+                        <option value="Other">{t('profile.other')}</option>
+                        <option value="Prefer not to say">{t('profile.prefer_not_to_say')}</option>
                       </select>
                     </div>
 
                     {/* Email */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.email_address')}</label>
                       <div className="relative opacity-60">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Mail className="h-4 w-4 text-slate-400" />
@@ -417,7 +409,7 @@ const Profile = () => {
 
                   {/* Sustainability Preferences */}
                   <div className="pt-4">
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Sustainability Preferences</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">{t('profile.sustainability_preferences')}</label>
                     <div className="relative">
                       <div className="absolute top-3 left-3 pointer-events-none">
                         <Leaf className="h-4 w-4 text-emerald-500" />
@@ -427,7 +419,7 @@ const Profile = () => {
                         value={profileData.sustainabilityPreferences}
                         onChange={handleInputChange}
                         rows={4}
-                        placeholder="Share your eco-friendly lifestyle choices (e.g., Vegan diet, drive an EV, use renewable energy at home...)"
+                        placeholder={t('profile.sustainability_placeholder')}
                         className="pl-10 block w-full rounded-xl border-slate-200 bg-slate-50 border py-3 px-4 text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
                       />
                     </div>
@@ -440,31 +432,21 @@ const Profile = () => {
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                       onClick={() => window.location.reload()}
                     >
-                      Cancel
+                      {t('profile.cancel')}
                     </button>
                     <button
                       type="submit"
                       disabled={updateProfileMutation.isPending || usernameAvailable === false}
                       className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-100 transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
                     >
-                      {updateProfileMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
+                      {updateProfileMutation.isPending ? t('profile.saving_changes') : t('profile.save_changes')}
                     </button>
                   </div>
                 </form>
               </motion.div>
             )}
 
-            {/* Achievements Tab */}
-            {activeTab === 'badges' && (
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/40"
-              >
-                <BadgeShowcase />
-              </motion.div>
-            )}
+
 
             {/* Leaderboard Standing Tab */}
             {activeTab === 'leaderboard' && (
@@ -485,50 +467,50 @@ const Profile = () => {
                         <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-yellow-400">
                           <Award className="w-7 h-7" />
                         </div>
-                        Leaderboard Performance
+                        {t('profile.leaderboard_performance')}
                       </h3>
                       <span className="text-xs font-bold px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Live Standing
+                        {t('profile.live_standing')}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 relative z-10">
                       <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">Current Rank</p>
+                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">{t('profile.current_rank')}</p>
                         <div className="flex items-baseline gap-2">
                           <span className="text-4xl font-black text-white">#{leaderboardStats.currentRank || '-'}</span>
-                          {leaderboardStats.trend === 'IMPROVED' && <span className="flex items-center text-xs font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30"><TrendingUp className="w-3.5 h-3.5 mr-0.5"/> Up</span>}
-                          {leaderboardStats.trend === 'DROPPED' && <span className="flex items-center text-xs font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/30"><TrendingDown className="w-3.5 h-3.5 mr-0.5"/> Down</span>}
+                          {leaderboardStats.trend === 'IMPROVED' && <span className="flex items-center text-xs font-black text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30"><TrendingUp className="w-3.5 h-3.5 mr-0.5"/> {t('profile.up')}</span>}
+                          {leaderboardStats.trend === 'DROPPED' && <span className="flex items-center text-xs font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/30"><TrendingDown className="w-3.5 h-3.5 mr-0.5"/> {t('profile.down')}</span>}
                         </div>
                       </div>
 
                       <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">Best Rank</p>
+                        <p className="text-xs font-bold text-emerald-300/80 uppercase tracking-wider mb-2">{t('profile.best_rank')}</p>
                         <span className="text-4xl font-black text-yellow-400">#{leaderboardStats.bestRank || '-'}</span>
                       </div>
 
                       <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Previous Rank</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('profile.previous_rank')}</p>
                         <span className="text-3xl font-bold text-slate-300">#{leaderboardStats.previousRank || '-'}</span>
                       </div>
 
                       <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-                        <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Total Score</p>
+                        <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">{t('profile.total_score')}</p>
                         <span className="text-3xl font-black text-emerald-400">{leaderboardStats.currentScore?.toLocaleString() || '0'}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10 relative z-10 text-sm font-semibold text-center">
                       <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <span className="text-slate-400 text-xs block mb-1">Weekly</span>
+                        <span className="text-slate-400 text-xs block mb-1">{t('profile.weekly')}</span>
                         <span className="font-bold text-white text-lg">{leaderboardStats.weeklyScore?.toLocaleString() || '0'} pts</span>
                       </div>
                       <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <span className="text-slate-400 text-xs block mb-1">Monthly</span>
+                        <span className="text-slate-400 text-xs block mb-1">{t('profile.monthly')}</span>
                         <span className="font-bold text-white text-lg">{leaderboardStats.monthlyScore?.toLocaleString() || '0'} pts</span>
                       </div>
                       <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <span className="text-slate-400 text-xs block mb-1">Yearly</span>
+                        <span className="text-slate-400 text-xs block mb-1">{t('profile.yearly')}</span>
                         <span className="font-bold text-white text-lg">{leaderboardStats.yearlyScore?.toLocaleString() || '0'} pts</span>
                       </div>
                     </div>
@@ -540,12 +522,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Professional Badge Showcase */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="bg-slate-900 rounded-3xl p-6 shadow-xl">
-          <BadgeShowcase />
-        </div>
-      </div>
+
 
       {/* Avatar Picker Modal */}
       <AnimatePresence>
@@ -570,8 +547,8 @@ const Profile = () => {
               <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg pointer-events-auto">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">Choose Your Avatar</h3>
-                    <p className="text-sm text-slate-500 mt-0.5">Pick a cartoon avatar that suits you</p>
+                    <h3 className="text-lg font-bold text-slate-900">{t('profile.choose_avatar_title')}</h3>
+                    <p className="text-sm text-slate-500 mt-0.5">{t('profile.choose_avatar_subtitle')}</p>
                   </div>
                   <button
                     onClick={() => setShowAvatarPicker(false)}
@@ -615,7 +592,7 @@ const Profile = () => {
                 </div>
 
                 <p className="text-xs text-slate-400 text-center mt-4">
-                  Click an avatar to select it, then save your profile to apply.
+                  {t('profile.choose_avatar_hint')}
                 </p>
               </div>
             </motion.div>

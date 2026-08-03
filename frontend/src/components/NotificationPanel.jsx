@@ -13,6 +13,16 @@ const NotificationPanel = ({ isOpen, onClose }) => {
     }
   }, [isOpen, fetchNotifications]);
 
+  const getImageUrl = (url) => {
+    if (!url || url.trim() === '') return null;
+    const rawUrl = url.trim();
+    if (rawUrl.startsWith('http') || rawUrl.startsWith('data:')) return rawUrl;
+    const hostname = window.location.hostname;
+    const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
+    const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
+    return `${baseUrl}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
@@ -104,7 +114,7 @@ const NotificationPanel = ({ isOpen, onClose }) => {
                         try {
                           const meta = JSON.parse(notification.metaData);
                           if (meta.imageUrl) {
-                            return <img src={meta.imageUrl} alt="Badge" className="w-8 h-8 rounded-full border-2 border-emerald-400" />;
+                            return <img src={getImageUrl(meta.imageUrl) || meta.imageUrl} alt="Badge" className="w-8 h-8 rounded-full border-2 border-emerald-400" />;
                           }
                         } catch (e) {}
                       }

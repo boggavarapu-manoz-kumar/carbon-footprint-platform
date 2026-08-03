@@ -118,6 +118,24 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.save(notification);
     }
 
+    @Override
+    @Transactional
+    public Notification createSupportTicketNotification(User user, String ticketNumber, String status, String metaData) {
+        Notification notification = Notification.builder()
+                .user(user)
+                .title("Support Ticket " + status)
+                .description("Your ticket " + ticketNumber + " has been " + status.toLowerCase() + ".")
+                .date(LocalDate.now())
+                .time(LocalTime.now())
+                .priority(NotificationPriority.INFO)
+                .actionLink("/dashboard/support")
+                .notificationType(NotificationType.SUPPORT_TICKET_CREATED)
+                .metaData(metaData)
+                .build();
+                
+        return notificationRepository.save(notification);
+    }
+
     private NotificationPriority determinePriority(NotificationType type) {
         switch (type) {
             case GOAL_CREATED:

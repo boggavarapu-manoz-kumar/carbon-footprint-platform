@@ -19,6 +19,16 @@ const BadgeUnlockModal = ({ notification, onClose }) => {
     }
   }, [notification]);
 
+  const getImageUrl = (url) => {
+    if (!url || url.trim() === '') return null;
+    const rawUrl = url.trim();
+    if (rawUrl.startsWith('http') || rawUrl.startsWith('data:')) return rawUrl;
+    const hostname = window.location.hostname;
+    const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
+    const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
+    return `${baseUrl}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  };
+
   if (!notification || !badgeData) return null;
 
   return (
@@ -69,7 +79,7 @@ const BadgeUnlockModal = ({ notification, onClose }) => {
               <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse" />
               {badgeData.imageUrl ? (
                 <img 
-                  src={badgeData.imageUrl} 
+                  src={getImageUrl(badgeData.imageUrl) || badgeData.imageUrl} 
                   alt={badgeData.badgeName} 
                   className="w-full h-full object-cover rounded-full border-4 border-white shadow-lg relative z-10"
                 />

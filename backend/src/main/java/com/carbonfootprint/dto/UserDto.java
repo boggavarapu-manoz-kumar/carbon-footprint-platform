@@ -26,6 +26,7 @@ public class UserDto {
     private AuthProvider provider;
     private String profilePictureUrl;
     private String sustainabilityPreferences;
+    private String preferredLanguage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastUsernameChangeDate;

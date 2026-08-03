@@ -70,6 +70,10 @@ public class User implements UserDetails, Serializable {
     @Column(name = "sustainability_preferences", length = 500)
     private String sustainabilityPreferences;
 
+    @Column(name = "preferred_language", length = 10)
+    @Builder.Default
+    private String preferredLanguage = "en";
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private List<Token> tokens;

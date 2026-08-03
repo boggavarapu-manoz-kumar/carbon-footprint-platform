@@ -37,6 +37,7 @@ public class UserMapper {
                 .provider(entity.getProvider())
                 .profilePictureUrl(entity.getProfilePictureUrl())
                 .sustainabilityPreferences(entity.getSustainabilityPreferences())
+                .preferredLanguage(entity.getPreferredLanguage())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .lastUsernameChangeDate(entity.getLastUsernameChangeDate())

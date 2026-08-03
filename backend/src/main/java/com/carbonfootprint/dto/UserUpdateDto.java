@@ -32,6 +32,9 @@ public class UserUpdateDto {
 
     private String gender;
 
+    @Size(max = 10, message = "Language preference cannot exceed 10 characters")
+    private String preferredLanguage;
+
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
 }

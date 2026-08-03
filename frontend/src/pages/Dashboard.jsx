@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { useProfile } from '../hooks/useProfile';
 import ActivityService from '../services/ActivityService';
 import AnalyticsService from '../services/AnalyticsService';
@@ -20,6 +21,7 @@ import FailureBanner from '../components/FailureBanner';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { data: userProfile } = useProfile();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
@@ -142,16 +144,16 @@ const Dashboard = () => {
         {/* Welcome & Quick Actions Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome back, {userProfile?.firstName || user?.firstName || 'Manoj'}</h1>
-            <p className="mt-1 text-sm text-slate-500">Here's your carbon footprint overview for today.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">{t('dashboard.welcome_back')}, {userProfile?.firstName || user?.firstName || 'Manoj'}</h1>
+            <p className="mt-1 text-sm text-slate-500">{t('dashboard.overview_subtitle')}</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => navigate('/dashboard/log-activity')} className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
               <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              Log Activity
+              {t('dashboard.log_activity')}
             </button>
             <button onClick={() => navigate('/dashboard/activity-history')} className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
-              View History
+              {t('dashboard.view_history')}
             </button>
           </div>
         </div>
@@ -170,8 +172,8 @@ const Dashboard = () => {
             
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div>
-                <h3 className="font-bold text-slate-200">Daily Streak</h3>
-                <p className="text-sm text-slate-400 mt-1">Keep it alive for bonus points!</p>
+                <h3 className="font-bold text-slate-200">{t('dashboard.daily_streak')}</h3>
+                <p className="text-sm text-slate-400 mt-1">{t('dashboard.streak_subtitle')}</p>
               </div>
               <div className="p-2 bg-slate-800 rounded-xl border border-slate-700">
                 <Flame className="w-6 h-6 text-orange-500 animate-pulse" />
@@ -182,13 +184,13 @@ const Dashboard = () => {
               <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-orange-500 drop-shadow-sm">
                 {points.currentStreak || 0}
               </span>
-              <span className="text-lg text-slate-300 mb-1 font-medium">Days</span>
+              <span className="text-lg text-slate-300 mb-1 font-medium">{t('dashboard.days')}</span>
             </div>
 
             <div className="bg-slate-800/50 rounded-xl p-3 flex justify-between items-center border border-slate-700/50 relative z-10">
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-300">Longest Streak</span>
+                <span className="text-sm text-slate-300">{t('dashboard.longest_streak')}</span>
               </div>
               <span className="font-bold text-slate-200">{points.longestStreak || 0}</span>
             </div>
@@ -239,8 +241,8 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
             <div className="mb-6">
-              <h3 className="text-base font-semibold text-slate-900">Category Breakdown</h3>
-              <p className="text-sm text-slate-500 mt-1">Your emissions distributed by category this month.</p>
+              <h3 className="text-base font-semibold text-slate-900">{t('dashboard.category_breakdown')}</h3>
+              <p className="text-sm text-slate-500 mt-1">{t('dashboard.category_subtitle')}</p>
             </div>
             <ErrorBoundary>
               <EnterpriseDistributionChart data={monthlyData?.categoryShares || []} />
@@ -249,8 +251,8 @@ const Dashboard = () => {
           
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
             <div className="mb-6">
-              <h3 className="text-base font-semibold text-slate-900">Emissions Trend</h3>
-              <p className="text-sm text-slate-500 mt-1">Your carbon footprint progression this month.</p>
+              <h3 className="text-base font-semibold text-slate-900">{t('dashboard.emissions_trend')}</h3>
+              <p className="text-sm text-slate-500 mt-1">{t('dashboard.trend_subtitle')}</p>
             </div>
             <ErrorBoundary>
               <EmissionsTrendChart
@@ -269,18 +271,18 @@ const Dashboard = () => {
         {/* Recent Activities Section */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
-            <h3 className="text-base font-semibold leading-6 text-slate-900">Recent Activities</h3>
-            <button onClick={() => navigate('/dashboard/activity-history')} className="text-sm font-medium text-emerald-600 hover:text-emerald-500">View all</button>
+            <h3 className="text-base font-semibold leading-6 text-slate-900">{t('dashboard.recent_activities')}</h3>
+            <button onClick={() => navigate('/dashboard/activity-history')} className="text-sm font-medium text-emerald-600 hover:text-emerald-500">{t('dashboard.view_all')}</button>
           </div>
           <div className="divide-y divide-slate-100">
             {recentActivities.length === 0 ? (
               <div className="p-12 text-center">
                 <svg className="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                <h3 className="text-sm font-medium text-slate-900">No activities</h3>
-                <p className="mt-1 text-sm text-slate-500">Get started by logging your first activity.</p>
+                <h3 className="text-sm font-medium text-slate-900">{t('dashboard.no_activities')}</h3>
+                <p className="mt-1 text-sm text-slate-500">{t('dashboard.no_activities_subtitle')}</p>
                 <div className="mt-6">
                   <button onClick={() => navigate('/dashboard/log-activity')} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700">
-                    Log Activity
+                    {t('dashboard.log_activity')}
                   </button>
                 </div>
               </div>
@@ -310,8 +312,8 @@ const Dashboard = () => {
         {recommendations.length > 0 && (
           <div className="mt-8 mb-8">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900">Personalized Action Plan</h2>
-              <p className="mt-1 text-sm text-slate-500">Based on your top 3 highest-emission activities over the last 30 days.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('dashboard.action_plan')}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t('dashboard.action_plan_subtitle')}</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {recommendations.map((rec, i) => {
@@ -353,20 +355,20 @@ const Dashboard = () => {
                     
                     <div className="bg-slate-50 border-t border-slate-200 p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500">Projected Reductions (kg CO₂e)</span>
+                        <span className="text-xs font-medium text-slate-500">{t('dashboard.projected_reductions')}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-4 mt-3 divide-x divide-slate-200">
                         <div className="text-center">
                           <div className="text-lg font-semibold text-slate-900">{rec.potentialWeeklyReduction?.toFixed(1) || '0'}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">Weekly</div>
+                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">{t('dashboard.weekly')}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-semibold text-slate-900">{rec.potentialMonthlyReduction?.toFixed(1) || '0'}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">Monthly</div>
+                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">{t('dashboard.monthly')}</div>
                         </div>
                         <div className="text-center">
                           <div className="text-lg font-semibold text-slate-900">{rec.potentialYearlyReduction?.toFixed(1) || '0'}</div>
-                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">Yearly</div>
+                          <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium mt-0.5">{t('dashboard.yearly')}</div>
                         </div>
                       </div>
                     </div>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity, Target, TrendingUp, Award } from 'lucide-react';
+import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity, Target, TrendingUp, Award, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 
 const NAVIGATION = [
@@ -9,6 +9,7 @@ const NAVIGATION = [
   { name: 'Activity Monitor', href: '/activities', icon: Activity, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'Goal Monitoring', href: '/goals', icon: Target, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'Gamification / Badges', href: '/badges', icon: Award, allowedRoles: ['SUPER_ADMIN', 'ADMIN'] },
+  { name: 'Support Tickets', href: '/support', icon: MessageSquare, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'SUPPORT_TEAM'] },
   { name: 'Audit Logs', href: '/audit-logs', icon: ShieldAlert, allowedRoles: ['SUPER_ADMIN', 'AUDITOR'] },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'Benchmarking', href: '/benchmarking', icon: TrendingUp, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },

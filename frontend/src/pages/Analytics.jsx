@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import AnalyticsService from '../services/AnalyticsService';
 import EnterpriseDistributionChart from '../components/analytics/EnterpriseDistributionChart';
 import EmissionsTrendChart from '../components/analytics/EmissionsTrendChart';
 import { DailyTimelineAnalyticsChart } from '../components/analytics/DailyTimelineAnalyticsChart';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
-const TABS = [
-  { id: 'daily',   label: 'Daily' },
-  { id: 'weekly',  label: 'Weekly' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'yearly',  label: 'Yearly' },
+const getTabs = (t) => [
+  { id: 'daily',   label: t('analytics.daily') },
+  { id: 'weekly',  label: t('analytics.weekly') },
+  { id: 'monthly', label: t('analytics.monthly') },
+  { id: 'yearly',  label: t('analytics.yearly') },
 ];
 
 const toISODate = (date) => date.toISOString().split('T')[0];
@@ -70,6 +71,8 @@ const SectionCard = ({ title, subtitle, children, className = '', delay = 0 }) =
 );
 
 const Analytics = () => {
+  const { t } = useTranslation();
+  const TABS = getTabs(t);
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(toISODate(new Date()));
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -139,8 +142,8 @@ const Analytics = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
-              <p className="text-sm text-slate-500 mt-1">Review your carbon footprint data and trends.</p>
+              <h1 className="text-2xl font-semibold text-slate-900">{t('analytics.title')}</h1>
+              <p className="text-sm text-slate-500 mt-1">{t('analytics.subtitle')}</p>
             </div>
             
             {/* Filters */}
@@ -196,11 +199,11 @@ const Analytics = () => {
             </motion.div>
           ) : isError ? (
             <motion.div key="error" className="flex flex-col items-center justify-center py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <p className="text-slate-500 text-sm">Failed to load analytics data.</p>
+              <p className="text-slate-500 text-sm">{t('analytics.failed_load')}</p>
             </motion.div>
           ) : !data ? (
             <motion.div key="empty" className="flex flex-col items-center justify-center py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <p className="text-slate-500 text-sm">No data available for the selected period.</p>
+              <p className="text-slate-500 text-sm">{t('analytics.no_data')}</p>
             </motion.div>
           ) : (
             <motion.div
@@ -210,33 +213,33 @@ const Analytics = () => {
               {/* KPIs Section */}
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <KpiCard
-                  label={isDaily ? "Today's Total Emission" : "Total Emissions"}
+                  label={isDaily ? t('analytics.today_total') : t('analytics.total_emissions')}
                   value={Number(data.totalEmissions || 0)}
                   delay={0.1}
                 />
                 <KpiCard
-                  label={isDaily ? "Today's Activities" : "Total Activities"}
+                  label={isDaily ? t('analytics.today_activities') : t('analytics.total_activities')}
                   value={Number(data.totalActivities || 0)}
-                  unit="activities"
+                  unit={t('analytics.activities_unit')}
                   delay={0.15}
                 />
                 <KpiCard
-                  label="Transport"
+                  label={t('analytics.transport')}
                   value={getCategoryEmissions('transport')}
                   delay={0.2}
                 />
                 <KpiCard
-                  label="Home Energy"
+                  label={t('analytics.home_energy')}
                   value={getCategoryEmissions('energy')}
                   delay={0.25}
                 />
                 <KpiCard
-                  label="Food & Diet"
+                  label={t('analytics.food_diet')}
                   value={getCategoryEmissions('diet')}
                   delay={0.3}
                 />
                 <KpiCard
-                  label="Shopping"
+                  label={t('analytics.shopping')}
                   value={getCategoryEmissions('shopping')}
                   delay={0.35}
                 />
@@ -245,7 +248,7 @@ const Analytics = () => {
               {/* Charts Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SectionCard 
-                  title={isDaily ? "Daily Category Breakdown" : "Category Breakdown"} 
+                  title={isDaily ? t('analytics.daily_category_breakdown') : t('analytics.category_breakdown')} 
                   delay={0.4}
                 >
                   <ErrorBoundary>
@@ -263,7 +266,7 @@ const Analytics = () => {
                     ) : (
                       <EmissionsTrendChart
                         data={timeline}
-                        title="Emissions Trend"
+                        title={t('analytics.emissions_trend')}
                         defaultChartType="labeled"
                         isDaily={false}
                       />
@@ -286,26 +289,26 @@ const Analytics = () => {
                     </svg>
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-900">Data Insights</h4>
+                    <h4 className="text-sm font-semibold text-blue-900">{t('analytics.data_insights')}</h4>
                     <div className="mt-1 text-sm text-blue-800 space-y-1">
                       {data.totalEmissions > 0 ? (
                         <>
                           <p>
-                            • Your highest emitting category for this period is <strong>{
+                            • {t('analytics.highest_emitting')} <strong>{
                               [...(data.categoryShares || [])].sort((a,b) => b.emissions - a.emissions)[0]?.category || 'N/A'
                             }</strong>.
                           </p>
                           <p>
-                            • You've logged <strong>{data.totalActivities || 0}</strong> activities, resulting in a total of <strong>{Number(data.totalEmissions).toLocaleString(undefined, { maximumFractionDigits: 2 })} kg CO2e</strong>.
+                            • {t('analytics.logged_activities_1')} <strong>{data.totalActivities || 0}</strong> {t('analytics.logged_activities_2')} <strong>{Number(data.totalEmissions).toLocaleString(undefined, { maximumFractionDigits: 2 })} kg CO2e</strong>.
                           </p>
                           {data.periodOverPeriodChange !== undefined && data.periodOverPeriodChange !== 0 && (
                             <p>
-                              • This represents a <strong>{Math.abs(data.periodOverPeriodChange).toFixed(1)}% {data.periodOverPeriodChange > 0 ? 'increase' : 'decrease'}</strong> compared to the previous period.
+                              • {t('analytics.represents')} <strong>{Math.abs(data.periodOverPeriodChange).toFixed(1)}% {data.periodOverPeriodChange > 0 ? t('analytics.increase') : t('analytics.decrease')}</strong> {t('analytics.compared_to_previous')}
                             </p>
                           )}
                         </>
                       ) : (
-                        <p>No emissions recorded for this period. Try logging an activity!</p>
+                        <p>{t('analytics.no_emissions_recorded')}</p>
                       )}
                     </div>
                   </div>

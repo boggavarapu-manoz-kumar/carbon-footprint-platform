@@ -12,10 +12,19 @@ const fetchBadgeShowcase = async () => {
 
 // Mini badge preview card
 const MiniBadge = ({ badge }) => {
-  // If no imageUrl is provided, use a simple local placeholder or empty string
-  const imageUrl = (badge.imageUrl && badge.imageUrl.trim() !== '') 
-    ? badge.imageUrl 
-    : '/vite.svg'; // Fallback to a local asset if missing
+  let imageUrl = '/vite.svg';
+  const rawBadgeImg = badge.imageUrl || badge.imagePath;
+  if (rawBadgeImg && rawBadgeImg.trim() !== '') {
+    const rawUrl = rawBadgeImg.trim();
+    if (rawUrl.startsWith('http') || rawUrl.startsWith('data:')) {
+      imageUrl = rawUrl;
+    } else {
+      const hostname = window.location.hostname;
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
+      const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
+      imageUrl = `${baseUrl}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+    }
+  }
 
   return (
     <motion.div

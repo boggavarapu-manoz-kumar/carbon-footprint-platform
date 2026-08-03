@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import ActivityService from '../services/ActivityService';
 import OtherActivityService from '../services/OtherActivityService';
@@ -45,6 +46,7 @@ const IconResolver = ({ iconName, className }) => {
 
 const LogActivity = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -363,8 +365,8 @@ const LogActivity = () => {
       
       {/* Header */}
       <div className="mb-10 text-center sm:text-left">
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">Log Activity</h1>
-        <p className="text-slate-500 text-lg max-w-2xl">Record a new activity to accurately measure and track your carbon footprint over time.</p>
+        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">{t('log_activity.title')}</h1>
+        <p className="text-slate-500 text-lg max-w-2xl">{t('log_activity.subtitle')}</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -377,7 +379,7 @@ const LogActivity = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-slate-900 flex items-center">
                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 text-sm mr-3">1</span>
-                Select Category
+                {t('log_activity.step1')}
               </h2>
               {step > 1 && (
                 <button onClick={() => setStep(1)} className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change</button>
@@ -432,7 +434,7 @@ const LogActivity = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 text-sm mr-3">2</span>
-                  Select Activity Type
+                  {t('log_activity.step2')}
                 </h2>
                 {step > 2 && (
                   <button onClick={() => setStep(2)} className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Change</button>
@@ -589,7 +591,7 @@ const LogActivity = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center">
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 text-sm mr-3">3</span>
-                  Activity Details
+                  {t('log_activity.step3')}
                 </h2>
                 <button onClick={() => setStep(2)} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 rounded">Change</button>
               </div>
@@ -724,8 +726,8 @@ const LogActivity = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Carbon Preview</h3>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Real-time Estimate</p>
+                <h3 className="text-sm font-bold text-slate-900">{t('log_activity.carbon_preview')}</h3>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('log_activity.real_time_estimate')}</p>
               </div>
             </div>
             

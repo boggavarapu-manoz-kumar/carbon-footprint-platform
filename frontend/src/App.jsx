@@ -40,6 +40,10 @@ const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
 const Benchmarking = lazy(() => import('./pages/Benchmarking'));
 const PointsHistory = lazy(() => import('./pages/PointsHistory'));
 const PointsGuide = lazy(() => import('./pages/PointsGuide'));
+const SupportTickets = lazy(() => import('./pages/support/SupportTickets'));
+const CreateTicketPage = lazy(() => import('./pages/support/CreateTicketPage'));
+const TicketSuccess = lazy(() => import('./pages/support/TicketSuccess'));
+const SupportTicketDetail = lazy(() => import('./pages/support/SupportTicketDetail'));
 const AdminBadgeManagement = lazy(() => import('./pages/admin/AdminBadgeManagement'));
 const AdminBadgeForm = lazy(() => import('./pages/admin/AdminBadgeForm'));
 
@@ -97,6 +101,10 @@ function App() {
           <Route path="benchmarking" element={<Benchmarking />} />
           <Route path="points-history" element={<PointsHistory />} />
           <Route path="points-guide" element={<PointsGuide />} />
+          <Route path="support" element={<SupportTickets />} />
+          <Route path="support/new" element={<CreateTicketPage />} />
+          <Route path="support/success" element={<TicketSuccess />} />
+          <Route path="support/:id" element={<SupportTicketDetail />} />
           
           {/* Admin Routes */}
           <Route path="admin/badges" element={<AdminBadgeManagement />} />

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, Search, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 import { NotificationCenter } from './NotificationCenter';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 export const TopNavbar = () => {
   const navigate = useNavigate();
@@ -55,6 +56,8 @@ export const TopNavbar = () => {
         {/* Right side utilities */}
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           
+          <LanguageSwitcher />
+
           <NotificationCenter />
 
           {/* Separator */}

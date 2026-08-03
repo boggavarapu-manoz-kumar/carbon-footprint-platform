@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, ArrowRight } from 'lucide-react';
 import { FadeIn } from '../components/motion/FadeIn';
@@ -11,6 +12,7 @@ const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,11 +74,11 @@ const Login = () => {
 
           <StaggerReveal staggerDelay={0.1}>
             <h1 className="text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-6 tracking-tight">
-              Welcome back to <br />
-              <span className="text-emerald-400">intelligent sustainability.</span>
+              {t('login.welcome_back')} <br />
+              <span className="text-emerald-400">{t('login.intelligent_sustainability')}</span>
             </h1>
             <p className="text-lg text-slate-300 max-w-md leading-relaxed">
-              Continue managing your carbon footprint with enterprise-grade analytics, seamless integrations, and real-time insights.
+              {t('login.continue_managing')}
             </p>
           </StaggerReveal>
         </div>
@@ -87,9 +89,9 @@ const Login = () => {
               <div className="flex gap-4 items-start">
                 <div className="w-12 h-12 rounded-full bg-slate-800 flex-shrink-0 border border-slate-700"></div>
                 <div>
-                  <p className="text-slate-200 text-sm italic mb-3">"CarbonSync completely transformed how our team tracks and reports Scope 1, 2, and 3 emissions. The automated intelligence is unmatched."</p>
-                  <p className="text-white font-semibold text-sm">Elena Rodriguez</p>
-                  <p className="text-slate-400 text-xs">Sustainability Director, GlobalTech</p>
+                  <p className="text-slate-200 text-sm italic mb-3">{t('login.quote_text')}</p>
+                  <p className="text-white font-semibold text-sm">{t('login.quote_author')}</p>
+                  <p className="text-slate-400 text-xs">{t('login.quote_role')}</p>
                 </div>
               </div>
             </div>
@@ -102,8 +104,8 @@ const Login = () => {
         <div className="w-full max-w-md">
           <FadeIn direction="none" duration={0.6}>
             <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">Sign In</h2>
-              <p className="text-slate-500">Enter your credentials to access your dashboard.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">{t('login.sign_in')}</h2>
+              <p className="text-slate-500">{t('login.enter_credentials')}</p>
             </div>
 
             <AnimatePresence>
@@ -125,14 +127,14 @@ const Login = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
               
               <div className="space-y-1">
-                <label htmlFor="loginIdentifier" className="block text-sm font-semibold text-slate-700">Email or Username</label>
+                <label htmlFor="loginIdentifier" className="block text-sm font-semibold text-slate-700">{t('login.email_username_label')}</label>
                 <input
                   id="loginIdentifier"
                   type="text"
-                  placeholder="name@company.com"
+                  placeholder={t('login.email_placeholder')}
                   className={`w-full px-4 py-3 bg-white border ${errors.loginIdentifier ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400`}
                   {...register('loginIdentifier', {
-                    required: 'Email or Username is required'
+                    required: t('login.email_required')
                   })}
                 />
                 <AnimatePresence>
@@ -144,9 +146,9 @@ const Login = () => {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">Password</label>
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">{t('login.password_label')}</label>
                   <RouterLink to="/forgot-password" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-                    Forgot password?
+                    {t('login.forgot_password')}
                   </RouterLink>
                 </div>
                 <div className="relative">
@@ -155,7 +157,7 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     className={`w-full px-4 py-3 bg-white border ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-slate-200 focus:border-slate-900 focus:ring-slate-900/10'} rounded-xl focus:outline-none focus:ring-4 transition-all placeholder:text-slate-400`}
-                    {...register('password', { required: 'Password is required' })}
+                    {...register('password', { required: t('login.password_required') })}
                   />
                   <button
                     type="button"
@@ -178,7 +180,7 @@ const Login = () => {
 
               <div className="flex items-center">
                 <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600" />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">Remember me</label>
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-700">{t('login.remember_me')}</label>
               </div>
 
               <button
@@ -192,7 +194,7 @@ const Login = () => {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <>Sign In <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" /></>
+                  <>{t('login.sign_in')} <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" /></>
                 )}
               </button>
             </form>
@@ -202,7 +204,7 @@ const Login = () => {
                 <div className="w-full border-t border-slate-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Or continue with</span>
+                <span className="px-2 bg-white text-slate-500">{t('login.or_continue_with')}</span>
               </div>
             </div>
 
@@ -217,14 +219,14 @@ const Login = () => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                Continue with Google
+                {t('login.continue_with_google')}
               </button>
             </div>
 
             <p className="mt-10 text-center text-sm text-slate-500">
-              Don't have an account?{' '}
+              {t('login.dont_have_account')}
               <RouterLink to="/register" className="font-semibold text-slate-900 hover:text-emerald-600 transition-colors">
-                Sign up for free
+                {t('login.sign_up_free')}
               </RouterLink>
             </p>
           </FadeIn>

@@ -47,9 +47,6 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
-      // Poll every 1 minute
-      const interval = setInterval(fetchUnreadCount, 60000);
-      return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
       setNotifications([]);

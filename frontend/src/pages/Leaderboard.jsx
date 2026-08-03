@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Trophy, Medal, Award, Star, Activity, Target, Flame, TrendingUp, AlertCircle, ChevronDown, ChevronUp, History, TrendingDown, Minus, CalendarDays, CheckCircle, Crown, Info, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LeaderboardService from "../services/LeaderboardService";
+import { useTranslation } from 'react-i18next';
 
 const Leaderboard = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('yearly'); // 'global', 'weekly', 'monthly', 'yearly'
   const [leaderboardData, setLeaderboardData] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
@@ -37,7 +39,7 @@ const Leaderboard = () => {
       );
       setLeaderboardData(data);
     } catch (err) {
-      setError("Unable to load global leaderboard data.");
+      setError(t('leaderboard.error_global'));
     } finally {
       setLoading(false);
     }
@@ -53,7 +55,7 @@ const Leaderboard = () => {
       );
       setWeeklyData(data);
     } catch (err) {
-      setError("Unable to load weekly leaderboard data.");
+      setError(t('leaderboard.error_weekly'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ const Leaderboard = () => {
       );
       setMonthlyData(data);
     } catch (err) {
-      setError("Unable to load monthly leaderboard data.");
+      setError(t('leaderboard.error_monthly'));
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,7 @@ const Leaderboard = () => {
       );
       setYearlyData(data);
     } catch (err) {
-      setError("Unable to load yearly leaderboard data.");
+      setError(t('leaderboard.error_yearly'));
     } finally {
       setLoading(false);
     }
@@ -121,13 +123,13 @@ const Leaderboard = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">Unable to load Leaderboard</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('leaderboard.error_title')}</h3>
         <p className="text-slate-500 max-w-md">{error}</p>
         <button 
           onClick={() => activeTab === 'global' ? loadGlobalLeaderboard() : activeTab === 'weekly' ? loadWeeklyLeaderboard() : activeTab === 'monthly' ? loadMonthlyLeaderboard() : loadYearlyLeaderboard()}
           className="mt-6 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
-          Try Again
+          {t('common.try_again')}
         </button>
       </div>
     );
@@ -174,7 +176,7 @@ const Leaderboard = () => {
         <div className="text-center mb-4 sm:mb-6 z-20 w-full px-1 sm:px-2">
           <p className="font-black text-slate-900 truncate text-sm sm:text-lg group-hover:text-emerald-600 transition-colors">{user.firstName} {user.lastName}</p>
           <p className="text-xs sm:text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
-            {user[scoreField]?.toLocaleString()} pts
+            {user[scoreField]?.toLocaleString()} {t('leaderboard.pts')}
           </p>
         </div>
         
@@ -218,18 +220,18 @@ const Leaderboard = () => {
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-8">
           <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-slate-900">All-Time Global Rankings</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('leaderboard.all_time_rankings')}</h2>
             <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-              <Award className="w-4 h-4" /> Top 50 Users
+              <Award className="w-4 h-4" /> {t('leaderboard.top_50')}
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                  <th className="px-6 py-4 w-24 text-center">Rank</th>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4 text-right">Score</th>
+                  <th className="px-6 py-4 w-24 text-center">{t('leaderboard.columns.rank')}</th>
+                  <th className="px-6 py-4">{t('leaderboard.columns.user')}</th>
+                  <th className="px-6 py-4 text-right">{t('leaderboard.columns.score')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -254,7 +256,7 @@ const Leaderboard = () => {
                         <div>
                           <p className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors flex items-center gap-2">
                             {user.firstName} {user.lastName} 
-                            {currentUser?.userId === user.userId && <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">You</span>}
+                            {currentUser?.userId === user.userId && <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">{t('leaderboard.you')}</span>}
                           </p>
                           <p className="text-xs text-slate-500">@{user.username}</p>
                         </div>
@@ -263,7 +265,7 @@ const Leaderboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2 group relative">
                         <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-800 font-black shadow-sm ring-1 ring-emerald-200">
-                          {user.totalSustainabilityScore.toLocaleString()} pts
+                          {user.totalSustainabilityScore.toLocaleString()} {t('leaderboard.pts')}
                         </span>
                       </div>
                     </td>
@@ -284,20 +286,20 @@ const Leaderboard = () => {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-8">
         <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-900">Weekly Top 100</h2>
+          <h2 className="text-lg font-bold text-slate-900">{t('leaderboard.weekly_top_100')}</h2>
           <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-            <History className="w-4 h-4" /> Resets every Sunday
+            <History className="w-4 h-4" /> {t('leaderboard.resets_sunday')}
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="px-6 py-4 w-24 text-center">Rank</th>
-                <th className="px-6 py-4">User</th>
-                <th className="px-6 py-4 text-center">Trend</th>
-                <th className="px-6 py-4 text-center">Carbon Logged</th>
-                <th className="px-6 py-4 text-right">Points</th>
+                <th className="px-6 py-4 w-24 text-center">{t('leaderboard.columns.rank')}</th>
+                <th className="px-6 py-4">{t('leaderboard.columns.user')}</th>
+                <th className="px-6 py-4 text-center">{t('leaderboard.columns.trend')}</th>
+                <th className="px-6 py-4 text-center">{t('leaderboard.columns.carbon_logged')}</th>
+                <th className="px-6 py-4 text-right">{t('leaderboard.columns.points')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -330,12 +332,12 @@ const Leaderboard = () => {
                     {user.trend === 'STABLE' && <Minus className="w-5 h-5 text-slate-400 mx-auto" />}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-slate-600 font-medium">
-                    {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} kg
+                    {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} {t('leaderboard.kg')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-2">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-50 text-primary-700 font-bold">
-                        {user.weeklyScore.toLocaleString()} pts
+                        {user.weeklyScore.toLocaleString()} {t('leaderboard.pts')}
                       </span>
                     </div>
                   </td>
@@ -376,29 +378,29 @@ const Leaderboard = () => {
     return (
       <div className="space-y-6 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <AwardCard title="Best Performer" user={bestPerformer} icon={Trophy} color="bg-yellow-500" value={`${bestPerformer?.monthlyScore?.toLocaleString() || 0} pts`} />
-          <AwardCard title="Top Improver" user={topImprover} icon={TrendingUp} color="bg-emerald-500" value="Highest Growth" />
-          <AwardCard title="Most Consistent" user={mostConsistent} icon={CalendarDays} color="bg-blue-500" value={`${mostConsistent?.activityCount || 0} Activities`} />
-          <AwardCard title="Goal Crusher" user={highestGoals} icon={Target} color="bg-purple-500" value={`${highestGoals?.goalsCompleted || 0} Goals`} />
+          <AwardCard title={t('leaderboard.awards.best_performer')} user={bestPerformer} icon={Trophy} color="bg-yellow-500" value={`${bestPerformer?.monthlyScore?.toLocaleString() || 0} ${t('leaderboard.pts')}`} />
+          <AwardCard title={t('leaderboard.awards.top_improver')} user={topImprover} icon={TrendingUp} color="bg-emerald-500" value={t('leaderboard.highest_growth')} />
+          <AwardCard title={t('leaderboard.awards.most_consistent')} user={mostConsistent} icon={CalendarDays} color="bg-blue-500" value={`${mostConsistent?.activityCount || 0} ${t('leaderboard.columns.activities')}`} />
+          <AwardCard title={t('leaderboard.awards.goal_crusher')} user={highestGoals} icon={Target} color="bg-purple-500" value={`${highestGoals?.goalsCompleted || 0} ${t('leaderboard.columns.goals')}`} />
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-slate-900">Monthly Top 100</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('leaderboard.monthly_top_100')}</h2>
             <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-              <CalendarDays className="w-4 h-4" /> Resets end of month
+              <CalendarDays className="w-4 h-4" /> {t('leaderboard.resets_month')}
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                  <th className="px-6 py-4 w-24 text-center">Rank</th>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4 text-center">Activities</th>
-                  <th className="px-6 py-4 text-center">Goals</th>
-                  <th className="px-6 py-4 text-center">Carbon Logged</th>
-                  <th className="px-6 py-4 text-right">Points</th>
+                  <th className="px-6 py-4 w-24 text-center">{t('leaderboard.columns.rank')}</th>
+                  <th className="px-6 py-4">{t('leaderboard.columns.user')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.activities')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.goals')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.carbon_logged')}</th>
+                  <th className="px-6 py-4 text-right">{t('leaderboard.columns.points')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -423,8 +425,8 @@ const Leaderboard = () => {
                         <div>
                           <p className="font-bold text-slate-900 flex items-center gap-2 group-hover:text-primary-600 transition-colors">
                             {user.firstName} {user.lastName} 
-                            {user.awards?.includes("Best Performer") && <Trophy className="w-4 h-4 text-yellow-500" title="Best Performer" />}
-                            {user.awards?.includes("Top Improver") && <TrendingUp className="w-4 h-4 text-emerald-500" title="Top Improver" />}
+                            {user.awards?.includes("Best Performer") && <Trophy className="w-4 h-4 text-yellow-500" title={t('leaderboard.awards.best_performer')} />}
+                            {user.awards?.includes("Top Improver") && <TrendingUp className="w-4 h-4 text-emerald-500" title={t('leaderboard.awards.top_improver')} />}
                           </p>
                         </div>
                       </div>
@@ -436,12 +438,12 @@ const Leaderboard = () => {
                       {user.goalsCompleted}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-slate-600 font-medium">
-                      {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} kg
+                      {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} {t('leaderboard.kg')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2 group relative">
                         <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-primary-50 to-primary-100 text-primary-800 font-black shadow-sm ring-1 ring-primary-200">
-                          {user.monthlyScore.toLocaleString()} pts
+                          {user.monthlyScore.toLocaleString()} {t('leaderboard.pts')}
                         </span>
                       </div>
                     </td>
@@ -467,7 +469,7 @@ const Leaderboard = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-wider flex items-center justify-center gap-3">
                 <Crown className="w-8 h-8 text-yellow-500" />
-                Sustainability Champions {yearlyData.year}
+                {t('leaderboard.sustainability_champions')} {yearlyData.year}
                 <Crown className="w-8 h-8 text-yellow-500" />
               </h2>
             </div>
@@ -481,22 +483,22 @@ const Leaderboard = () => {
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-slate-900">Yearly Top 100</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('leaderboard.yearly_top_100')}</h2>
             <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-              <History className="w-4 h-4" /> Resets Dec 31
+              <History className="w-4 h-4" /> {t('leaderboard.resets_dec_31')}
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                  <th className="px-6 py-4 w-24 text-center">Rank</th>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4 text-center">Award</th>
-                  <th className="px-6 py-4 text-center">Goals</th>
-                  <th className="px-6 py-4 text-center">Badge Points</th>
-                  <th className="px-6 py-4 text-center">Carbon Logged</th>
-                  <th className="px-6 py-4 text-right">Points</th>
+                  <th className="px-6 py-4 w-24 text-center">{t('leaderboard.columns.rank')}</th>
+                  <th className="px-6 py-4">{t('leaderboard.columns.user')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.award')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.goals')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.badge_points')}</th>
+                  <th className="px-6 py-4 text-center">{t('leaderboard.columns.carbon_logged')}</th>
+                  <th className="px-6 py-4 text-right">{t('leaderboard.columns.points')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -521,17 +523,17 @@ const Leaderboard = () => {
                         <div>
                           <p className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
                             {user.firstName} {user.lastName} 
-                            {currentUser?.userId === user.userId && <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">You</span>}
+                            {currentUser?.userId === user.userId && <span className="ml-2 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">{t('leaderboard.you')}</span>}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                        {user.award === 'Gold' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-bold text-xs"><Trophy className="w-3 h-3 mr-1"/> Gold</span>}
-                        {user.award === 'Silver' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-xs"><Medal className="w-3 h-3 mr-1"/> Silver</span>}
-                        {user.award === 'Bronze' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-xs"><Medal className="w-3 h-3 mr-1"/> Bronze</span>}
-                        {user.award === 'Top 10' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs">Top 10</span>}
-                        {user.award === 'Top 100' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-50 text-slate-600 font-semibold text-xs">Top 100</span>}
+                        {user.award === 'Gold' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-bold text-xs"><Trophy className="w-3 h-3 mr-1"/> {t('leaderboard.badges.gold')}</span>}
+                        {user.award === 'Silver' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-xs"><Medal className="w-3 h-3 mr-1"/> {t('leaderboard.badges.silver')}</span>}
+                        {user.award === 'Bronze' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-xs"><Medal className="w-3 h-3 mr-1"/> {t('leaderboard.badges.bronze')}</span>}
+                        {user.award === 'Top 10' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs">{t('leaderboard.badges.top_10')}</span>}
+                        {user.award === 'Top 100' && <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-50 text-slate-600 font-semibold text-xs">{t('leaderboard.badges.top_100')}</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-slate-700 font-medium">
                       {user.goalsCompleted}
@@ -540,12 +542,12 @@ const Leaderboard = () => {
                       {user.badgePoints}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-slate-600 font-medium">
-                      {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} kg
+                      {user.carbonSaved ? user.carbonSaved.toFixed(2) : '0'} {t('leaderboard.kg')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2 group relative">
                         <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-800 font-black shadow-sm ring-1 ring-emerald-200">
-                          {user.yearlyScore.toLocaleString()} pts
+                          {user.yearlyScore.toLocaleString()} {t('leaderboard.pts')}
                         </span>
                       </div>
                     </td>
@@ -568,40 +570,40 @@ const Leaderboard = () => {
             animate={{ opacity: 1, x: 0 }}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-50 text-emerald-700 font-bold text-sm mb-4 border border-emerald-200/50"
           >
-            <Trophy className="w-4 h-4" /> Hall of Fame
+            <Trophy className="w-4 h-4" /> {t('leaderboard.hall_of_fame')}
           </motion.div>
           <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-900 via-teal-800 to-emerald-900 drop-shadow-sm mb-4">
-            Leaderboard
+            {t('leaderboard.title')}
           </h1>
           <p className="text-slate-500 text-lg max-w-2xl font-medium leading-relaxed">
-            Compete with peers across the platform by logging activities, achieving goals, and earning badges. Ascend the ranks!
+            {t('leaderboard.subtitle')}
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-slate-500 mb-1">Category</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1">{t('leaderboard.category')}</label>
               <select 
                 value={category} 
                 onChange={(e) => setCategory(e.target.value)}
                 className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2"
               >
-                <option value="Overall">Overall</option>
-                <option value="Transport">Transport</option>
-                <option value="Electricity">Electricity</option>
-                <option value="Food">Food</option>
-                <option value="Shopping">Shopping</option>
-                <option value="Other">Other</option>
+                <option value="Overall">{t('leaderboard.categories.Overall')}</option>
+                <option value="Transport">{t('leaderboard.categories.Transport')}</option>
+                <option value="Electricity">{t('leaderboard.categories.Electricity')}</option>
+                <option value="Food">{t('leaderboard.categories.Food')}</option>
+                <option value="Shopping">{t('leaderboard.categories.Shopping')}</option>
+                <option value="Other">{t('leaderboard.categories.Other')}</option>
               </select>
             </div>
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-slate-500 mb-1">Sort By</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1">{t('leaderboard.sort_by')}</label>
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2"
               >
-                <option value="Highest Sustainability Score">Highest Sustainability Score</option>
-                <option value="Most Goals Completed">Most Goals Completed</option>
-                <option value="Most Improved">Most Improved</option>
+                <option value="Highest Sustainability Score">{t('leaderboard.sort_options.Highest Sustainability Score')}</option>
+                <option value="Most Goals Completed">{t('leaderboard.sort_options.Most Goals Completed')}</option>
+                <option value="Most Improved">{t('leaderboard.sort_options.Most Improved')}</option>
               </select>
             </div>
           </div>
@@ -616,7 +618,7 @@ const Leaderboard = () => {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            Yearly
+            {t('leaderboard.tabs.yearly')}
           </button>
           <button
             onClick={() => setActiveTab('monthly')}
@@ -626,7 +628,7 @@ const Leaderboard = () => {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            Monthly
+            {t('leaderboard.tabs.monthly')}
           </button>
           <button
             onClick={() => setActiveTab('weekly')}
@@ -636,7 +638,7 @@ const Leaderboard = () => {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            Weekly
+            {t('leaderboard.tabs.weekly')}
           </button>
           <button
             onClick={() => setActiveTab('global')}
@@ -646,7 +648,7 @@ const Leaderboard = () => {
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            All-Time
+            {t('leaderboard.tabs.global')}
           </button>
         </div>
       </div>

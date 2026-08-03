@@ -123,6 +123,13 @@ public class UserServiceImpl implements UserService {
             user.setSustainabilityPreferences(updateDto.getSustainabilityPreferences().trim());
             updated = true;
         }
+        if (updateDto.getPreferredLanguage() != null) {
+            String newLang = updateDto.getPreferredLanguage().trim();
+            if (!newLang.equals(user.getPreferredLanguage())) {
+                user.setPreferredLanguage(newLang);
+                updated = true;
+            }
+        }
 
         if (updated) {
             user = userRepository.save(user);

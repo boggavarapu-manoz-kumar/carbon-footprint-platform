@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import Navbar from './Navbar';
 
 const AppLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { t } = useTranslation();
 
     const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: HomeIcon, exact: true },
-    { name: 'Analytics', path: '/dashboard/analytics', icon: BarChartIcon },
-    { name: 'Peer Benchmarking', path: '/dashboard/benchmarking', icon: GlobeIcon },
-    { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: TrophyIcon },
-    { name: 'AI Recommendations', path: '/dashboard/recommendations', icon: SparklesIcon },
-    { name: 'Goals', path: '/dashboard/goals', icon: TargetIcon },
-    { name: 'Achievements', path: '/dashboard/badges', icon: AwardIcon },
-    { name: 'Log Activity', path: '/dashboard/log-activity', icon: PlusIcon },
-    { name: 'Activity History', path: '/dashboard/activity-history', icon: ListIcon },
-    { name: 'Profile Settings', path: '/dashboard/profile', icon: UserIcon },
+    { name: t('sidebar.dashboard'), path: '/dashboard', icon: HomeIcon, exact: true },
+    { name: t('sidebar.analytics'), path: '/dashboard/analytics', icon: BarChartIcon },
+    { name: t('sidebar.peer_benchmarking'), path: '/dashboard/benchmarking', icon: GlobeIcon },
+    { name: t('sidebar.leaderboard'), path: '/dashboard/leaderboard', icon: TrophyIcon },
+    { name: t('sidebar.ai_recommendations'), path: '/dashboard/recommendations', icon: SparklesIcon },
+    { name: t('sidebar.goals'), path: '/dashboard/goals', icon: TargetIcon },
+    { name: t('sidebar.achievements'), path: '/dashboard/badges', icon: AwardIcon },
+    { name: t('sidebar.log_activity'), path: '/dashboard/log-activity', icon: PlusIcon },
+    { name: t('sidebar.activity_history'), path: '/dashboard/activity-history', icon: ListIcon },
+    { name: 'Support', path: '/dashboard/support', icon: MessageIcon },
+    { name: t('sidebar.profile_settings'), path: '/dashboard/profile', icon: UserIcon },
   ];
 
   const SidebarComponent = () => {
@@ -35,7 +38,7 @@ const AppLayout = () => {
 
         {/* Sidebar Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          <p className="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Main Menu</p>
+          <p className="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{t('sidebar.main_menu')}</p>
           {navItems.map((item) => {
             const isActive = item.exact
               ? location.pathname === item.path
@@ -147,3 +150,9 @@ const AwardIcon = (props) => (
 );
 
 export default AppLayout;
+
+const MessageIcon = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);

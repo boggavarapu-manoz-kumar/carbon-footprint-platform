@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Award, Lock, Star, Shield, Crown, Zap, TrendingUp, Calendar, Loader2 } from 'lucide-react';
 import axiosInstance from '../api/axiosConfig';
 import AchievementTimeline from '../components/AchievementTimeline';
+import { useTranslation } from 'react-i18next';
 
 const fetchBadgeShowcase = async () => {
   const { data } = await axiosInstance.get('/v1/badges/showcase');
@@ -11,14 +12,24 @@ const fetchBadgeShowcase = async () => {
 };
 
 const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
+  const { t } = useTranslation();
   const percentage = badge.targetProgress > 0 
     ? Math.min(100, Math.round((badge.currentProgress / badge.targetProgress) * 100)) 
     : 0;
 
-  // If no imageUrl is provided, use a simple local placeholder or empty string
-  const imageUrl = (badge.imageUrl && badge.imageUrl.trim() !== '') 
-    ? badge.imageUrl 
-    : '/vite.svg'; // Fallback to a local asset if missing
+  let imageUrl = '/vite.svg';
+  const rawBadgeImg = badge.imageUrl || badge.imagePath;
+  if (rawBadgeImg && rawBadgeImg.trim() !== '') {
+    const rawUrl = rawBadgeImg.trim();
+    if (rawUrl.startsWith('http') || rawUrl.startsWith('data:')) {
+      imageUrl = rawUrl;
+    } else {
+      const hostname = window.location.hostname;
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${hostname}:8081/api`;
+      const baseUrl = apiUrl.replace(/\/api$/, '') || `http://${hostname}:8081`;
+      imageUrl = `${baseUrl}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+    }
+  }
 
   return (
     <motion.div
@@ -39,7 +50,7 @@ const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
             <img 
               src={imageUrl} 
               alt={badge.name} 
-              className={`w-full h-full object-contain ${isLocked ? 'opacity-60' : ''}`}
+              className={`w-full h-full object-cover rounded-full ${isLocked ? 'opacity-60' : ''}`}
             />
           </div>
           
@@ -57,7 +68,7 @@ const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
             </h3>
             {!isLocked && (
               <span className="inline-flex items-center justify-center font-bold text-xs bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100">
-                +{badge.points} XP
+                +{badge.points} {t('badges.xp')}
               </span>
             )}
           </div>
@@ -68,7 +79,7 @@ const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
           {isLocked && badge.targetProgress > 0 && (
             <div className="mt-2 w-full">
               <div className="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
-                <span>Progress</span>
+                <span>{t('badges.progress')}</span>
                 <span>{badge.currentProgress} / {badge.targetProgress}</span>
               </div>
               <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -86,7 +97,7 @@ const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
           {!isLocked && badge.earnedAt && (
             <div className="mt-4 flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-400 font-medium border-t border-slate-100 pt-3">
               <Calendar className="w-3.5 h-3.5" />
-              Unlocked {new Date(badge.earnedAt).toLocaleDateString()}
+              {t('badges.unlocked')} {new Date(badge.earnedAt).toLocaleDateString()}
             </div>
           )}
         </div>
@@ -96,6 +107,7 @@ const BadgeCard = ({ badge, isLocked, isUpcoming }) => {
 };
 
 const Badges = () => {
+  const { t } = useTranslation();
   const { data: showcase, isLoading, isError } = useQuery({
     queryKey: ['badgeShowcase'],
     queryFn: fetchBadgeShowcase
@@ -115,8 +127,8 @@ const Badges = () => {
         <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-4">
           <Shield className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900">Failed to load badges</h2>
-        <p className="text-slate-500 mt-2">There was an error connecting to the gamification engine.</p>
+        <h2 className="text-xl font-bold text-slate-900">{t('badges.error_title')}</h2>
+        <p className="text-slate-500 mt-2">{t('badges.error_subtitle')}</p>
       </div>
     );
   }
@@ -149,7 +161,7 @@ const Badges = () => {
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-emerald-50 border border-white/20 text-sm font-bold tracking-wide mb-8 uppercase"
           >
-            <Star className="w-4 h-4 text-yellow-300" /> Hall of Fame
+            <Star className="w-4 h-4 text-yellow-300" /> {t('badges.hall_of_fame')}
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -157,7 +169,7 @@ const Badges = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl sm:text-6xl font-black text-white tracking-tight mb-6 drop-shadow-md"
           >
-            Your Gamification <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-emerald-200">Showcase</span>
+            {t('badges.title1')} <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-emerald-200">{t('badges.title2')}</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -165,7 +177,7 @@ const Badges = () => {
             transition={{ delay: 0.2 }}
             className="text-lg sm:text-xl text-emerald-50/90 mb-10 leading-relaxed font-medium max-w-xl"
           >
-            Every sustainable action counts. Track your progress, earn powerful badges, and showcase your commitment to the planet.
+            {t('badges.subtitle')}
           </motion.p>
           
           <motion.div 
@@ -175,11 +187,11 @@ const Badges = () => {
             className="flex flex-wrap gap-4"
           >
             <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 min-w-[160px] shadow-xl">
-              <div className="text-emerald-200 text-sm font-bold uppercase tracking-wider mb-2">Badges Earned</div>
+              <div className="text-emerald-200 text-sm font-bold uppercase tracking-wider mb-2">{t('badges.earned_badges')}</div>
               <div className="text-4xl font-black text-white">{earnedBadges?.length || 0}</div>
             </div>
             <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 min-w-[160px] shadow-xl">
-              <div className="text-emerald-200 text-sm font-bold uppercase tracking-wider mb-2">Total XP</div>
+              <div className="text-emerald-200 text-sm font-bold uppercase tracking-wider mb-2">{t('badges.total_xp')}</div>
               <div className="text-4xl font-black text-white">{allEarnedXP.toLocaleString()}</div>
             </div>
           </motion.div>
@@ -193,7 +205,7 @@ const Badges = () => {
             <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
               <Award className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Unlocked Badges</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{t('badges.unlocked_badges')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {earnedBadges.map((badge, idx) => (
@@ -210,7 +222,7 @@ const Badges = () => {
             <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
               <TrendingUp className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Close to Unlocking</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{t('badges.close_unlocking')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {upcomingBadges.map((badge, idx) => (
@@ -227,7 +239,7 @@ const Badges = () => {
             <div className="p-2 bg-slate-100 text-slate-600 rounded-xl">
               <Lock className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Locked Achievements</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{t('badges.locked_achievements')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {lockedBadges.map((badge, idx) => (
@@ -241,8 +253,8 @@ const Badges = () => {
       {(!earnedBadges?.length && !upcomingBadges?.length && !lockedBadges?.length) && (
         <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-300">
           <Award className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-900">No Badges Available</h3>
-          <p className="text-slate-500 mt-2">The gamification engine currently has no badges loaded.</p>
+          <h3 className="text-xl font-bold text-slate-900">{t('badges.no_badges_title')}</h3>
+          <p className="text-slate-500 mt-2">{t('badges.no_badges_subtitle')}</p>
         </div>
       )}
 
