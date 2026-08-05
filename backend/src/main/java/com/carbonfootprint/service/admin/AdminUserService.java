@@ -58,6 +58,20 @@ public class AdminUserService {
     }
 
     /**
+     * Retrieves users by a list of roles.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AdminUserResponse> getUsersByRoles(java.util.List<String> roleNames) {
+        java.util.List<com.carbonfootprint.entity.Role> enums = roleNames.stream()
+            .map(com.carbonfootprint.entity.Role::valueOf)
+            .toList();
+        
+        return userRepository.findByRoleIn(enums).stream()
+            .map(this::toDto)
+            .toList();
+    }
+
+    /**
      * Suspends a user — disables their account.
      * NOTE: The User entity uses Spring Security's isEnabled() flag.
      * We model "suspended" as a non-enabled account state.

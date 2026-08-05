@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import ActivityService from '../services/ActivityService';
 import OtherActivityService from '../services/OtherActivityService';
+import QuickLogCarousel from '../components/QuickLogCarousel';
 import toast from 'react-hot-toast';
 import ErrorState from '../components/ErrorState';
 import { CheckCircle } from 'lucide-react';
@@ -158,6 +159,51 @@ const LogActivity = () => {
   // Handle dynamic form change
   const handleInputChange = (fieldName, value) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleQuickLogSelect = (quickLog) => {
+    if (!quickLog) return;
+    
+    // Set Category
+    setSelectedCategoryCode(quickLog.categoryCode);
+    
+    // Set Type and specific states
+    if (quickLog.categoryCode === 'TRANSPORT') {
+      if (quickLog.activityTypeCode.startsWith('CAR_')) {
+        setTransportMode('Car');
+        setTransportSubSelection(quickLog.activityTypeCode);
+      } else if (quickLog.activityTypeCode.startsWith('FLIGHT_')) {
+        setTransportMode('Flight');
+        setTransportSubSelection(quickLog.activityTypeCode);
+      } else if (quickLog.activityTypeCode === 'BUS') {
+        setTransportMode('Bus');
+      } else if (quickLog.activityTypeCode === 'TRAIN') {
+        setTransportMode('Train');
+      }
+    } else if (quickLog.categoryCode === 'DIET') {
+      setFoodMealType(quickLog.activityTypeCode);
+    } else if (quickLog.categoryCode === 'SHOPPING') {
+      setShoppingType(quickLog.activityTypeCode);
+    } else {
+      setSelectedActivityTypeCode(quickLog.activityTypeCode);
+    }
+    
+    // Parse Dynamic Inputs
+    if (quickLog.dynamicInputs) {
+      try {
+        const parsed = JSON.parse(quickLog.dynamicInputs);
+        setFormData(parsed);
+      } catch (e) {
+        console.error("Failed to parse quick log inputs", e);
+      }
+    } else {
+      setFormData({});
+    }
+
+    // Set suggested quantity to the form data (we need to know the field name, usually it's the only NUMBER field)
+    // For now we rely on the user filling the quantity manually or jumping to step 4
+    setStep(4);
+    toast.success(`Quick Log applied: ${quickLog.name}`);
   };
 
   // Debounced emission calculation
@@ -368,6 +414,8 @@ const LogActivity = () => {
         <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">{t('log_activity.title')}</h1>
         <p className="text-slate-500 text-lg max-w-2xl">{t('log_activity.subtitle')}</p>
       </div>
+
+      <QuickLogCarousel onSelect={handleQuickLogSelect} />
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         

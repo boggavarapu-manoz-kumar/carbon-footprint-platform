@@ -11,7 +11,9 @@ import {
   Clock,
   User,
   Info,
-  Lock
+  Lock,
+  Star,
+  Upload
 } from 'lucide-react';
 
 export const AdminTicketDetail = () => {
@@ -21,6 +23,7 @@ export const AdminTicketDetail = () => {
   
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [feedback, setFeedback] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newMessage, setNewMessage] = useState('');
   const [isInternal, setIsInternal] = useState(false);
@@ -46,11 +49,20 @@ export const AdminTicketDetail = () => {
     try {
       if (showLoading) setIsLoading(true);
       const [ticketRes, messagesRes] = await Promise.all([
-        axios.get(`/v1/tickets/${id}`),
-        axios.get(`/v1/tickets/${id}/messages`)
+        axios.get(`/tickets/${id}`),
+        axios.get(`/tickets/${id}/messages`)
       ]);
       setTicket(ticketRes.data);
       setMessages(messagesRes.data);
+      
+      if (ticketRes.data.hasFeedback) {
+        try {
+          const feedbackRes = await axios.get(`/tickets/${id}/feedback`);
+          setFeedback(feedbackRes.data);
+        } catch (err) {
+          console.error('Failed to fetch feedback:', err);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch ticket details:', error);
       if (showLoading) {
@@ -73,7 +85,7 @@ export const AdminTicketDetail = () => {
         isInternal: isInternal
       })], { type: 'application/json' }));
 
-      const response = await axios.post(`/v1/tickets/${id}/messages`, formData, {
+      const response = await axios.post(`/tickets/${id}/messages`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setMessages([...messages, response.data]);
@@ -87,7 +99,7 @@ export const AdminTicketDetail = () => {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await axios.put(`/v1/tickets/${id}/status`, { status: newStatus });
+      await axios.put(`/tickets/${id}/status`, { status: newStatus });
       setTicket({ ...ticket, status: newStatus });
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -96,7 +108,7 @@ export const AdminTicketDetail = () => {
 
   const handleAssignToMe = async () => {
     try {
-      await axios.put(`/v1/tickets/${id}/assign?adminId=${user.id}`);
+      await axios.put(`/tickets/${id}/assign?adminId=${user.id}`);
       setTicket({ ...ticket, assignedToName: user.firstName + ' ' + user.lastName });
       toast.success('Ticket assigned to you');
     } catch (error) {
@@ -107,7 +119,7 @@ export const AdminTicketDetail = () => {
 
   const handleEscalate = async () => {
     try {
-      const res = await axios.patch(`/v1/tickets/${id}/escalate`);
+      const res = await axios.patch(`/tickets/${id}/escalate`);
       setTicket(res.data);
       toast.success('Ticket priority escalated');
     } catch (error) {
@@ -249,6 +261,46 @@ export const AdminTicketDetail = () => {
             </div>
           </div>
         </div>
+
+        {feedback && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 sm:p-6 my-6 shadow-sm">
+            <h3 className="text-lg font-bold text-emerald-900 mb-4 flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+              Customer Feedback
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Overall Satisfaction</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star} 
+                      className={`w-4 h-4 ${star <= feedback.overallSatisfaction ? 'fill-amber-400 text-amber-400' : 'text-emerald-200'}`} 
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Support Quality</span>
+                <span className="font-semibold text-emerald-900">{feedback.supportQuality}</span>
+              </div>
+              <div>
+                <span className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Response Time</span>
+                <span className="font-semibold text-emerald-900">{feedback.responseTime}</span>
+              </div>
+              <div>
+                <span className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Problem Resolution</span>
+                <span className="font-semibold text-emerald-900">{feedback.problemResolution}</span>
+              </div>
+            </div>
+            {feedback.comments && (
+              <div className="mt-4 pt-4 border-t border-emerald-200/50">
+                <span className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2">Additional Comments</span>
+                <p className="text-emerald-900 bg-white/50 p-3 rounded-lg border border-emerald-100/50 italic">"{feedback.comments}"</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {messages.map((msg) => {
           const isStaff = msg.authorRole !== 'USER';

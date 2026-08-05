@@ -24,7 +24,7 @@ public class UserCreateDto {
     String firstName;
 
     @NotBlank(message = "Last name is required")
-    @Size(min = 2, max = 100, message = "Last name must be between 2 and 100 characters")
+    @Size(max = 100, message = "Last name must be between 1 and 100 characters")
     String lastName;
 
     @Size(max = 15, message = "Mobile number cannot exceed 15 characters")

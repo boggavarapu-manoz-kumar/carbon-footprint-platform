@@ -83,14 +83,14 @@ public class AdminJwtAuthenticationFilter extends OncePerRequestFilter {
                         if (tokenIpHash != null && tokenUaHash != null && 
                            (!tokenIpHash.equals(currentIpHash) || !tokenUaHash.equals(currentUaHash))) {
                             log.error("SESSION HIJACKING ATTEMPT DETECTED! IP or User-Agent mismatch for token: {}", jwt);
-                            throw new SecurityException("Token fingerprint mismatch");
+                            throw new org.springframework.security.authentication.BadCredentialsException("Token fingerprint mismatch");
                         }
 
                         // Verify Token Replay (jti)
                         String jti = jwtService.extractClaim(jwt, io.jsonwebtoken.Claims::getId);
                         if (jwtService.isTokenRevoked(jti)) {
                             log.error("TOKEN REPLAY ATTEMPT DETECTED! Revoked JTI reused: {}", jti);
-                            throw new SecurityException("Token has been revoked");
+                            throw new org.springframework.security.authentication.BadCredentialsException("Token has been revoked");
                         }
                         
                         // Verify Session is active in DB

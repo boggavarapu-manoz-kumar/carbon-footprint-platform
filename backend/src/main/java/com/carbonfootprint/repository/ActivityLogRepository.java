@@ -174,4 +174,18 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
 
     @org.springframework.data.jpa.repository.Query("SELECT a.user.id, SUM(a.emissionValue) FROM ActivityLog a WHERE a.activityType.subCategory.category.name = :category GROUP BY a.user.id")
     java.util.List<Object[]> sumEmissionsGroupedByUserAndCategory(@org.springframework.data.repository.query.Param("category") String category);
+
+    // --- QUICK LOG QUERIES ---
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.id, a.dynamicInputs, a.activityType.name, a.activityType.subCategory.category.name, a.activityType.subCategory.category.code, a.activityType.code, MAX(a.logDate), COUNT(a), a.unit, AVG(a.quantity) " +
+           "FROM ActivityLog a WHERE a.user.id = :userId " +
+           "GROUP BY a.activityType.id, a.dynamicInputs, a.activityType.name, a.activityType.subCategory.category.name, a.activityType.subCategory.category.code, a.activityType.code, a.unit " +
+           "ORDER BY COUNT(a) DESC, MAX(a.logDate) DESC")
+    java.util.List<Object[]> getFrequentlyUsedActivities(@org.springframework.data.repository.query.Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.id, a.dynamicInputs, a.activityType.name, a.activityType.subCategory.category.name, a.activityType.subCategory.category.code, a.activityType.code, MAX(a.logDate), COUNT(a), a.unit, AVG(a.quantity) " +
+           "FROM ActivityLog a WHERE a.user.id = :userId " +
+           "GROUP BY a.activityType.id, a.dynamicInputs, a.activityType.name, a.activityType.subCategory.category.name, a.activityType.subCategory.category.code, a.activityType.code, a.unit " +
+           "ORDER BY MAX(a.logDate) DESC")
+    java.util.List<Object[]> getRecentlyUsedActivities(@org.springframework.data.repository.query.Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
 }

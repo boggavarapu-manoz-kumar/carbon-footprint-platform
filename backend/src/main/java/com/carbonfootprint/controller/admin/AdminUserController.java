@@ -33,6 +33,14 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
     private final UserSuspensionService userSuspensionService;
 
+    @GetMapping("/roles")
+    @PreAuthorize("hasAuthority(T(com.carbonfootprint.security.admin.AdminPermissions).USERS_VIEW) or hasRole('SUPER_ADMIN') or hasRole('ADMIN') or hasRole('SUPPORT_TEAM')")
+    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getUsersByRoles(@RequestParam List<String> roles) {
+        log.info("Fetching users by roles: {}", roles);
+        List<AdminUserResponse> users = adminUserService.getUsersByRoles(roles);
+        return ResponseEntity.ok(ApiResponse.success(users, "Users fetched successfully"));
+    }
+
     /**
      * Retrieves a paginated, searchable list of all platform users.
      */

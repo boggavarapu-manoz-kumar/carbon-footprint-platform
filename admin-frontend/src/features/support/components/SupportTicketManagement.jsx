@@ -41,17 +41,17 @@ export const SupportTicketManagement = () => {
       if (showLoading) setIsLoading(true);
       
       const [ticketsRes, statsRes, adminsRes, feedbackRes] = await Promise.all([
-        axios.get('/v1/tickets'),
-        axios.get('/v1/tickets/stats'),
-        axios.get('/v1/users/roles?roles=SUPER_ADMIN,ADMIN,SUPPORT_TEAM'),
-        axios.get('/v1/tickets/feedback/stats')
+        axios.get('/tickets'),
+        axios.get('/tickets/stats'),
+        axios.get('/users/roles?roles=SUPER_ADMIN,ADMIN,SUPPORT_TEAM'),
+        axios.get('/tickets/feedback/stats')
       ]);
       
       setTickets(ticketsRes.data);
       setStats(statsRes.data);
       setFeedbackStats(feedbackRes.data);
       if (adminsRes.data) {
-        setAdmins(adminsRes.data);
+        setAdmins(adminsRes.data.data || adminsRes.data);
       }
     } catch (error) {
       console.error('Failed to fetch ticket data:', error);
@@ -70,7 +70,7 @@ export const SupportTicketManagement = () => {
   const handleEscalate = async (ticketId, e) => {
     e.stopPropagation();
     try {
-      await axios.patch(`/v1/tickets/${ticketId}/escalate`);
+      await axios.patch(`/tickets/${ticketId}/escalate`);
       toast.success('Ticket escalated successfully');
       fetchData(false);
     } catch (error) {
@@ -81,7 +81,7 @@ export const SupportTicketManagement = () => {
   const handleAssignToMe = async (ticketId, e) => {
     e.stopPropagation();
     try {
-      await axios.put(`/v1/tickets/${ticketId}/assign?adminId=${user.id}`);
+      await axios.put(`/tickets/${ticketId}/assign?adminId=${user.id}`);
       toast.success('Ticket assigned to you');
       fetchData(false);
     } catch (error) {
@@ -329,7 +329,7 @@ export const SupportTicketManagement = () => {
                 filteredTickets.map((ticket) => (
                   <tr 
                     key={ticket.id} 
-                    onClick={() => navigate(`/admin/support/${ticket.id}`)}
+                    onClick={() => navigate(`/support/${ticket.id}`)}
                     className="hover:bg-slate-50 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4 text-slate-500 font-medium">#{ticket.ticketNumber || ticket.id}</td>

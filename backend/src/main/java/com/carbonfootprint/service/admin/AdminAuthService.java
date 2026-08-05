@@ -65,7 +65,7 @@ public class AdminAuthService {
         if (recentFailures >= MAX_FAILED_ATTEMPTS) {
             log.warn("Brute-force attempt blocked for email: {}, IP: {}", request.getEmail(), ipAddress);
             logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "LOCKED");
-            throw new RuntimeException("Account is temporarily locked due to excessive failed attempts.");
+            throw new com.carbonfootprint.exception.TooManyRequestsException("Account is temporarily locked due to excessive failed attempts.");
         }
 
         log.debug("Authenticating admin user: {}", request.getEmail());

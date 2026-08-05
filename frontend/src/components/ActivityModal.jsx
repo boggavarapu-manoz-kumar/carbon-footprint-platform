@@ -36,7 +36,7 @@ const ActivityModal = ({ isOpen, onClose, activity, mode, onSave }) => {
     try {
       const payload = {
         category: activity.category,
-        activityType: activity.activityType,
+        activityType: activity.activityType || activity.activityName,
         unit: activity.unit,
         quantity: parseFloat(formData.quantity),
         logDate: formData.logDate

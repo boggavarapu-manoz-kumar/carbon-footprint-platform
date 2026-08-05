@@ -9,6 +9,7 @@ import com.carbonfootprint.repository.SupportTicketRepository;
 import com.carbonfootprint.repository.TicketFeedbackRepository;
 import com.carbonfootprint.repository.TicketMessageRepository;
 import com.carbonfootprint.repository.UserRepository;
+import com.carbonfootprint.repository.admin.AdminUserRepository;
 import com.carbonfootprint.response.support.AdminTicketStatsResponse;
 import com.carbonfootprint.response.support.TicketMessageResponse;
 import com.carbonfootprint.response.support.TicketResponse;
@@ -16,6 +17,7 @@ import com.carbonfootprint.response.support.TicketFeedbackResponse;
 import com.carbonfootprint.response.support.AdminFeedbackStatsResponse;
 import com.carbonfootprint.dto.support.TicketFeedbackCreateRequest;
 import com.carbonfootprint.entity.TicketPriority;
+import com.carbonfootprint.entity.admin.AdminUser;
 import java.time.LocalDateTime;
 import com.carbonfootprint.response.support.TicketResponse;
 import com.carbonfootprint.service.admin.AdminNotificationService;
@@ -38,6 +40,7 @@ public class SupportTicketService {
     private final TicketMessageRepository ticketMessageRepository;
     private final TicketFeedbackRepository ticketFeedbackRepository;
     private final UserRepository userRepository;
+    private final AdminUserRepository adminUserRepository;
     private final CloudinaryService cloudinaryService;
     private final EmailService emailService;
     private final NotificationService notificationService;
@@ -51,7 +54,7 @@ public class SupportTicketService {
 
     @Transactional
     public TicketResponse createTicket(TicketCreateRequest request, MultipartFile file, String username) {
-        User author = userRepository.findByUsername(username)
+        User author = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String attachmentUrl = null;
@@ -112,7 +115,7 @@ public class SupportTicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getUserTickets(String username) {
-        User author = userRepository.findByUsername(username)
+        User author = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return supportTicketRepository.findByAuthorOrderByCreatedAtDesc(author)
@@ -132,7 +135,7 @@ public class SupportTicketService {
     @Transactional(readOnly = true)
     public TicketResponse getTicket(Long id, String username) {
         SupportTicket ticket = getTicketEntity(id);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // If not admin/support, check ownership
@@ -143,6 +146,12 @@ public class SupportTicketService {
                 throw new RuntimeException("Not authorized to view this ticket");
             }
         }
+        return new TicketResponse(ticket);
+    }
+
+    @Transactional(readOnly = true)
+    public TicketResponse getTicketForAdmin(Long id) {
+        SupportTicket ticket = getTicketEntity(id);
         return new TicketResponse(ticket);
     }
 
@@ -216,7 +225,7 @@ public class SupportTicketService {
     @Transactional
     public TicketMessageResponse addMessage(Long ticketId, TicketMessageCreateRequest request, MultipartFile file, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Only admins can post internal messages
@@ -253,8 +262,56 @@ public class SupportTicketService {
             }
         }
 
+        supportTicketRepository.save(ticket);
+
+        return new TicketMessageResponse(saved);
+    }
+
+    @Transactional
+    public TicketMessageResponse addMessageForAdmin(Long ticketId, TicketMessageCreateRequest request, MultipartFile file, String adminEmail) {
+        SupportTicket ticket = getTicketEntity(ticketId);
+        
+        // Ensure admin has a User record so they can author messages
+        User user = userRepository.findByEmail(adminEmail)
+                .orElseGet(() -> {
+                    AdminUser admin = adminUserRepository.findByEmail(adminEmail)
+                            .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
+                    User newUser = User.builder()
+                            .email(admin.getEmail())
+                            .username("adm_" + java.util.UUID.randomUUID().toString().substring(0, 8))
+                            .firstName("Admin")
+                            .lastName("Support")
+                            .mobileNumber("0000000000")
+                            .gender("OTHER")
+                            .role(com.carbonfootprint.entity.Role.ADMIN)
+                            .provider(com.carbonfootprint.entity.AuthProvider.LOCAL)
+                            .password("placeholder")
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        boolean isInternal = request.isInternal();
+        String attachmentUrl = null;
+        if (file != null && !file.isEmpty()) {
+            try {
+                attachmentUrl = cloudinaryService.uploadFile(file, "ticket_messages");
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to upload attachment", e);
+            }
+        }
+
+        TicketMessage message = TicketMessage.builder()
+                .ticket(ticket)
+                .author(user)
+                .content(request.getContent())
+                .isInternal(isInternal)
+                .attachmentUrl(attachmentUrl)
+                .build();
+
+        TicketMessage saved = ticketMessageRepository.save(message);
+
         // Increment unread user replies if admin sends a public message
-        if (!isInternal && !user.getId().equals(ticket.getAuthor().getId())) {
+        if (!isInternal) {
             ticket.setUnreadUserReplies(ticket.getUnreadUserReplies() + 1);
             ticket.setStatus(TicketStatus.WAITING_FOR_USER);
             
@@ -278,50 +335,16 @@ public class SupportTicketService {
                     "support-ticket-replied"
                 );
             }
-        } else if (!isInternal && user.getId().equals(ticket.getAuthor().getId())) {
-            // Notify admin
-            if (ticket.getAssignedTo() != null) {
-                adminNotificationService.createNotification(
-                        "New Reply on Ticket #" + ticket.getTicketNumber(),
-                        "User replied to ticket: " + ticket.getTitle(),
-                        "SUPPORT_TICKET",
-                        "NORMAL",
-                        ticket.getAssignedTo().getId()
-                );
-                
-                if (ticket.getAssignedTo().getEmail() != null) {
-                    String ticketLink = adminUrl + "/support/" + ticket.getId();
-                    emailService.sendSupportTicketUpdateEmail(
-                        ticket.getAssignedTo().getEmail(),
-                        ticket.getTicketNumber(),
-                        "New User Reply on Ticket: " + ticket.getTitle(),
-                        ticket.getStatus().name(),
-                        request.getContent(),
-                        ticketLink,
-                        "support-ticket-replied"
-                    );
-                }
-            } else {
-                // If unassigned, notify all admins
-                adminNotificationService.createNotification(
-                        "New Reply on Ticket #" + ticket.getTicketNumber(),
-                        "User replied to ticket: " + ticket.getTitle(),
-                        "SUPPORT_TICKET",
-                        "NORMAL",
-                        null
-                );
-            }
         }
 
         supportTicketRepository.save(ticket);
-
         return new TicketMessageResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public List<TicketMessageResponse> getMessages(Long ticketId, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         boolean isAdmin = user.getRole().name().equals("SUPER_ADMIN") || 
@@ -360,10 +383,34 @@ public class SupportTicketService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<TicketMessageResponse> getMessagesForAdmin(Long ticketId, String adminEmail) {
+        SupportTicket ticket = getTicketEntity(ticketId);
+        List<TicketMessage> messages = ticketMessageRepository.findByTicketOrderByCreatedAtAsc(ticket);
+        
+        // Mark user messages as read by admin
+        boolean updated = false;
+        LocalDateTime now = LocalDateTime.now();
+        for (TicketMessage msg : messages) {
+            if (!msg.isRead() && msg.getAuthor().getRole().name().equals("USER")) {
+                msg.setRead(true);
+                msg.setReadAt(now);
+                updated = true;
+            }
+        }
+        if (updated) {
+            ticketMessageRepository.saveAll(messages);
+        }
+
+        return messages.stream()
+                .map(TicketMessageResponse::new)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public TicketResponse closeTicketByUser(Long ticketId, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         if (!ticket.getAuthor().getId().equals(user.getId())) {
@@ -473,7 +520,7 @@ public class SupportTicketService {
     @Transactional
     public TicketFeedbackResponse submitFeedback(Long ticketId, TicketFeedbackCreateRequest request, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!ticket.getAuthor().getId().equals(user.getId())) {
@@ -503,7 +550,7 @@ public class SupportTicketService {
     @Transactional(readOnly = true)
     public TicketFeedbackResponse getFeedback(Long ticketId, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
                 
         // Just verify ownership
@@ -515,6 +562,14 @@ public class SupportTicketService {
             }
         }
 
+        return ticketFeedbackRepository.findByTicket(ticket)
+                .map(TicketFeedbackResponse::new)
+                .orElseThrow(() -> new ResourceNotFoundException("Feedback not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public TicketFeedbackResponse getFeedbackForAdmin(Long ticketId) {
+        SupportTicket ticket = getTicketEntity(ticketId);
         return ticketFeedbackRepository.findByTicket(ticket)
                 .map(TicketFeedbackResponse::new)
                 .orElseThrow(() -> new ResourceNotFoundException("Feedback not found"));

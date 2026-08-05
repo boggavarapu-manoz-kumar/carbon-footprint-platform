@@ -63,7 +63,7 @@ export const Login = () => {
       if (status === 429) {
         setError('Too many attempts. Account locked.');
         setRateLimitTimer(59);
-      } else if (status === 401 || status === 403) {
+      } else if (status === 401 || status === 403 || status === 400) {
         setError('Invalid credentials.');
       } else {
         setError('System error. Contact engineering.');
