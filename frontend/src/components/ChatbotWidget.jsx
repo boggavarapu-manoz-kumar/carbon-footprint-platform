@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { generateCarbonReport } from '../utils/ReportGenerator';
-import axios from 'axios';
 
 export const ChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +88,7 @@ export const ChatbotWidget = () => {
     const fetchHistory = async () => {
       try {
         const baseURL = getBaseURL();
-        const token = await getValidToken().catch(() => null);
+        const token = await getValidToken();
         
         if (token) {
           const res = await fetch(`${baseURL}/v1/chatbot/history`, {
@@ -150,84 +149,84 @@ export const ChatbotWidget = () => {
 
   /**
    * Decodes a JWT payload safely, handling base64url encoding.
-   * Standard base64 (atob) cannot decode base64url because JWTs use
-   * '-' instead of '+' and '_' instead of '/' and omit padding.
+   * Returns expiry timestamp in ms, or null if undecodable.
    */
   const decodeJwtExpiry = (token) => {
     try {
       const base64Url = token.split('.')[1];
       if (!base64Url) return null;
-      // Convert base64url → base64, restore padding
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
       const payload = JSON.parse(atob(padded));
       return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
     } catch {
-      return null; // Undecodable token — let the server decide validity
+      return null;
     }
   };
 
   /**
-   * Returns a valid Bearer token. If the token is provably expired,
-   * it silently refreshes using the stored refresh token.
-   * If the token cannot be decoded (e.g. unusual format), we keep it
-   * and let the 401 retry path handle any actual expiry.
+   * Attempts a silent token refresh using the stored refresh token.
+   * Returns new access token on success, null on any failure.
+   * NEVER throws.
+   */
+  const tryRefresh = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) return null;
+      const baseURL = getBaseURL();
+      const resp = await fetch(`${baseURL}/v1/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      const newAccess = json?.data?.accessToken;
+      const newRefresh = json?.data?.refreshToken;
+      if (newAccess) {
+        localStorage.setItem('token', newAccess);
+        if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
+        return newAccess;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * Returns the best available bearer token.
+   * - If token exists and is not near expiry: return it immediately.
+   * - If token is expired/near-expiry: try a silent refresh, fall back to original.
+   * - If no token: try refresh, fall back to null.
+   * NEVER throws. The 401-retry in handleSend handles true auth failures.
    */
   const getValidToken = async () => {
     const token = localStorage.getItem('token');
 
     if (token) {
       const expiresAt = decodeJwtExpiry(token);
-      const bufferMs = 60 * 1000; // refresh 60s before actual expiry
+      const bufferMs = 60 * 1000; // proactive refresh 60s before expiry
 
-      // Only trigger a proactive refresh if we can CONFIRM expiry
-      // If expiresAt is null (decode failed), keep the token as-is
       if (expiresAt !== null && Date.now() >= expiresAt - bufferMs) {
-        // Token is confirmed expired — try refresh
-        try {
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            const baseURL = getBaseURL();
-            const resp = await axios.post(`${baseURL}/v1/auth/refresh-token`, { refreshToken });
-            const newAccessToken = resp.data?.data?.accessToken;
-            const newRefreshToken = resp.data?.data?.refreshToken;
-            if (newAccessToken) {
-              localStorage.setItem('token', newAccessToken);
-              if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-              return newAccessToken;
-            }
-          }
-        } catch {
-          // Refresh failed — fall through and try the original token anyway;
-          // the 401-retry path in handleSend will handle persistent failures
-        }
+        // Token is confirmed near/past expiry — try silent refresh
+        const refreshed = await tryRefresh();
+        // On failure, still return the original token — server decides
+        return refreshed || token;
       }
-      // Return the stored token (valid, undecodable-but-possibly-valid, or
-      // expired-but-refresh-failed — let the server be authoritative)
+      // Token looks valid (or undecoded — let server decide)
       return token;
     }
 
-    // No token at all — try refresh as a last resort
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) throw new Error('NO_SESSION');
-    try {
-      const baseURL = getBaseURL();
-      const resp = await axios.post(`${baseURL}/v1/auth/refresh-token`, { refreshToken });
-      const newAccessToken = resp.data?.data?.accessToken;
-      const newRefreshToken = resp.data?.data?.refreshToken;
-      if (!newAccessToken) throw new Error('NO_SESSION');
-      localStorage.setItem('token', newAccessToken);
-      if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-      return newAccessToken;
-    } catch {
-      throw new Error('NO_SESSION');
-    }
+    // No token stored at all — try refresh as last resort
+    const refreshed = await tryRefresh();
+    return refreshed; // may be null — callers must handle null
   };
 
   const handleClearChat = async () => {
     try {
       const baseURL = getBaseURL();
-      const token = await getValidToken().catch(() => null);
+      const token = await getValidToken();
       
       await fetch(`${baseURL}/v1/chatbot/history`, {
         method: 'DELETE',
@@ -280,20 +279,17 @@ export const ChatbotWidget = () => {
 
     try {
       // Proactively get a valid (possibly refreshed) token before sending
-      let token = await getValidToken().catch(() => localStorage.getItem('token'));
+      let token = await getValidToken();
       let response = await doFetch(token);
 
-      // If we still get 401 despite our proactive refresh, try one silent retry
-      // with a forced refresh — handles edge cases like clock skew.
+      // If we still get 401, force a refresh and retry exactly once
       if (response.status === 401) {
-        try {
-          localStorage.removeItem('token'); // force refresh path
-          token = await getValidToken();
-          response = await doFetch(token);
-        } catch {
-          throw new Error('NO_SESSION');
+        localStorage.removeItem('token'); // force the refresh path
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          response = await doFetch(refreshed);
         }
-        // Still 401 after refresh — give up gracefully
+        // If still 401 after refresh attempt, fail gracefully
         if (response.status === 401) throw new Error('NO_SESSION');
       }
 

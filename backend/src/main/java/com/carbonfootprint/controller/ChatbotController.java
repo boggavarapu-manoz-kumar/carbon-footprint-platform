@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,6 +47,12 @@ public class ChatbotController {
         }).start();
 
         return emitter;
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<java.util.List<com.carbonfootprint.chatbot.ChatHistory>> getHistory(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(chatHistoryService.getRecentHistory(user.getEmail(), 50));
     }
 
     @DeleteMapping("/history")
