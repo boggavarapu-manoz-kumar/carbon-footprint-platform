@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/AppLayout';
+import OrganizationLayout from './components/OrganizationLayout';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -47,6 +48,14 @@ const SupportTicketDetail = lazy(() => import('./pages/support/SupportTicketDeta
 const AdminBadgeManagement = lazy(() => import('./pages/admin/AdminBadgeManagement'));
 const AdminBadgeForm = lazy(() => import('./pages/admin/AdminBadgeForm'));
 
+const OrganizationOverview = lazy(() => import('./pages/organization/OrganizationOverview'));
+const CreateOrganization = lazy(() => import('./pages/organization/CreateOrganization'));
+const OrganizationMembersPage = lazy(() => import('./pages/organization/OrganizationMembersPage').then(module => ({ default: module.OrganizationMembersPage })));
+const OrganizationInvitationsPage = lazy(() => import('./pages/organization/OrganizationInvitationsPage').then(module => ({ default: module.OrganizationInvitationsPage })));
+const OrganizationAnalyticsPage = lazy(() => import('./pages/organization/OrganizationAnalyticsPage').then(module => ({ default: module.OrganizationAnalyticsPage })));
+const OrganizationSettingsPage = lazy(() => import('./pages/organization/OrganizationSettingsPage').then(module => ({ default: module.OrganizationSettingsPage })));
+const ActivationPage = lazy(() => import('./pages/ActivationPage').then(module => ({ default: module.ActivationPage })));
+
 // Global Loading Fallback
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#FBFBFC]">
@@ -82,6 +91,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/suspended" element={<Suspended />} />
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+            <Route path="/activate" element={<ActivationPage />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -111,6 +121,19 @@ function App() {
           <Route path="admin/badges/create" element={<AdminBadgeForm />} />
           <Route path="admin/badges/edit/:id" element={<AdminBadgeForm />} />
         </Route>
+        <Route path="/organization/create" element={<AppLayout />}>
+          <Route index element={<CreateOrganization />} />
+        </Route>
+        
+        <Route path="/organization/:id" element={<OrganizationLayout />}>
+          <Route index element={<OrganizationOverview />} />
+          <Route path="members" element={<OrganizationMembersPage />} />
+          <Route path="invitations" element={<OrganizationInvitationsPage />} />
+          <Route path="analytics" element={<OrganizationAnalyticsPage />} />
+          <Route path="reports" element={<div className="p-6">Reports Module Coming Soon</div>} />
+          <Route path="settings" element={<OrganizationSettingsPage />} />
+        </Route>
+        
         <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>
 

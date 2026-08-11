@@ -26,6 +26,28 @@ public class Organization {
     @Column(length = 100)
     private String industry;
 
+    @Column(name = "organization_code", unique = true, length = 50)
+    private String organizationCode;
+
+    @Column(name = "company_size", length = 50)
+    private String companySize;
+
+    @Column(length = 100)
+    private String country;
+
+    @Column(length = 100)
+    private String timezone;
+
+    @Column(columnDefinition="LONGTEXT")
+    private String logo;
+
+    @Column(length = 255)
+    private String website;
+
+    @Column(length = 50)
+    @Builder.Default
+    private String status = "ACTIVE"; // ACTIVE, SUSPENDED, PENDING
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

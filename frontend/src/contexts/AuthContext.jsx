@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import AuthService from '../services/AuthService';
+import { clearPendingActivities } from '../utils/indexedDB';
 
 const AuthContext = createContext(null);
 
@@ -62,6 +63,16 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     queryClient.clear(); // Clear cache so no data leaks to next user
+    
+    // Clear PWA caches completely to isolate users
+    try {
+      await clearPendingActivities();
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHES' });
+      }
+    } catch (e) {
+      console.error("Failed to clear PWA cache:", e);
+    }
   };
 
   const updateUser = (newUserData) => {

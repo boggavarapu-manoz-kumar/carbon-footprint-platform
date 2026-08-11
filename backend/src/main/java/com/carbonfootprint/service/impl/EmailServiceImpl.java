@@ -102,6 +102,18 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendOrgAdminCredentialsEmail(String toEmail, String adminName, String orgName, String orgCode, String tempPassword, String loginUrl) {
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("adminName", adminName != null ? adminName : "Admin");
+        data.put("orgName", orgName);
+        data.put("orgCode", orgCode);
+        data.put("adminEmail", toEmail);
+        data.put("tempPassword", tempPassword != null ? tempPassword : "Use existing account password");
+        data.put("loginUrl", loginUrl != null ? loginUrl : frontendUrl + "/login");
+        enqueueEmail(toEmail, "Welcome & Credentials: Organization Admin for " + orgName, "org-admin-welcome", data);
+    }
+
+    @Override
     public void queueEmail(String toEmail, String subject, String body) {
         enqueueEmail(toEmail, subject, "general-notification", java.util.Map.of("body", body));
     }

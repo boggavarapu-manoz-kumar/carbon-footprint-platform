@@ -16,3 +16,29 @@ target/
 # Logs
 *.log
 app.log
+
+# Environment / Secrets — NEVER commit
+.env
+.env.*
+*.env
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Frontend build outputs
+dist/
+dev-dist/
+frontend/dev-dist/
+
+# Uploaded files (local storage fallback)
+backend/uploads/
+uploads/
+
+# One-off generator scripts (not part of the app)
+generate_all_243_langs.py
+generate_backend_support.sh
+generate_langs.py
+generate_org_files.sh
+generate_services.sh
+setup_locales.py

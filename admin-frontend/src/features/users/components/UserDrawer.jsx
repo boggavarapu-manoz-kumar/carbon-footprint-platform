@@ -25,20 +25,20 @@ const StatusBadge = ({ status }) => {
 };
 
 export const UserDrawer = ({ user, isOpen, onClose, onSuspendToggle, isActionPending, actionError }) => {
+  const { data: suspensions, isLoading: isLoadingSuspensions } = useQuery({
+    queryKey: ['suspensions', user?.id],
+    queryFn: async () => {
+      const res = await adminAxios.get(`/users/${user?.id}/suspensions`);
+      return res.data.data; // ApiResponse format
+    },
+    enabled: isOpen && !!user?.id,
+  });
+
   if (!user) return null;
 
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || user.email;
   const initial = (user.firstName || user.email || '?').charAt(0).toUpperCase();
   const isActive = user.status === 'ACTIVE';
-
-  const { data: suspensions, isLoading: isLoadingSuspensions } = useQuery({
-    queryKey: ['suspensions', user.id],
-    queryFn: async () => {
-      const res = await adminAxios.get(`/users/${user.id}/suspensions`);
-      return res.data.data; // ApiResponse format
-    },
-    enabled: isOpen && !!user.id,
-  });
 
   return (
     <>

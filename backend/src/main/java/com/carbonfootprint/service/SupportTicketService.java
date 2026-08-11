@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import com.carbonfootprint.response.support.TicketResponse;
 import com.carbonfootprint.service.admin.AdminNotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import java.time.Year;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class SupportTicketService {
 
@@ -62,7 +64,9 @@ public class SupportTicketService {
             try {
                 attachmentUrl = cloudinaryService.uploadFile(file, "support_tickets");
             } catch (Exception e) {
-                throw new RuntimeException("Failed to upload attachment", e);
+                // Log and continue — ticket is created without attachment.
+                // Prevents transient Cloudinary/storage errors from blocking ticket submission.
+                log.warn("Attachment upload failed for new ticket (ticket will be saved without attachment): {}", e.getMessage());
             }
         }
 
@@ -241,7 +245,7 @@ public class SupportTicketService {
             try {
                 attachmentUrl = cloudinaryService.uploadFile(file, "ticket_messages");
             } catch (Exception e) {
-                throw new RuntimeException("Failed to upload attachment", e);
+                log.warn("Attachment upload failed for ticket message (message will be saved without attachment): {}", e.getMessage());
             }
         }
 
@@ -296,7 +300,7 @@ public class SupportTicketService {
             try {
                 attachmentUrl = cloudinaryService.uploadFile(file, "ticket_messages");
             } catch (Exception e) {
-                throw new RuntimeException("Failed to upload attachment", e);
+                log.warn("Attachment upload failed for admin message (message will be saved without attachment): {}", e.getMessage());
             }
         }
 

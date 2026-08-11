@@ -19,6 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.carbonfootprint.service.admin.PlatformSettingService;
 
@@ -54,6 +61,14 @@ public class GeminiService {
     }
 
     public String generateAIResponse(String prompt) {
+        return generateAIResponseInternal(prompt, true);
+    }
+
+    public String generateChatResponse(String prompt) {
+        return generateAIResponseInternal(prompt, false);
+    }
+
+    private String generateAIResponseInternal(String prompt, boolean forceJson) {
         String dbApiKey = platformSettingService.getSettingValue("gemini.apiKey");
         String geminiApiKey = (dbApiKey != null && !dbApiKey.trim().isEmpty()) ? dbApiKey : envApiKey;
         
@@ -87,7 +102,9 @@ public class GeminiService {
 
             Map<String, Object> generationConfig = new HashMap<>();
             generationConfig.put("temperature", 0.7);
-            generationConfig.put("responseMimeType", "application/json");
+            if (forceJson) {
+                generationConfig.put("responseMimeType", "application/json");
+            }
             requestBody.put("generationConfig", generationConfig);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -145,5 +162,98 @@ public class GeminiService {
         }
         
         return null;
+    }
+
+    public void streamChatResponse(String prompt, SseEmitter emitter) {
+        streamChatResponse(prompt, emitter, null, null);
+    }
+
+    public void streamChatResponse(String prompt, SseEmitter emitter,
+                                   java.util.function.Consumer<String> chunkCallback,
+                                   Runnable completionCallback) {
+        // Capture security context from the calling thread so the completion
+        // callback can write to the DB in a background thread without AccessDenied
+        final SecurityContext callerSecurityContext = SecurityContextHolder.getContext();
+        String dbApiKey = platformSettingService.getSettingValue("gemini.apiKey");
+        String geminiApiKey = (dbApiKey != null && !dbApiKey.trim().isEmpty()) ? dbApiKey : envApiKey;
+        
+        if (geminiApiKey == null || geminiApiKey.trim().isEmpty()) {
+            try {
+                emitter.send(SseEmitter.event().data(objectMapper.writeValueAsString(Map.of("text", "I'm currently offline. Please try again later."))));
+                emitter.complete();
+            } catch (Exception ignored) {}
+            if (completionCallback != null) completionCallback.run();
+            return;
+        }
+
+        try {
+            Map<String, Object> part = new HashMap<>();
+            part.put("text", prompt);
+            Map<String, Object> content = new HashMap<>();
+            content.put("parts", List.of(part));
+            Map<String, Object> reqBody = new HashMap<>();
+            reqBody.put("contents", List.of(content));
+
+            String requestJson = objectMapper.writeValueAsString(reqBody);
+
+            RequestCallback requestCallback = request -> {
+                request.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                request.getBody().write(requestJson.getBytes());
+            };
+
+            String baseUrl = geminiApiUrl.replace(":generateContent", ":streamGenerateContent");
+            String url = baseUrl + "?alt=sse&key=" + geminiApiKey;
+
+            restTemplate.execute(url, HttpMethod.POST, requestCallback, response -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getBody()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.startsWith("data: ")) {
+                            String data = line.substring(6);
+                            if (data.trim().equals("[DONE]")) continue;
+                            
+                            try {
+                                JsonNode root = objectMapper.readTree(data);
+                                JsonNode parts = root.path("candidates").get(0).path("content").path("parts");
+                                if (parts.isArray() && parts.size() > 0) {
+                                    String textChunk = parts.get(0).path("text").asText();
+                                    // Notify history accumulator
+                                    if (chunkCallback != null) chunkCallback.accept(textChunk);
+                                    // Send to frontend
+                                    emitter.send(SseEmitter.event().data(objectMapper.writeValueAsString(Map.of("text", textChunk))));
+                                }
+                            } catch (Exception e) {
+                                log.warn("Failed to parse SSE chunk: {}", e.getMessage());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error reading Gemini stream", e);
+                    emitter.completeWithError(e);
+                }
+                emitter.complete();
+                // Trigger completion callback (save history) with correct security context
+                if (completionCallback != null) {
+                    SecurityContextHolder.setContext(callerSecurityContext);
+                    try {
+                        completionCallback.run();
+                    } finally {
+                        SecurityContextHolder.clearContext();
+                    }
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            log.error("Failed to start Gemini stream", e);
+            emitter.completeWithError(e);
+            if (completionCallback != null) {
+                SecurityContextHolder.setContext(callerSecurityContext);
+                try {
+                    completionCallback.run();
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
+            }
+        }
     }
 }

@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Navbar from './Navbar';
+import WorkspaceSelector from './WorkspaceSelector';
+const ChatbotWidget = lazy(() => import('./ChatbotWidget').then(module => ({ default: module.ChatbotWidget })));
+import { InstallPrompt } from './InstallPrompt';
+import { useNetworkState } from '../hooks/useNetworkState';
+import { syncOfflineActivities } from '../utils/SyncManager';
+import { useQueryClient } from '@tanstack/react-query';
+import { CloudOff } from 'lucide-react';
 
 const AppLayout = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { t } = useTranslation();
+  const { isOnline } = useNetworkState();
+  const queryClient = useQueryClient();
+
+  // Try to sync when we come online
+  useEffect(() => {
+    if (isOnline) {
+      syncOfflineActivities(queryClient);
+    }
+  }, [isOnline, queryClient]);
 
     const navItems = [
     { name: t('sidebar.dashboard'), path: '/dashboard', icon: HomeIcon, exact: true },
@@ -34,6 +50,11 @@ const AppLayout = () => {
             </div>
             <span className="text-lg font-semibold tracking-tight text-slate-900">CarbonSync</span>
           </div>
+        </div>
+
+        {/* Workspace Selector */}
+        <div className="px-4 py-4 border-b border-slate-200">
+          <WorkspaceSelector />
         </div>
 
         {/* Sidebar Navigation */}
@@ -95,9 +116,26 @@ const AppLayout = () => {
 
         {/* Page Content wrapped in Outlet */}
         <main className="flex-1 overflow-y-auto w-full p-4 md:p-6 lg:p-8">
+          {!isOnline && (
+            <div className="mb-4 bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-3 text-orange-800 shadow-sm animate-in slide-in-from-top-2">
+              <CloudOff className="w-5 h-5 text-orange-500 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">You are offline</p>
+                <p className="text-xs opacity-90 mt-0.5">Activities will be saved securely and synced when you reconnect.</p>
+              </div>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
+
+      {/* Global AI Chatbot Widget */}
+      <Suspense fallback={null}>
+        <ChatbotWidget />
+      </Suspense>
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 };
