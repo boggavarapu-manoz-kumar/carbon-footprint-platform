@@ -289,8 +289,11 @@ export const ChatbotWidget = () => {
         if (refreshed) {
           response = await doFetch(refreshed);
         }
-        // If still 401 after refresh attempt, fail gracefully
-        if (response.status === 401) throw new Error('NO_SESSION');
+        // If still 401 after refresh attempt, fail gracefully and dispatch logout
+        if (response.status === 401) {
+          window.dispatchEvent(new Event('unauthorized'));
+          throw new Error('NO_SESSION');
+        }
       }
 
       if (!response.ok) {

@@ -29,7 +29,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     checkAuth();
+
+    // Listen for global unauthorized events (from axios interceptor)
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false);
+      setUser(null);
+      queryClient.clear();
+      window.location.href = '/login';
+    };
+
+    window.addEventListener('unauthorized', handleUnauthorized);
+    
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
   }, []);
+
 
   const login = async (credentials) => {
     queryClient.clear(); // Clear any stale cache before logging in new user
