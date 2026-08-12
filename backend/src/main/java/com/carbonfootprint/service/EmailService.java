@@ -9,6 +9,9 @@ public interface EmailService {
     void sendAchievementEmail(String toEmail, String title, java.util.Map<String, Object> emailData);
     void sendSupportTicketEmail(String toEmail, String ticketNumber, String title);
     void sendSupportTicketUpdateEmail(String toEmail, String ticketNumber, String subject, String status, String latestReply, String ticketLink, String templateName);
-    void sendOrgAdminCredentialsEmail(String toEmail, String adminName, String orgName, String orgCode, String tempPassword, String loginUrl);
+
+    void sendOrganizationInvitationEmail(String toEmail, String organizationName, String token);
+    void sendEmployeeInvitationEmail(String toEmail, String organizationName, String token);
+
     void queueEmail(String toEmail, String subject, String body);
 }

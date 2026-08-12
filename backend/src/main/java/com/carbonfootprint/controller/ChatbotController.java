@@ -36,13 +36,19 @@ public class ChatbotController {
         // Timeout is 30 seconds
         SseEmitter emitter = new SseEmitter(30000L);
         
+        // Capture context for the new thread
+        final org.springframework.security.core.context.SecurityContext context = org.springframework.security.core.context.SecurityContextHolder.getContext();
+        
         // Execute stream generation asynchronously
         new Thread(() -> {
+            org.springframework.security.core.context.SecurityContextHolder.setContext(context);
             try {
                 chatbotService.streamQuery(user, request.getQuery(), emitter);
             } catch (Exception e) {
                 log.error("Streaming error", e);
                 emitter.completeWithError(e);
+            } finally {
+                org.springframework.security.core.context.SecurityContextHolder.clearContext();
             }
         }).start();
 

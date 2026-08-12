@@ -122,11 +122,7 @@ public class EmailQueueProcessor {
             htmlBody += pixelHtml;
         }
 
-        try {
-            mailSender.send(message);
-        } catch (Exception mailEx) {
-            log.warn("SMTP server unreachable. Email logged locally:\nRecipient: {}\nSubject: {}\nPayload: {}", 
-                    emailLog.getToEmail(), emailLog.getSubject(), templateModel);
-        }
+        helper.setText(htmlBody, true);
+        mailSender.send(message);
     }
 }

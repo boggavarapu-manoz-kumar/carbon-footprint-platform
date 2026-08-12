@@ -22,9 +22,8 @@ const BenchmarkingDashboard = React.lazy(() => import('../features/benchmarking/
 const BadgeManagement = React.lazy(() => import('../features/gamification/components/BadgeManagement').then(m => ({ default: m.BadgeManagement })));
 const SupportTicketManagement = React.lazy(() => import('../features/support/components/SupportTicketManagement').then(m => ({ default: m.SupportTicketManagement })));
 const AdminTicketDetail = React.lazy(() => import('../features/support/components/AdminTicketDetail').then(m => ({ default: m.AdminTicketDetail })));
-const OrganizationMembersPage = React.lazy(() => import('../features/organization/components/OrganizationMembersPage').then(m => ({ default: m.OrganizationMembersPage })));
-const SuperAdminOrganizationsPage = React.lazy(() => import('../features/organization/components/SuperAdminOrganizationsPage').then(m => ({ default: m.SuperAdminOrganizationsPage })));
-const SuperAdminOrganizationAnalyticsPage = React.lazy(() => import('../features/organization/components/SuperAdminOrganizationAnalyticsPage').then(m => ({ default: m.SuperAdminOrganizationAnalyticsPage })));
+const SuperAdminOrganizations = React.lazy(() => import('../features/organizations/components/SuperAdminOrganizations'));
+const CreateOrganizationForm = React.lazy(() => import('../features/organizations/components/CreateOrganizationForm'));
 /**
  * If a password-reset email link accidentally points to the admin port,
  * this component safely bounces the visitor to the correct user-facing app
@@ -219,31 +218,21 @@ export const router = createBrowserRouter([
             )
           },
           {
-            path: 'organization/:id/members',
-            element: (
-              <RoleRoute allowedRoles={['SUPER_ADMIN']}>
-                <Suspense fallback={<PageLoader />}>
-                  <OrganizationMembersPage />
-                </Suspense>
-              </RoleRoute>
-            )
-          },
-          {
             path: 'organizations',
             element: (
               <RoleRoute allowedRoles={['SUPER_ADMIN']}>
                 <Suspense fallback={<PageLoader />}>
-                  <SuperAdminOrganizationsPage />
+                  <SuperAdminOrganizations />
                 </Suspense>
               </RoleRoute>
             )
           },
           {
-            path: 'organization/:id/analytics',
+            path: 'organizations/create',
             element: (
               <RoleRoute allowedRoles={['SUPER_ADMIN']}>
                 <Suspense fallback={<PageLoader />}>
-                  <SuperAdminOrganizationAnalyticsPage />
+                  <CreateOrganizationForm />
                 </Suspense>
               </RoleRoute>
             )

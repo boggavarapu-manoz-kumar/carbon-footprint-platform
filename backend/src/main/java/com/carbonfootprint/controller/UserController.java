@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final com.carbonfootprint.repository.UserRepository userRepository;
+    private final com.carbonfootprint.repository.OrganizationMembershipRepository organizationMembershipRepository;
 
     @PostMapping
     public ResponseEntity<ApiResponse<UserDto>> createUser(@Valid @RequestBody UserCreateDto createDto) {
@@ -87,6 +89,34 @@ public class UserController {
         log.info("REST request to delete User by ID: {}", id);
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"));
+    }
+
+    @GetMapping("/me/organization")
+    public ResponseEntity<ApiResponse<com.carbonfootprint.dto.organization.OrganizationMembershipDto>> getMyOrganizationContext(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
+        
+        com.carbonfootprint.entity.User user = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new com.carbonfootprint.exception.ResourceNotFoundException("User not found"));
+            
+        // Find the active membership for this user (assuming user can only have one active membership for now)
+        return organizationMembershipRepository.findByUserId(user.getId()).stream()
+            .filter(m -> m.getStatus() == com.carbonfootprint.entity.organization.MembershipStatus.ACTIVE)
+            .findFirst()
+            .map(m -> {
+                com.carbonfootprint.dto.organization.OrganizationMembershipDto dto = com.carbonfootprint.dto.organization.OrganizationMembershipDto.builder()
+                        .id(m.getId())
+                        .organizationId(m.getOrganization().getId())
+                        .organizationName(m.getOrganization().getName())
+                        .organizationLogo(m.getOrganization().getLogo())
+                        .role(m.getRole())
+                        .status(m.getStatus())
+                        .department(m.getDepartment())
+                        .jobTitle(m.getJobTitle())
+                        .employeeId(m.getEmployeeId())
+                        .build();
+                return ResponseEntity.ok(ApiResponse.success(dto));
+            })
+            .orElseGet(() -> ResponseEntity.ok(ApiResponse.success(null))); // Return success with null data if not an org member
     }
 
     @GetMapping("/check-username")

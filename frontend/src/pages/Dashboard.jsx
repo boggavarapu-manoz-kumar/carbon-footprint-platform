@@ -18,9 +18,10 @@ import BadgeShowcase from '../components/BadgeShowcase';
 
 import AchievementBanner from '../components/AchievementBanner';
 import FailureBanner from '../components/FailureBanner';
+import OrgMembershipWidget from '../components/OrgMembershipWidget';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, orgContext } = useAuth();
   const { t } = useTranslation();
   const { data: userProfile } = useProfile();
   const navigate = useNavigate();
@@ -163,6 +164,13 @@ const Dashboard = () => {
         
         {/* Failure Banner */}
         <FailureBanner />
+
+        {/* Organization Widget (Shown only for members) */}
+        {orgContext && (
+          <div className="mb-8">
+            <OrgMembershipWidget orgContext={orgContext} />
+          </div>
+        )}
 
         {/* Gamification Row (Streak & Progress) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

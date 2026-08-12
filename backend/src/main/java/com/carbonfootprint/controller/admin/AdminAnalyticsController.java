@@ -146,12 +146,7 @@ public class AdminAnalyticsController {
         return ResponseEntity.ok(ApiResponse.success(analyticsService.getBadgeAnalytics(year), "Badge analytics retrieved"));
     }
 
-    // ─── Organization Analytics ────────────────────────────────────
-    @GetMapping("/organizations")
-    public ResponseEntity<ApiResponse<OrganizationAnalyticsResponse>> getOrganizationAnalytics() {
-        log.info("Fetching organization analytics");
-        return ResponseEntity.ok(ApiResponse.success(analyticsService.getOrganizationAnalytics(), "Organization analytics retrieved"));
-    }
+
 
     // ─── Other Activities Analytics ────────────────────────────────
     @GetMapping("/other-activities")

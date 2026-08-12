@@ -6,10 +6,7 @@ import com.carbonfootprint.repository.ActivityLogRepository;
 import com.carbonfootprint.repository.GoalRepository;
 import com.carbonfootprint.repository.UserBadgeRepository;
 import com.carbonfootprint.repository.UserRepository;
-import com.carbonfootprint.repository.OrganizationRepository;
-import com.carbonfootprint.repository.OrganizationMemberRepository;
-import com.carbonfootprint.entity.Organization;
-import com.carbonfootprint.entity.OrganizationMember;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -35,8 +32,7 @@ public class AdminAnalyticsService {
     private final ActivityLogRepository activityLogRepository;
     private final GoalRepository goalRepository;
     private final UserBadgeRepository userBadgeRepository;
-    private final OrganizationRepository organizationRepository;
-    private final OrganizationMemberRepository organizationMemberRepository;
+
     private final BadgeRepository badgeRepository;
 
     private static final String[] MONTH_NAMES = {
@@ -840,7 +836,6 @@ public class AdminAnalyticsService {
                     .emissions(mEms)
                     .goalsAchieved(mGoals)
                     .badgesEarned(mBadges)
-                    .organizationsJoined(0L) // Will be updated when we add organization metrics logic if needed, currently leaving as 0 for simplicity or we can just leave it as 0
                     .build());
         }
 
@@ -860,71 +855,15 @@ public class AdminAnalyticsService {
                 .totalEmissions(curEmissions)
                 .totalGoals(curGoals)
                 .totalBadges(curBadges)
-                .totalOrganizations(organizationRepository.count())
                 .activitiesChangePct(Math.round(actChange * 100.0) / 100.0)
                 .usersChangePct(Math.round(usrChange * 100.0) / 100.0)
                 .emissionsChangePct(Math.round(emsChange * 100.0) / 100.0)
                 .goalsChangePct(Math.round(goalChange * 100.0) / 100.0)
                 .badgesChangePct(Math.round(badChange * 100.0) / 100.0)
-                .organizationsChangePct(0.0)
                 .monthlyData(monthlyData)
                 .categoryData(catData)
                 .build();
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // ORGANIZATION ANALYTICS
-    // ─────────────────────────────────────────────────────────────
 
-    public OrganizationAnalyticsResponse getOrganizationAnalytics() {
-        log.info("Fetching Organization Analytics");
-
-        long totalOrganizations = organizationRepository.count();
-
-        // Calculate total organization emissions and rankings
-        // In a real scenario, this requires a complex join or aggregating members.
-        // For now, we will query organizations and build mock/empty data if they have no members.
-        // Since we are building real architecture, we will do a basic implementation.
-
-        List<Organization> orgs = organizationRepository.findAll();
-        List<OrganizationAnalyticsResponse.OrganizationRank> rankings = new ArrayList<>();
-        BigDecimal totalOrgEmissions = BigDecimal.ZERO;
-
-        for (Organization org : orgs) {
-            List<OrganizationMember> members = organizationMemberRepository.findByOrganizationId(org.getId());
-            long memberCount = members.size();
-            BigDecimal orgEmissions = BigDecimal.ZERO;
-
-            for (OrganizationMember member : members) {
-                // Fetch user's total emissions. We can use activityLogRepository sum for that user.
-                BigDecimal userEmissions = activityLogRepository.sumEmissionsByUserId(member.getUser().getId());
-                if (userEmissions != null) {
-                    orgEmissions = orgEmissions.add(userEmissions);
-                }
-            }
-
-            BigDecimal avgEmissions = memberCount > 0 
-                ? orgEmissions.divide(BigDecimal.valueOf(memberCount), 2, RoundingMode.HALF_UP) 
-                : BigDecimal.ZERO;
-
-            totalOrgEmissions = totalOrgEmissions.add(orgEmissions);
-
-            rankings.add(OrganizationAnalyticsResponse.OrganizationRank.builder()
-                    .name(org.getName())
-                    .industry(org.getIndustry() != null ? org.getIndustry() : "N/A")
-                    .memberCount(memberCount)
-                    .totalEmissions(orgEmissions)
-                    .avgEmissionsPerMember(avgEmissions)
-                    .build());
-        }
-
-        // Sort rankings by total emissions descending
-        rankings.sort((a, b) -> b.getTotalEmissions().compareTo(a.getTotalEmissions()));
-
-        return OrganizationAnalyticsResponse.builder()
-                .totalOrganizations(totalOrganizations)
-                .totalOrganizationEmissions(totalOrgEmissions)
-                .rankings(rankings)
-                .build();
-    }
 }

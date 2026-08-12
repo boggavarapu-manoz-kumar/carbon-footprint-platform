@@ -22,6 +22,25 @@ const OAuth2RedirectHandler = () => {
         try {
           await handleOAuthLogin(token, refreshToken);
           toast.success('Successfully logged in with Google!');
+          
+          // Check if user is an Organization Admin to route them appropriately
+          try {
+            const response = await fetch('/api/users/me/organization', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (response.ok) {
+              const orgData = await response.json();
+              if (orgData.data && orgData.data.role === 'ORGANIZATION_ADMIN') {
+                navigate('/dashboard/org-admin', { replace: true });
+                return;
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch org context during login routing:", e);
+          }
+
           navigate('/dashboard', { replace: true });
         } catch (error) {
           console.error("Failed to fetch user after OAuth:", error);

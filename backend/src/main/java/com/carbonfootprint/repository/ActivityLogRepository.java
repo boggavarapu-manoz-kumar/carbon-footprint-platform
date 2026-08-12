@@ -188,4 +188,17 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long>,
            "GROUP BY a.activityType.id, a.dynamicInputs, a.activityType.name, a.activityType.subCategory.category.name, a.activityType.subCategory.category.code, a.activityType.code, a.unit " +
            "ORDER BY MAX(a.logDate) DESC")
     java.util.List<Object[]> getRecentlyUsedActivities(@org.springframework.data.repository.query.Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
+
+    // --- ORGANIZATION ANALYTICS QUERIES ---
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(a.emissionValue) FROM ActivityLog a JOIN OrganizationMembership m ON a.user.id = m.user.id WHERE m.organization.id = :orgId AND m.status = 'ACTIVE'")
+    java.math.BigDecimal sumEmissionsByOrganizationId(@org.springframework.data.repository.query.Param("orgId") Long orgId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT SUM(a.emissionValue) FROM ActivityLog a JOIN OrganizationMembership m ON a.user.id = m.user.id WHERE m.organization.id = :orgId AND m.status = 'ACTIVE' AND a.logDate >= :startDate AND a.logDate <= :endDate")
+    java.math.BigDecimal sumEmissionsByOrganizationIdAndDateRange(@org.springframework.data.repository.query.Param("orgId") Long orgId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.activityType.subCategory.category.name, SUM(a.emissionValue) FROM ActivityLog a JOIN OrganizationMembership m ON a.user.id = m.user.id WHERE m.organization.id = :orgId AND m.status = 'ACTIVE' AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.activityType.subCategory.category.name")
+    java.util.List<Object[]> sumEmissionsGroupedByCategoryAndOrgAndDateRange(@org.springframework.data.repository.query.Param("orgId") Long orgId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a.logDate, SUM(a.emissionValue) FROM ActivityLog a JOIN OrganizationMembership m ON a.user.id = m.user.id WHERE m.organization.id = :orgId AND m.status = 'ACTIVE' AND a.logDate >= :startDate AND a.logDate <= :endDate GROUP BY a.logDate")
+    java.util.List<Object[]> sumEmissionsGroupedByDateAndOrgAndDateRange(@org.springframework.data.repository.query.Param("orgId") Long orgId, @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
 }

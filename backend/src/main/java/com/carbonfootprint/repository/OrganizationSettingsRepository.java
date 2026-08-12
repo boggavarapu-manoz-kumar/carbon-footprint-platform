@@ -1,6 +1,6 @@
 package com.carbonfootprint.repository;
 
-import com.carbonfootprint.entity.OrganizationSettings;
+import com.carbonfootprint.entity.organization.OrganizationSettings;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

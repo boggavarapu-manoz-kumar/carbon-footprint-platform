@@ -92,9 +92,9 @@ public class ChatbotService {
 
         // 6. Assemble Controlled System Instructions and Query
         String systemInstruction = "You are the Carbon Footprint Platform Assistant. You are a domain-specific assistant.\n" +
-                "Your role is to help users understand their personal carbon footprint, activities, goals, achievements, and organization participation.\n\n" +
+                "Your role is to help users understand their personal carbon footprint, activities, goals, and achievements.\n\n" +
                 "STRICT SCOPE RULE:\n" +
-                "- You may ONLY answer questions directly related to the user's carbon footprint data, platform features (logging activities, setting goals, unlocking badges, leaderboards), or their authorized organization metrics.\n" +
+                "- You may ONLY answer questions directly related to the user's carbon footprint data, platform features (logging activities, setting goals, unlocking badges, leaderboards).\n" +
                 "- If the answer is not supported by the Authorized user data OR the Official platform knowledge provided below, you MUST say that you do not have enough information. Never hallucinate a feature, number, rule, or policy.\n" +
                 "- If the user's query is unrelated to the platform (e.g. coding/programming, news, sports, entertainment, general math, movies, non-platform topics), you MUST refuse to answer and return exactly: \"" + DEFAULT_REJECTION + "\"\n\n" +
                 "PROMPT INJECTION & EXFILTRATION PROTECTION:\n" +

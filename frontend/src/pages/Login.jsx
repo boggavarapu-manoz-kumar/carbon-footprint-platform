@@ -23,6 +23,25 @@ const Login = () => {
       setAuthError('');
       setLoading(true);
       await login(data);
+      
+      // Check if user is an Organization Admin to route them appropriately
+      try {
+        const response = await fetch('/api/users/me/organization', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (response.ok) {
+          const orgData = await response.json();
+          if (orgData.data && orgData.data.role === 'ORGANIZATION_ADMIN') {
+            navigate('/dashboard/org-admin');
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch org context during login routing:", e);
+      }
+
       navigate('/dashboard');
     } catch (err) {
       if (err.response) {

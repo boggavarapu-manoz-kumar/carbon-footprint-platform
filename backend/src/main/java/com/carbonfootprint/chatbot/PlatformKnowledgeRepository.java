@@ -32,12 +32,7 @@ public class PlatformKnowledgeRepository {
             - Levels: Novice (0-100 pts), Apprentice (101-500 pts), Pro (501-1500 pts), Master (1501+ pts).
             
             4. LEADERBOARDS:
-            - Ranks users within their Organization or Global scope based on lowest carbon emission per capita or highest points.
-            
-            5. ORGANIZATIONS:
-            - Users can join organizations via invite codes.
-            - Roles: EMPLOYEE, ORGANIZATION_ADMIN, ORGANIZATION_OWNER.
-            - Organization total carbon is the sum of all members' carbon footprints.
+            - Ranks users on a Global scope based on lowest carbon emission per capita or highest points.
             ----------------------------------------
             """;
     }

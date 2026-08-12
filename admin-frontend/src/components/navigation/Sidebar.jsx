@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity, Target, TrendingUp, Award, MessageSquare, Building2 } from 'lucide-react';
+import { Home, Users, Settings, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, Ban, Activity, Target, TrendingUp, Award, MessageSquare, Building } from 'lucide-react';
 import { useAuth } from '../../core/AuthContext';
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/', icon: Home, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT', 'AUDITOR'] },
+  { name: 'Organizations', href: '/organizations', icon: Building, allowedRoles: ['SUPER_ADMIN'] },
   { name: 'User Management', href: '/users', icon: Users, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR', 'SUPPORT'] },
-  { name: 'Organizations', href: '/organizations', icon: Building2, allowedRoles: ['SUPER_ADMIN'] },
   { name: 'Suspensions', href: '/suspensions', icon: Ban, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'] },
   { name: 'Activity Monitor', href: '/activities', icon: Activity, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },
   { name: 'Goal Monitoring', href: '/goals', icon: Target, allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'AUDITOR'] },

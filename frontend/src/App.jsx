@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AppLayout from './components/AppLayout';
-import OrganizationLayout from './components/OrganizationLayout';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -26,6 +25,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Suspended = lazy(() => import('./pages/Suspended'));
 const OAuth2RedirectHandler = lazy(() => import('./pages/OAuth2RedirectHandler'));
+const AcceptInvitation = lazy(() => import('./pages/AcceptInvitation'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
@@ -34,7 +34,9 @@ const LogElectricity = lazy(() => import('./pages/LogElectricity'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Badges = lazy(() => import('./pages/Badges'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const OrgLeaderboard = lazy(() => import('./pages/OrgLeaderboard'));
 const Goals = lazy(() => import('./pages/Goals'));
+const OrgAdminDashboard = lazy(() => import('./pages/admin/OrgAdminDashboard'));
 const GoalDashboard = lazy(() => import('./pages/GoalDashboard'));
 const Recommendations = lazy(() => import('./pages/Recommendations'));
 const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
@@ -47,14 +49,9 @@ const TicketSuccess = lazy(() => import('./pages/support/TicketSuccess'));
 const SupportTicketDetail = lazy(() => import('./pages/support/SupportTicketDetail'));
 const AdminBadgeManagement = lazy(() => import('./pages/admin/AdminBadgeManagement'));
 const AdminBadgeForm = lazy(() => import('./pages/admin/AdminBadgeForm'));
+const SuperAdminOrganizations = lazy(() => import('./pages/admin/SuperAdminOrganizations'));
+const CreateOrganizationForm = lazy(() => import('./pages/admin/CreateOrganizationForm'));
 
-const OrganizationOverview = lazy(() => import('./pages/organization/OrganizationOverview'));
-const CreateOrganization = lazy(() => import('./pages/organization/CreateOrganization'));
-const OrganizationMembersPage = lazy(() => import('./pages/organization/OrganizationMembersPage').then(module => ({ default: module.OrganizationMembersPage })));
-const OrganizationInvitationsPage = lazy(() => import('./pages/organization/OrganizationInvitationsPage').then(module => ({ default: module.OrganizationInvitationsPage })));
-const OrganizationAnalyticsPage = lazy(() => import('./pages/organization/OrganizationAnalyticsPage').then(module => ({ default: module.OrganizationAnalyticsPage })));
-const OrganizationSettingsPage = lazy(() => import('./pages/organization/OrganizationSettingsPage').then(module => ({ default: module.OrganizationSettingsPage })));
-const ActivationPage = lazy(() => import('./pages/ActivationPage').then(module => ({ default: module.ActivationPage })));
 
 // Global Loading Fallback
 const PageLoader = () => (
@@ -91,7 +88,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/suspended" element={<Suspended />} />
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-            <Route path="/activate" element={<ActivationPage />} />
+            <Route path="/accept-invite" element={<AcceptInvitation />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -105,6 +102,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="badges" element={<Badges />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="org-leaderboard" element={<OrgLeaderboard />} />
           <Route path="goals" element={<Goals />} />
           <Route path="goals/:id" element={<GoalDashboard />} />
           <Route path="recommendations" element={<Recommendations />} />
@@ -115,25 +113,17 @@ function App() {
           <Route path="support/new" element={<CreateTicketPage />} />
           <Route path="support/success" element={<TicketSuccess />} />
           <Route path="support/:id" element={<SupportTicketDetail />} />
-          
-          {/* Admin Routes */}
+
+          <Route path="org-admin" element={<OrgAdminDashboard />} />
+
+          {/* Super Admin Routes */}
           <Route path="admin/badges" element={<AdminBadgeManagement />} />
           <Route path="admin/badges/create" element={<AdminBadgeForm />} />
           <Route path="admin/badges/edit/:id" element={<AdminBadgeForm />} />
+          <Route path="admin/organizations" element={<SuperAdminOrganizations />} />
+          <Route path="admin/organizations/create" element={<CreateOrganizationForm />} />
         </Route>
-        <Route path="/organization/create" element={<AppLayout />}>
-          <Route index element={<CreateOrganization />} />
-        </Route>
-        
-        <Route path="/organization/:id" element={<OrganizationLayout />}>
-          <Route index element={<OrganizationOverview />} />
-          <Route path="members" element={<OrganizationMembersPage />} />
-          <Route path="invitations" element={<OrganizationInvitationsPage />} />
-          <Route path="analytics" element={<OrganizationAnalyticsPage />} />
-          <Route path="reports" element={<div className="p-6">Reports Module Coming Soon</div>} />
-          <Route path="settings" element={<OrganizationSettingsPage />} />
-        </Route>
-        
+
         <Route path="/complete-profile" element={<CompleteProfile />} />
             </Route>
 

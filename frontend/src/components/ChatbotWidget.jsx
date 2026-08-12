@@ -47,8 +47,7 @@ export const ChatbotWidget = () => {
   const suggestionChips = [
     "What was my footprint this week?",
     "Show me a breakdown of my footprint",
-    "Download my carbon report PDF",
-    "What is my current organization ranking?"
+    "Download my carbon report PDF"
   ];
 
   const playPopSound = () => {
@@ -100,7 +99,7 @@ export const ChatbotWidget = () => {
               const formattedHistory = data.map(msg => ({
                 sender: msg.role === 'user' ? 'user' : 'bot',
                 text: msg.content,
-                time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               }));
               
               setMessages([
@@ -289,9 +288,8 @@ export const ChatbotWidget = () => {
         if (refreshed) {
           response = await doFetch(refreshed);
         }
-        // If still 401 after refresh attempt, fail gracefully and dispatch logout
+        // If still 401 after refresh attempt, fail gracefully
         if (response.status === 401) {
-          window.dispatchEvent(new Event('unauthorized'));
           throw new Error('NO_SESSION');
         }
       }

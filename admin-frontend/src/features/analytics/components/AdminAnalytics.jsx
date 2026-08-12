@@ -190,11 +190,6 @@ export const AdminAnalytics = () => {
     enabled: activeTab === 'distribution' || activeTab === 'audit',
   });
 
-  const { data: orgData, isLoading: orgLoading } = useQuery({
-    queryKey: ['admin-organizations', selectedYear],
-    queryFn: () => analyticsApi.getOrganizationAnalytics(),
-    enabled: activeTab === 'organizations' || activeTab === 'audit',
-  });
 
   const { data: otherData, isLoading: otherLoading } = useQuery({
     queryKey: ['admin-other-activities', selectedYear],
@@ -437,7 +432,6 @@ export const AdminAnalytics = () => {
           <StatCard title="Carbon (kg)" value={fmt(data.totalEmissions)} trend={data.emissionsChangePct} icon={Leaf} color="success" loading={yearlyLoading} />
           <StatCard title="Goals" value={fmt(data.totalGoals)} trend={data.goalsChangePct} icon={Target} color="purple" loading={yearlyLoading} />
           <StatCard title="Badges" value={fmt(data.totalBadges)} trend={data.badgesChangePct} icon={Award} color="primary" loading={yearlyLoading} />
-          <StatCard title="Organizations" value={fmt(data.totalOrganizations)} trend={data.organizationsChangePct} icon={Building} color="danger" loading={yearlyLoading} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -555,55 +549,6 @@ export const AdminAnalytics = () => {
             </ResponsiveContainer>
           </ChartCard>
         </div>
-      </div>
-    );
-  };
-
-  const renderOrganizations = () => {
-    const data = orgData || {};
-    const rankings = data.rankings || [];
-
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <StatCard title="Total Registered Organizations" value={fmt(data.totalOrganizations)} icon={Building} color="info" loading={orgLoading} />
-          <StatCard title="Total Organization Emissions" value={fmtKg(data.totalOrganizationEmissions)} icon={Leaf} color="success" loading={orgLoading} />
-        </div>
-
-        <ChartCard title="Organization Leaderboard" subtitle="Organizations ranked by total emissions (Ascending is better)" loading={orgLoading}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Rank</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Organization Name</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Industry</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Members</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Total Emissions</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Avg / Member</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rankings.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-8 text-center text-gray-500">No organizations found. Real data will appear here once organizations are onboarded.</td>
-                  </tr>
-                ) : (
-                  rankings.map((org, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition">
-                      <td className="py-3 px-4 text-sm text-gray-900 font-bold">#{index + 1}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 font-medium">{org.name}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{org.industry}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{fmt(org.memberCount)}</td>
-                      <td className="py-3 px-4 text-sm text-gray-900 font-bold text-red-600">{fmtKg(org.totalEmissions)}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{fmtKg(org.avgEmissionsPerMember)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </ChartCard>
       </div>
     );
   };
@@ -781,7 +726,6 @@ export const AdminAnalytics = () => {
     { id: 'yearly', label: 'Yearly', icon: Globe },
     { id: 'distribution', label: 'Distribution', icon: PieChartIcon },
     { id: 'other', label: 'Other Activities', icon: PlusCircle },
-    { id: 'organizations', label: 'Organizations', icon: Building },
     { id: 'audit', label: 'Audit', icon: ShieldCheck },
   ];
 
@@ -836,7 +780,6 @@ export const AdminAnalytics = () => {
       {activeTab === 'yearly' && renderYearly()}
       {activeTab === 'distribution' && renderDistribution()}
       {activeTab === 'other' && renderOtherActivities()}
-      {activeTab === 'organizations' && renderOrganizations()}
       {activeTab === 'audit' && renderAudit()}
     </div>
   );

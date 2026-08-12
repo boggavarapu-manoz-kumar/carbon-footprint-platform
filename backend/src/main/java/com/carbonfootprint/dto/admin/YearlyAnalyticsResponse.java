@@ -20,7 +20,6 @@ public class YearlyAnalyticsResponse {
     private BigDecimal totalEmissions;
     private long totalGoals;
     private long totalBadges;
-    private long totalOrganizations;
 
     // ─── Comparison (Percentage Change vs Prev Year) ─────────────
     private double activitiesChangePct;
@@ -28,7 +27,6 @@ public class YearlyAnalyticsResponse {
     private double emissionsChangePct;
     private double goalsChangePct;
     private double badgesChangePct;
-    private double organizationsChangePct;
 
     // ─── Monthly breakdown (Jan - Dec) ───────────────────────────
     private List<MonthlySlot> monthlyData;
@@ -47,7 +45,6 @@ public class YearlyAnalyticsResponse {
         private BigDecimal emissions;
         private long goalsAchieved;
         private long badgesEarned;
-        private long organizationsJoined;
     }
 
     @Data

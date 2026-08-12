@@ -1,0 +1,63 @@
+-- V12__Create_Organization_Module.sql
+
+CREATE TABLE organizations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(100) UNIQUE,
+    industry VARCHAR(255),
+    company_size VARCHAR(100),
+    country VARCHAR(100),
+    timezone VARCHAR(100),
+    logo VARCHAR(255),
+    status VARCHAR(50) NOT NULL, -- PENDING, ACTIVE, SUSPENDED, INACTIVE, ARCHIVED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT
+);
+
+CREATE TABLE organization_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+);
+
+CREATE TABLE organization_memberships (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    role VARCHAR(50) NOT NULL, -- ORGANIZATION_ADMIN, ORGANIZATION_EMPLOYEE
+    status VARCHAR(50) NOT NULL, -- INVITED, ACTIVE, SUSPENDED, REMOVED, DECLINED
+    department VARCHAR(255),
+    job_title VARCHAR(255),
+    employee_id VARCHAR(100),
+    joined_at TIMESTAMP NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_org_user (organization_id, user_id),
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE organization_invitations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    status VARCHAR(50) NOT NULL, -- PENDING, ACCEPTED, EXPIRED, CANCELLED
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+);
+
+CREATE TABLE organization_admin_assignments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    organization_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    assigned_by BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

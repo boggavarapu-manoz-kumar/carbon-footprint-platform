@@ -35,9 +35,6 @@ public class ChatUserContext {
     /** Populated when RECOMMENDATIONS scope is active — max 3 items */
     private List<String> topRecommendations;
 
-    /** Populated when ORGANIZATION scope is active — role-gated */
-    private List<OrganizationContext> organizations;
-
     // =========================================================
     // Nested sanitized context records
     // =========================================================
@@ -80,16 +77,6 @@ public class ChatUserContext {
         public long totalScore;
     }
 
-    public static class OrganizationContext {
-        public String organizationName;
-        public String role;          // ORGANIZATION_OWNER, ORGANIZATION_ADMIN, EMPLOYEE
-        public String memberStatus;  // ACTIVE, SUSPENDED
-        /** Only visible to ORGANIZATION_ADMIN and ORGANIZATION_OWNER */
-        public Long activeMemberCount;
-        /** Only visible to ORGANIZATION_ADMIN and ORGANIZATION_OWNER */
-        public BigDecimal orgTotalCarbonKg;
-    }
-
     // =========================================================
     // Fluent builder pattern
     // =========================================================
@@ -105,8 +92,6 @@ public class ChatUserContext {
         public Builder gamification(GamificationContext v)     { ctx.gamification = v; return this; }
         public Builder leaderboard(LeaderboardContext v)       { ctx.leaderboard = v; return this; }
         public Builder topRecommendations(List<String> v)      { ctx.topRecommendations = v; return this; }
-        public Builder organizations(List<OrganizationContext> v) { ctx.organizations = v; return this; }
-
         public ChatUserContext build() { return ctx; }
     }
 
@@ -117,5 +102,4 @@ public class ChatUserContext {
     public GamificationContext getGamification()      { return gamification; }
     public LeaderboardContext getLeaderboard()         { return leaderboard; }
     public List<String> getTopRecommendations()       { return topRecommendations; }
-    public List<OrganizationContext> getOrganizations() { return organizations; }
 }

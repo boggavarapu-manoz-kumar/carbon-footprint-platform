@@ -1,6 +1,6 @@
 package com.carbonfootprint.repository;
 
-import com.carbonfootprint.entity.OrganizationInvitation;
+import com.carbonfootprint.entity.organization.OrganizationInvitation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +11,5 @@ import java.util.Optional;
 public interface OrganizationInvitationRepository extends JpaRepository<OrganizationInvitation, Long> {
     Optional<OrganizationInvitation> findByToken(String token);
     List<OrganizationInvitation> findByOrganizationId(Long organizationId);
-    Optional<OrganizationInvitation> findByOrganizationIdAndEmailAndStatus(Long organizationId, String email, String status);
-    long countByOrganizationIdAndStatus(Long organizationId, String status);
+    Optional<OrganizationInvitation> findByOrganizationIdAndEmail(Long organizationId, String email);
 }

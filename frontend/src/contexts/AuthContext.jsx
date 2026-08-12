@@ -9,11 +9,26 @@ export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [orgContext, setOrgContext] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
     const userData = await AuthService.getCurrentUser();
     setUser(userData);
+    
+    try {
+      const response = await fetch('/api/users/me/organization', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const orgData = await response.json();
+        setOrgContext(orgData.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch organization context:", e);
+    }
   };
 
   useEffect(() => {
@@ -95,7 +110,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, handleOAuthLogin, register, logout, updateUser, refreshUser: fetchUser }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, orgContext, loading, login, handleOAuthLogin, register, logout, updateUser, refreshUser: fetchUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );

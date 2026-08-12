@@ -32,6 +32,60 @@ public interface PointHistoryRepository extends JpaRepository<PointHistory, Long
     @Query("SELECT p.user.id, COALESCE(SUM(p.points), 0) FROM PointHistory p GROUP BY p.user.id")
     List<Object[]> sumPointsGroupedByUser();
 
+    // --- ORGANIZATION LEADERBOARD QUERIES ---
+
+    /**
+     * Returns [userId, totalPoints] for all ACTIVE members of an org, optionally date-scoped.
+     * Pageable enforces DB-level top-N (no in-memory sorting or loading of all rows).
+     * Pass null for both dates to get all-time scores.
+     */
+    @Query("SELECT p.user.id, COALESCE(SUM(p.points), 0) AS pts " +
+           "FROM PointHistory p " +
+           "JOIN OrganizationMembership m ON p.user.id = m.user.id " +
+           "WHERE m.organization.id = :orgId AND m.status = 'ACTIVE' " +
+           "AND (:startDate IS NULL OR p.timestamp >= :startDate) " +
+           "AND (:endDate IS NULL OR p.timestamp <= :endDate) " +
+           "GROUP BY p.user.id " +
+           "ORDER BY pts DESC")
+    org.springframework.data.domain.Page<Object[]> sumPointsGroupedByOrgMemberAndDateRange(
+            @Param("orgId") Long orgId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Returns the total points for a specific user within an org scope, optionally date-scoped.
+     * Used to compute the current user's rank without fetching the full board.
+     */
+    @Query("SELECT COALESCE(SUM(p.points), 0) " +
+           "FROM PointHistory p " +
+           "JOIN OrganizationMembership m ON p.user.id = m.user.id " +
+           "WHERE p.user.id = :userId AND m.organization.id = :orgId AND m.status = 'ACTIVE' " +
+           "AND (:startDate IS NULL OR p.timestamp >= :startDate) " +
+           "AND (:endDate IS NULL OR p.timestamp <= :endDate)")
+    Long sumPointsForUserInOrg(
+            @Param("userId") Long userId,
+            @Param("orgId") Long orgId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    /**
+     * Counts how many ACTIVE org members have strictly more points than the given score.
+     * Adding 1 to this gives the current user's rank (even if they fall off the paginated view).
+     */
+    @Query("SELECT COUNT(DISTINCT m.user.id) " +
+           "FROM OrganizationMembership m " +
+           "WHERE m.organization.id = :orgId AND m.status = 'ACTIVE' " +
+           "AND (SELECT COALESCE(SUM(p2.points), 0) FROM PointHistory p2 " +
+           "     WHERE p2.user.id = m.user.id " +
+           "     AND (:startDate IS NULL OR p2.timestamp >= :startDate) " +
+           "     AND (:endDate IS NULL OR p2.timestamp <= :endDate)) > :userScore")
+    long countOrgMembersWithMorePoints(
+            @Param("orgId") Long orgId,
+            @Param("userScore") Long userScore,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
     boolean existsByUserIdAndReason(Long userId, String reason);
 
     boolean existsByUserIdAndReasonAndTimestampGreaterThanEqual(Long userId, String reason, LocalDateTime timestamp);

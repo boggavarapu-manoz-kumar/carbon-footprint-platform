@@ -10,6 +10,5 @@ public enum DataScope {
     GAMIFICATION,
     LEADERBOARD,
     RECOMMENDATIONS,
-    ORGANIZATION,
     PLATFORM_HELP
 }

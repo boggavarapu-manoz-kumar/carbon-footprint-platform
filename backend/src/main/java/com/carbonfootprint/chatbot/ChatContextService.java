@@ -6,10 +6,7 @@ import com.carbonfootprint.dto.BadgeShowcaseDto;
 import com.carbonfootprint.dto.UserPointsResponseDto;
 import com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto;
 import com.carbonfootprint.dto.recommendation.RecommendationResponseDto;
-import com.carbonfootprint.entity.OrganizationMember;
-import com.carbonfootprint.entity.OrganizationRole;
 import com.carbonfootprint.entity.User;
-import com.carbonfootprint.repository.OrganizationMemberRepository;
 import com.carbonfootprint.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +34,6 @@ public class ChatContextService {
     private final BadgeShowcaseService badgeShowcaseService;
     private final GamificationService gamificationService;
     private final RecommendationService recommendationService;
-    private final OrganizationMemberRepository organizationMemberRepository;
-    private final OrganizationAnalyticsService organizationAnalyticsService;
 
     private static final Map<DataScope, List<String>> SCOPE_KEYWORDS = Map.of(
             DataScope.FOOTPRINT, List.of("footprint", "emission", "carbon", "co2", "kg", "today", "week", "month", "activity", "activities", "track"),
@@ -46,7 +41,6 @@ public class ChatContextService {
             DataScope.GAMIFICATION, List.of("point", "level", "badge", "streak", "xp", "reward", "unlock", "gamification", "showcase"),
             DataScope.LEADERBOARD, List.of("leaderboard", "rank", "score", "standings", "position", "compare", "compete"),
             DataScope.RECOMMENDATIONS, List.of("recommendation", "suggest", "improve", "tip", "advice", "how can i", "help me reduce"),
-            DataScope.ORGANIZATION, List.of("organization", "company", "team", "org", "workplace", "employee", "corporate"),
             DataScope.PLATFORM_HELP, List.of("help", "how to", "what is", "explain", "features", "dashboard", "platform")
     );
 
@@ -100,9 +94,6 @@ public class ChatContextService {
             builder.topRecommendations(buildRecommendationsContext(user));
         }
 
-        if (scopes.contains(DataScope.ORGANIZATION)) {
-            builder.organizations(buildOrganizationContext(user));
-        }
 
         return builder.build();
     }
@@ -181,34 +172,4 @@ public class ChatContextService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    private List<ChatUserContext.OrganizationContext> buildOrganizationContext(User user) {
-        List<OrganizationMember> memberships = organizationMemberRepository.findByUserId(user.getId());
-        
-        return memberships.stream().map(membership -> {
-            ChatUserContext.OrganizationContext ctx = new ChatUserContext.OrganizationContext();
-            ctx.organizationName = membership.getOrganization().getName();
-            ctx.role = membership.getRole().name();
-            ctx.memberStatus = membership.getStatus();
-            
-            // TENANT ISOLATION / SECURITY RULE:
-            // Only expose organization-wide metrics to Admins and Owners
-            if (membership.getRole() == OrganizationRole.ORGANIZATION_ADMIN || 
-                membership.getRole() == OrganizationRole.ORGANIZATION_OWNER) {
-                
-                try {
-                    // Fetch org analytics
-                    Map<String, Object> analytics = organizationAnalyticsService.getOrganizationMetrics(
-                            membership.getOrganization().getId()
-                    );
-                    
-                    ctx.activeMemberCount = analytics.get("activeMembers") != null ? Long.parseLong(analytics.get("activeMembers").toString()) : 0L;
-                    ctx.orgTotalCarbonKg = analytics.get("totalCarbonFootprint") != null ? new java.math.BigDecimal(analytics.get("totalCarbonFootprint").toString()) : java.math.BigDecimal.ZERO;
-                } catch (Exception e) {
-                    log.warn("Failed to fetch org analytics for chatbot context", e);
-                }
-            }
-            return ctx;
-        }).collect(Collectors.toList());
-    }
 }
