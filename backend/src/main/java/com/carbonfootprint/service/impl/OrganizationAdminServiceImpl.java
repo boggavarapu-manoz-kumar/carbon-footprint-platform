@@ -62,6 +62,9 @@ public class OrganizationAdminServiceImpl implements OrganizationAdminService {
                 .token(token)
                 .status(InvitationStatus.PENDING)
                 .expiresAt(LocalDateTime.now().plusDays(7))
+                .department(dto.getDepartment())
+                .jobTitle(dto.getJobTitle())
+                .employeeId(dto.getEmployeeId())
                 .build();
         
         invitationRepository.save(invitation);

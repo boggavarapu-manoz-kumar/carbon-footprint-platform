@@ -4,9 +4,10 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Leaf, ArrowRight } from 'lucide-react';
+import { Leaf, ArrowRight, Building, ShieldAlert } from 'lucide-react';
 import { FadeIn } from '../components/motion/FadeIn';
 import { StaggerReveal } from '../components/motion/StaggerReveal';
+import api from '../api/axiosConfig';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -17,6 +18,7 @@ const Login = () => {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState('USER'); // 'USER' | 'ORG_ADMIN'
 
   const onSubmit = async (data) => {
     try {
@@ -26,20 +28,24 @@ const Login = () => {
       
       // Check if user is an Organization Admin to route them appropriately
       try {
-        const response = await fetch('/api/users/me/organization', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        if (response.ok) {
-          const orgData = await response.json();
-          if (orgData.data && orgData.data.role === 'ORGANIZATION_ADMIN') {
-            navigate('/dashboard/org-admin');
-            return;
-          }
+        const response = await api.get('/v1/users/me/organization');
+        if (response.data?.data && response.data.data.role === 'ORGANIZATION_ADMIN') {
+          navigate('/dashboard/org-admin');
+          return;
+        } else if (loginMode === 'ORG_ADMIN') {
+          setAuthError('You do not have Organization Administrator privileges.');
+          setLoading(false);
+          return;
         }
       } catch (e) {
         console.error("Failed to fetch org context during login routing:", e);
+      }
+      
+      if (loginMode === 'ORG_ADMIN') {
+        // Fallback if the above fetch failed completely but they tried to login as org admin
+        setAuthError('Unable to verify organization status.');
+        setLoading(false);
+        return;
       }
 
       navigate('/dashboard');
@@ -123,8 +129,12 @@ const Login = () => {
         <div className="w-full max-w-md">
           <FadeIn direction="none" duration={0.6}>
             <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">{t('login.sign_in')}</h2>
-              <p className="text-slate-500">{t('login.enter_credentials')}</p>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
+                {loginMode === 'ORG_ADMIN' ? 'Organization Login' : t('login.sign_in')}
+              </h2>
+              <p className="text-slate-500">
+                {loginMode === 'ORG_ADMIN' ? 'Access your organization\'s dashboard to invite members and track impact.' : t('login.enter_credentials')}
+              </p>
             </div>
 
             <AnimatePresence>
@@ -242,12 +252,30 @@ const Login = () => {
               </button>
             </div>
 
-            <p className="mt-10 text-center text-sm text-slate-500">
+            <p className="mt-8 text-center text-sm text-slate-500">
               {t('login.dont_have_account')}
-              <RouterLink to="/register" className="font-semibold text-slate-900 hover:text-emerald-600 transition-colors">
+              <RouterLink to="/register" className="font-semibold text-slate-900 hover:text-emerald-600 transition-colors ml-1">
                 {t('login.sign_up_free')}
               </RouterLink>
             </p>
+
+            <div className="mt-8 pt-6 border-t border-slate-100 space-y-4">
+              <button 
+                type="button"
+                onClick={() => setLoginMode(loginMode === 'USER' ? 'ORG_ADMIN' : 'USER')}
+                className="w-full py-3 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-2 group"
+              >
+                <Building className="w-4 h-4 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+                {loginMode === 'USER' ? 'Sign in as Organization Admin' : 'Sign in as Regular User'}
+              </button>
+              
+              <div className="text-center">
+                <a href={`http://${window.location.hostname}:5174/login`} className="inline-flex items-center text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors group">
+                  <ShieldAlert className="w-3 h-3 mr-1 opacity-70 group-hover:opacity-100" />
+                  System Administrator Portal
+                </a>
+              </div>
+            </div>
           </FadeIn>
         </div>
       </div>

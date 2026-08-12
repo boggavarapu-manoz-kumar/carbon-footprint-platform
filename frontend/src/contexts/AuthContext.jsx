@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import AuthService from '../services/AuthService';
+import api from '../api/axiosConfig';
 import { clearPendingActivities } from '../utils/indexedDB';
 
 const AuthContext = createContext(null);
@@ -17,14 +18,9 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     
     try {
-      const response = await fetch('/api/users/me/organization', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const orgData = await response.json();
-        setOrgContext(orgData.data);
+      const response = await api.get('/v1/users/me/organization');
+      if (response.data?.data) {
+        setOrgContext(response.data.data);
       }
     } catch (e) {
       console.error("Failed to fetch organization context:", e);

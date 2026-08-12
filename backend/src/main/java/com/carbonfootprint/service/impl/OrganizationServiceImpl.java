@@ -70,6 +70,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                 .token(token)
                 .status(InvitationStatus.PENDING)
                 .expiresAt(LocalDateTime.now().plusDays(7))
+                .employeeId(dto.getAdminIdentifier())
                 .build();
         
         invitationRepository.save(invitation);

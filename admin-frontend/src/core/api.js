@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// Get base URL from env or use default for development
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1/admin';
+// Use current hostname to support network access
+const hostname = window.location.hostname;
+const defaultApiUrl = `http://${hostname}:8081/api/v1/admin`;
+const BASE_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 
 let inMemoryToken = null;
 
@@ -54,8 +56,8 @@ adminAxios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // If error is 401 and it's not the refresh endpoint itself
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+    // If error is 401 and it's not the refresh or login endpoint itself
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh') && !originalRequest.url?.includes('/auth/login')) {
       if (isRefreshing) {
         return new Promise(function(resolve, reject) {
           failedQueue.push({resolve, reject})

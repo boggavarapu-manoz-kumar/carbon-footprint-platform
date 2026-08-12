@@ -38,11 +38,11 @@ public class AdminSecurityConfig {
             AdminJwtAuthenticationFilter adminJwtAuthFilter,
             com.carbonfootprint.security.admin.GlobalRateLimitFilter globalRateLimitFilter,
             com.carbonfootprint.security.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
-            SecurityConfig securityConfig) throws Exception {
+            org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource) throws Exception {
 
         http
             .securityMatcher("/api/v1/admin/**")
-            .cors(cors -> cors.configurationSource(securityConfig.corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth

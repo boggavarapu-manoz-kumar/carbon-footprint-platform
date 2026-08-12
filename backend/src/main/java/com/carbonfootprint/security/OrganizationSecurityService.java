@@ -25,7 +25,7 @@ public class OrganizationSecurityService {
             return true;
         }
         User user = getCurrentUser();
-        return user != null && user.getRole().name().equals("SUPER_ADMIN"); 
+        return user != null && user.getRole() == com.carbonfootprint.entity.Role.SUPER_ADMIN; 
     }
 
     public boolean hasOrganizationAdminAccess(Long organizationId) {

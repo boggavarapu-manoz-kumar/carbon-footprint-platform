@@ -39,7 +39,7 @@ const OrgAdminDashboard = () => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/api/v1/organizations/${orgContext.organizationId}/analytics`, {
+        const response = await api.get(`/v1/organizations/${orgContext.organizationId}/analytics`, {
           params: { period }
         });
         setAnalytics(response.data.data);
@@ -74,13 +74,17 @@ const OrgAdminDashboard = () => {
     setInviteError(null);
     setIsInviting(true);
     try {
-      await api.post(`/org/admin/${orgContext.organizationId}/employees/invite`, inviteData);
+      const payload = {
+        name: `${inviteData.firstName} ${inviteData.lastName}`.trim(),
+        email: inviteData.email
+      };
+      await api.post(`/org/admin/${orgContext.organizationId}/employees/invite`, payload);
       import('react-hot-toast').then(m => m.toast.success('Invitation sent successfully!'));
       setInviteData({ firstName: '', lastName: '', email: '' });
       setIsInviteModalOpen(false);
       
       // Refresh analytics to show pending invites update
-      const response = await api.get(`/api/v1/organizations/${orgContext.organizationId}/analytics`, {
+      const response = await api.get(`/v1/organizations/${orgContext.organizationId}/analytics`, {
         params: { period }
       });
       setAnalytics(response.data.data);

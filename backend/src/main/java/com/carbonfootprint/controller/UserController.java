@@ -92,6 +92,7 @@ public class UserController {
     }
 
     @GetMapping("/me/organization")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<com.carbonfootprint.dto.organization.OrganizationMembershipDto>> getMyOrganizationContext(
             @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
         

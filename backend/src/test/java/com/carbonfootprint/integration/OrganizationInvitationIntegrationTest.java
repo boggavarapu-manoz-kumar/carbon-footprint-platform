@@ -65,7 +65,7 @@ public class OrganizationInvitationIntegrationTest extends BaseIntegrationTest {
         activationDto.setLastName("User");
         activationDto.setPassword("Pass@1234");
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/public/organizations/activate/employee")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/invitations/activate-employee")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(activationDto)))
                 .andExpect(status().isBadRequest());
@@ -80,7 +80,7 @@ public class OrganizationInvitationIntegrationTest extends BaseIntegrationTest {
         activationDto.setLastName("User");
         activationDto.setPassword("Pass@1234");
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/public/organizations/activate/employee")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/invitations/activate-employee")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(activationDto)))
                 .andExpect(status().isNotFound());

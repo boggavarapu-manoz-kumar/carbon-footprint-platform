@@ -45,10 +45,13 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
         // Validate user or create new
         User user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
         if (user == null) {
+            String tempUsername = "temp_" + java.util.UUID.randomUUID().toString().substring(0, 8);
             user = User.builder()
                     .firstName(dto.getFirstName())
                     .lastName(dto.getLastName())
                     .email(invitation.getEmail())
+                    .username(tempUsername)
+                    .mobileNumber("")
                     .password(passwordEncoder.encode(dto.getPassword()))
                     .role(Role.USER) // Global role is always USER for org members, they don't get super admin
                     .provider(com.carbonfootprint.entity.AuthProvider.LOCAL)
@@ -104,10 +107,13 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
 
         User user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
         if (user == null) {
+            String tempUsername = "temp_" + java.util.UUID.randomUUID().toString().substring(0, 8);
             user = User.builder()
                     .firstName(dto.getFirstName())
                     .lastName(dto.getLastName())
                     .email(invitation.getEmail())
+                    .username(tempUsername)
+                    .mobileNumber("")
                     .password(passwordEncoder.encode(dto.getPassword()))
                     .role(Role.USER)
                     .provider(com.carbonfootprint.entity.AuthProvider.LOCAL)
@@ -158,14 +164,26 @@ public class OrganizationInvitationServiceImpl implements OrganizationInvitation
         membershipRepository.findByOrganizationIdAndUserId(org.getId(), user.getId())
             .ifPresentOrElse(membership -> {
                 membership.setStatus(MembershipStatus.ACTIVE);
+                // Also update metadata if it was present on the invite but missing from the membership
+                if (membership.getDepartment() == null && invitation.getDepartment() != null) {
+                    membership.setDepartment(invitation.getDepartment());
+                }
+                if (membership.getJobTitle() == null && invitation.getJobTitle() != null) {
+                    membership.setJobTitle(invitation.getJobTitle());
+                }
+                if (membership.getEmployeeId() == null && invitation.getEmployeeId() != null) {
+                    membership.setEmployeeId(invitation.getEmployeeId());
+                }
                 membershipRepository.save(membership);
             }, () -> {
-                // Should not happen as InviteEmployee creates the membership in INVITED state
                 OrganizationMembership membership = OrganizationMembership.builder()
                     .organization(org)
                     .user(user)
                     .role(invitation.getRole())
                     .status(MembershipStatus.ACTIVE)
+                    .department(invitation.getDepartment())
+                    .jobTitle(invitation.getJobTitle())
+                    .employeeId(invitation.getEmployeeId())
                     .joinedAt(LocalDateTime.now())
                     .build();
                 membershipRepository.save(membership);
