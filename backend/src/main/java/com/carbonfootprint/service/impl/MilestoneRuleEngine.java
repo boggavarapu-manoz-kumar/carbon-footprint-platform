@@ -28,8 +28,9 @@ public class MilestoneRuleEngine {
     private final YearlyLeaderboardHistoryRepository yearlyLeaderboardHistoryRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    @org.springframework.scheduling.annotation.Async
     @EventListener
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void evaluateRulesForUser(UserMetricsUpdatedEvent event) {
         Long userId = event.getUserId();
         log.info("Dynamic Rule Engine evaluating rules for user: {}", userId);

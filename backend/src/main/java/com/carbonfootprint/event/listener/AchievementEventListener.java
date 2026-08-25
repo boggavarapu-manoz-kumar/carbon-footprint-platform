@@ -37,7 +37,7 @@ public class AchievementEventListener {
 
     @Async
     @EventListener
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void handleAchievementUnlocked(AchievementUnlockedEvent event) {
         log.info("Processing AchievementUnlockedEvent for user: {}, badge: {}", event.getUserId(), event.getBadgeName());
 

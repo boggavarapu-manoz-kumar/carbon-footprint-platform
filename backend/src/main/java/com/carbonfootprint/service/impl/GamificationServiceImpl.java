@@ -37,7 +37,7 @@ public class GamificationServiceImpl implements GamificationService {
 
     @Async
     @EventListener
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     @Override
     public void handleGamificationEvent(GamificationEvent event) {
         log.info("Received GamificationEvent: {} (Action: {}) for user {}", event.getEventType(), event.getActionType(), event.getUserId());
@@ -229,6 +229,10 @@ public class GamificationServiceImpl implements GamificationService {
         UserSustainabilityProfile newProfile = UserSustainabilityProfile.builder()
                 .user(user)
                 .totalPoints(0L)
+                .totalXp(0L)
+                .totalCarbonSaved(java.math.BigDecimal.ZERO)
+                .adoptedRecommendationsCount(0)
+                .highestStreak(0)
                 .currentLevel("Eco Beginner")
                 .currentStreak(0)
                 .longestStreak(0)

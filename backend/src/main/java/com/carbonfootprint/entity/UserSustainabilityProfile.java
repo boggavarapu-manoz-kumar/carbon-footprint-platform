@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -58,7 +59,7 @@ public class UserSustainabilityProfile {
 
     @Column(name = "total_carbon_saved", precision = 10, scale = 2)
     @Builder.Default
-    private java.math.BigDecimal totalCarbonSaved = java.math.BigDecimal.ZERO;
+    private BigDecimal totalCarbonSaved = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -67,4 +68,36 @@ public class UserSustainabilityProfile {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public Long getTotalPoints() {
+        return totalPoints != null ? totalPoints : 0L;
+    }
+
+    public Long getTotalXp() {
+        return totalXp != null ? totalXp : 0L;
+    }
+
+    public Integer getCurrentStreak() {
+        return currentStreak != null ? currentStreak : 0;
+    }
+
+    public Integer getLongestStreak() {
+        return longestStreak != null ? longestStreak : 0;
+    }
+
+    public Integer getHighestStreak() {
+        return highestStreak != null ? highestStreak : 0;
+    }
+
+    public Integer getAdoptedRecommendationsCount() {
+        return adoptedRecommendationsCount != null ? adoptedRecommendationsCount : 0;
+    }
+
+    public BigDecimal getTotalCarbonSaved() {
+        return totalCarbonSaved != null ? totalCarbonSaved : BigDecimal.ZERO;
+    }
+
+    public String getCurrentLevel() {
+        return currentLevel != null ? currentLevel : "Eco Beginner";
+    }
 }
