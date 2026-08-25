@@ -26,7 +26,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final TokenRepository tokenRepository;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
-    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:5174}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:${FRONTEND_URL:http://localhost:5173}}")
     private String frontendUrl;
 
     @Override
@@ -74,23 +74,30 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     private boolean isAuthorizedRedirectUri(String uri) {
+        if (uri == null || uri.trim().isEmpty()) {
+            return false;
+        }
         try {
             java.net.URI clientRedirectUri = java.net.URI.create(uri);
-            java.net.URI defaultUri = java.net.URI.create(frontendUrl);
-            if (clientRedirectUri.getHost() != null && clientRedirectUri.getHost().equalsIgnoreCase(defaultUri.getHost())
-                    && clientRedirectUri.getPort() == defaultUri.getPort()) {
+            String host = clientRedirectUri.getHost();
+            if (host == null) {
+                return false;
+            }
+            if ("localhost".equalsIgnoreCase(host) || "127.0.0.1".equalsIgnoreCase(host)) {
                 return true;
             }
-            // Allow localhost origins in development / testing
-            if ("localhost".equalsIgnoreCase(clientRedirectUri.getHost()) || "127.0.0.1".equalsIgnoreCase(clientRedirectUri.getHost())) {
+            if (host.toLowerCase().endsWith(".onrender.com") || host.toLowerCase().endsWith(".vercel.app") || host.toLowerCase().endsWith(".netlify.app")) {
+                return true;
+            }
+            java.net.URI defaultUri = java.net.URI.create(frontendUrl);
+            if (host.equalsIgnoreCase(defaultUri.getHost())) {
                 return true;
             }
             String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
             if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
                 for (String allowed : allowedOrigins.split(",")) {
                     java.net.URI allowedUri = java.net.URI.create(allowed.trim());
-                    if (clientRedirectUri.getHost() != null && clientRedirectUri.getHost().equalsIgnoreCase(allowedUri.getHost())
-                            && clientRedirectUri.getPort() == allowedUri.getPort()) {
+                    if (host.equalsIgnoreCase(allowedUri.getHost())) {
                         return true;
                     }
                 }
@@ -99,11 +106,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             log.error("Failed to parse redirect URI: {}", uri, e);
         }
         return false;
-    }
-
-    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
-        super.clearAuthenticationAttributes(request);
-        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
 
     private void saveUserToken(User user, String jwtToken) {
@@ -119,12 +121,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private void revokeAllUserTokens(User user) {
         var validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
-        if (validUserTokens.isEmpty()) return;
-        
+        if (validUserTokens.isEmpty())
+            return;
         validUserTokens.forEach(token -> {
             token.setExpired(true);
             token.setRevoked(true);
         });
         tokenRepository.saveAll(validUserTokens);
+    }
+
+    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
+        super.clearAuthenticationAttributes(request);
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
 }

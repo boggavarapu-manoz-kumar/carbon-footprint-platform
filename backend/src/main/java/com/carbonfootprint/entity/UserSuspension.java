@@ -32,7 +32,7 @@ public class UserSuspension {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "evidence_notes", columnDefinition="LONGTEXT")
+    @Column(name = "evidence_notes", columnDefinition = "TEXT")
     private String evidenceNotes;
 
     @Column(name = "start_date", nullable = false)

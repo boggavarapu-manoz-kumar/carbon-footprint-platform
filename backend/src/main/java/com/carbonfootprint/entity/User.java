@@ -64,7 +64,7 @@ public class User implements UserDetails, Serializable {
     @Column(name = "provider_id")
     private String providerId;
 
-    @Column(name = "profile_picture_url", columnDefinition="LONGTEXT")
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
     private String profilePictureUrl;
 
     @Column(name = "sustainability_preferences", length = 500)

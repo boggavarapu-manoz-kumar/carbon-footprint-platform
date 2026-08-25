@@ -45,27 +45,33 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             log.info("Registering new user via OAuth2: {}", email);
             String firstName = "User";
             String lastName = "";
-            if (name != null) {
-                String[] parts = name.split(" ", 2);
+            if (name != null && !name.trim().isEmpty()) {
+                String[] parts = name.trim().split("\\s+", 2);
                 firstName = parts[0];
                 if (parts.length > 1) {
                     lastName = parts[1];
                 }
             }
-            String username = email.split("@")[0].replaceAll("[^a-zA-Z0-9_.]", "") + "_" + System.currentTimeMillis() % 1000;
+            if (firstName.length() > 50) firstName = firstName.substring(0, 50);
+            if (lastName.length() > 50) lastName = lastName.substring(0, 50);
+
+            String base = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "");
+            if (base.isEmpty()) base = "user";
+            if (base.length() > 18) base = base.substring(0, 18);
+            String username = base + "_" + (System.currentTimeMillis() % 10000);
 
             user = User.builder()
                     .email(email)
                     .firstName(firstName)
-                    .lastName(lastName)
+                    .lastName(lastName.isEmpty() ? " " : lastName)
                     .username(username)
                     .mobileNumber("")
                     .gender("")
-                    .profilePictureUrl(picture)
+                    .profilePictureUrl(picture != null ? picture : "https://api.dicebear.com/9.x/bottts/svg?seed=" + username)
                     .provider(AuthProvider.GOOGLE)
                     .providerId(providerId)
                     .role(Role.USER)
-                    // Password can be null because of our entity update
+                    .isSuspended(false)
                     .password(null)
                     .build();
             user = userRepository.save(user);
