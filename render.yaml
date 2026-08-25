@@ -17,7 +17,7 @@ services:
     healthCheckPath: /actuator/health
     envVars:
       - key: PORT
-        value: 8081
+        value: 10000
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: SPRING_DATASOURCE_URL

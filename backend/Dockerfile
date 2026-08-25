@@ -27,13 +27,13 @@ RUN chown -R spring:spring /app
 USER spring:spring
 
 # Environment defaults
-ENV PORT=8081 \
+ENV PORT=10000 \
     SPRING_PROFILES_ACTIVE=prod \
     JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
-EXPOSE 8081
+EXPOSE 10000 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/actuator/health || exit 1
+  CMD curl -f http://localhost:${PORT:-10000}/actuator/health || exit 1
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-10000} -jar app.jar"]
