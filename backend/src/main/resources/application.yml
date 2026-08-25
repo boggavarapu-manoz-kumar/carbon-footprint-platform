@@ -97,6 +97,14 @@ management:
     web:
       exposure:
         include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,metrics,prometheus}
+  health:
+    redis:
+      enabled: false
+    mail:
+      enabled: false
+  endpoint:
+    health:
+      show-details: when_authorized
   metrics:
     export:
       prometheus:

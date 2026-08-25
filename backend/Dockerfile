@@ -34,6 +34,6 @@ ENV PORT=10000 \
 EXPOSE 10000 8081
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-10000}/actuator/health || exit 1
+  CMD curl -f http://localhost:${PORT:-10000}/api/v1/public/health || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-10000} -jar app.jar"]
