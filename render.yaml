@@ -69,7 +69,6 @@ services:
   - type: web
     name: carbon-user-app
     runtime: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     routes:
@@ -86,7 +85,6 @@ services:
   - type: web
     name: carbon-admin-portal
     runtime: static
-    plan: free
     buildCommand: cd admin-frontend && npm install && npm run build
     staticPublishPath: ./admin-frontend/dist
     routes:
