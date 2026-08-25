@@ -79,7 +79,7 @@ public class SecurityConfig {
 
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/oauth2/**", "/login/oauth2/code/**", "/api/v1/users/check-username", "/api/v1/users/suggest-username", "/error", "/api/v1/invitations/**").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/api/v1/public/**", "/oauth2/**", "/login/oauth2/code/**", "/api/v1/users/check-username", "/api/v1/users/suggest-username", "/error", "/api/v1/invitations/**", "/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
                 .anyRequest().authenticated()
             )
