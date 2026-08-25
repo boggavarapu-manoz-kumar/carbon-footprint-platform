@@ -112,7 +112,7 @@ const AdminBadgeManagement = () => {
                         <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200"
                              style={{ backgroundColor: badge.color ? `${badge.color}15` : '' }}>
                           {badge.imageUrl ? (
-                            <img src={badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('/') ? badge.imageUrl : `http://localhost:8080${badge.imageUrl}`} alt={badge.name} className="w-8 h-8 object-contain" />
+                            <img src={badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('/') ? badge.imageUrl : `${import.meta.env.VITE_API_URL || ''}${badge.imageUrl}`} alt={badge.name} className="w-8 h-8 object-contain" />
                           ) : (
                             <i className={`fa-solid ${badge.icon || 'fa-medal'} text-2xl`} style={{ color: badge.color || '#94a3b8' }}></i>
                           )}

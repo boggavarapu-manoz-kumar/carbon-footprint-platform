@@ -58,7 +58,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         Cookie redirectUriCookie = HttpCookieOAuth2AuthorizationRequestRepository.getCookie(request, HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME);
         if (redirectUriCookie != null && redirectUriCookie.getValue() != null && !redirectUriCookie.getValue().isEmpty()) {
-            targetUrl = redirectUriCookie.getValue();
+            String candidate = redirectUriCookie.getValue();
+            if (isAuthorizedRedirectUri(candidate)) {
+                targetUrl = candidate;
+            } else {
+                log.warn("Unauthorized redirect URI rejected: {}", candidate);
+            }
         }
 
         return UriComponentsBuilder.fromUriString(targetUrl)
@@ -66,6 +71,34 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .queryParam("token", jwtToken)
                 .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
+    }
+
+    private boolean isAuthorizedRedirectUri(String uri) {
+        try {
+            java.net.URI clientRedirectUri = java.net.URI.create(uri);
+            java.net.URI defaultUri = java.net.URI.create(frontendUrl);
+            if (clientRedirectUri.getHost() != null && clientRedirectUri.getHost().equalsIgnoreCase(defaultUri.getHost())
+                    && clientRedirectUri.getPort() == defaultUri.getPort()) {
+                return true;
+            }
+            // Allow localhost origins in development / testing
+            if ("localhost".equalsIgnoreCase(clientRedirectUri.getHost()) || "127.0.0.1".equalsIgnoreCase(clientRedirectUri.getHost())) {
+                return true;
+            }
+            String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+            if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
+                for (String allowed : allowedOrigins.split(",")) {
+                    java.net.URI allowedUri = java.net.URI.create(allowed.trim());
+                    if (clientRedirectUri.getHost() != null && clientRedirectUri.getHost().equalsIgnoreCase(allowedUri.getHost())
+                            && clientRedirectUri.getPort() == allowedUri.getPort()) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse redirect URI: {}", uri, e);
+        }
+        return false;
     }
 
     protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {

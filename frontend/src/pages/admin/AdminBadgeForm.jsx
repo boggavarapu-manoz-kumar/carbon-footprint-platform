@@ -57,7 +57,7 @@ const AdminBadgeForm = () => {
           imageUrl: badge.imageUrl || ''
         });
         if (badge.imageUrl) {
-          setPreviewImage(badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('data:') ? badge.imageUrl : `http://localhost:8080${badge.imageUrl}`);
+          setPreviewImage(badge.imageUrl.startsWith('http') || badge.imageUrl.startsWith('data:') ? badge.imageUrl : `${import.meta.env.VITE_API_URL || ''}${badge.imageUrl}`);
         }
       }
     } catch (error) {
@@ -85,7 +85,7 @@ const AdminBadgeForm = () => {
       const response = await AdminBadgeService.uploadImage(file);
       const url = response.data;
       setFormData(prev => ({ ...prev, imageUrl: url }));
-      setPreviewImage(url.startsWith('http') ? url : `http://localhost:8080${url}`);
+      setPreviewImage(url.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || ''}${url}`);
       toast.success('Image uploaded successfully');
     } catch (error) {
       toast.error('Failed to upload image');

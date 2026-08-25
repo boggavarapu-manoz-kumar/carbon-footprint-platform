@@ -35,8 +35,9 @@ const ResetPasswordRedirect = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
+    const userAppUrl = import.meta.env.VITE_USER_APP_URL || (typeof window !== 'undefined' && window.location ? `${window.location.protocol}//${window.location.hostname}:5173` : 'http://localhost:5173');
     window.location.replace(
-      `http://localhost:5174/reset-password${token ? `?token=${encodeURIComponent(token)}` : ''}`
+      `${userAppUrl}/reset-password${token ? `?token=${encodeURIComponent(token)}` : ''}`
     );
   }, [location.search]);
   return (

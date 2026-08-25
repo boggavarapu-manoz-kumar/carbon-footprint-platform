@@ -4,7 +4,9 @@ import axios from 'axios';
 import { setAccessToken } from './api';
 
 const AuthContext = createContext(null);
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1/admin';
+const hostname = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
+const defaultBaseUrl = `http://${hostname}:8081/api/v1/admin`;
+const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/v1/admin` : defaultBaseUrl;
 
 export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);

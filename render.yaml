@@ -1,0 +1,112 @@
+# ==============================================================================
+# CARBON FOOTPRINT PLATFORM - RENDER BLUEPRINT (INFRASTRUCTURE AS CODE)
+# 100% Free-Tier Compatible Full Stack Deployment
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Spring Boot 3 Backend Web Service (Free Tier)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: carbon-backend-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: carbon-postgres-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: carbon-postgres-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: carbon-postgres-db
+          property: password
+      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 86400000
+      - key: FRONTEND_URL
+        value: https://carbon-user-app.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://carbon-user-app.onrender.com,https://carbon-admin-portal.onrender.com
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: SPRING_MAIL_USERNAME
+        value: carbon.footprint.platform@gmail.com
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # 2. User Frontend (React Vite PWA - Free Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: carbon-user-app
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://carbon-backend-api.onrender.com/api
+
+  # ----------------------------------------------------------------------------
+  # 3. Admin Portal (React Vite - Free Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: carbon-admin-portal
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: cd admin-frontend && npm install && npm run build
+    staticPublishPath: ./admin-frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://carbon-backend-api.onrender.com/api
+      - key: VITE_USER_APP_URL
+        value: https://carbon-user-app.onrender.com
+
+# ------------------------------------------------------------------------------
+# 4. Managed PostgreSQL Database (Free Tier)
+# ------------------------------------------------------------------------------
+databases:
+  - name: carbon-postgres-db
+    databaseName: carbon_db
+    user: carbon_admin
+    plan: free
+    region: oregon
