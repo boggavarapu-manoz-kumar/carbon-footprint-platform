@@ -70,7 +70,6 @@ services:
     name: carbon-user-app
     runtime: static
     plan: free
-    region: oregon
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     routes:
@@ -88,7 +87,6 @@ services:
     name: carbon-admin-portal
     runtime: static
     plan: free
-    region: oregon
     buildCommand: cd admin-frontend && npm install && npm run build
     staticPublishPath: ./admin-frontend/dist
     routes:
