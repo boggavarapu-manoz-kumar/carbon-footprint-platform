@@ -68,6 +68,6 @@ public interface OtherActivityLogRepository extends JpaRepository<OtherActivityL
     @Query("SELECT function('DATE', o.createdAt), COUNT(o), COALESCE(SUM(o.carbonValue), 0), COUNT(DISTINCT o.user.id) FROM OtherActivityLog o WHERE o.createdAt >= :startDate AND o.createdAt <= :endDate GROUP BY function('DATE', o.createdAt) ORDER BY function('DATE', o.createdAt) ASC")
     java.util.List<Object[]> getDailyBreakdownGlobal(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDateTime startDate, @org.springframework.data.repository.query.Param("endDate") java.time.LocalDateTime endDate);
 
-    @Query("SELECT function('HOUR', function('CONVERT_TZ', o.createdAt, '+00:00', '+05:30')), COUNT(o), COALESCE(SUM(o.carbonValue), 0), COUNT(DISTINCT o.user.id) FROM OtherActivityLog o WHERE o.logDate = :targetDate GROUP BY function('HOUR', function('CONVERT_TZ', o.createdAt, '+00:00', '+05:30')) ORDER BY function('HOUR', function('CONVERT_TZ', o.createdAt, '+00:00', '+05:30')) ASC")
+    @Query("SELECT function('HOUR', o.createdAt), COUNT(o), COALESCE(SUM(o.carbonValue), 0), COUNT(DISTINCT o.user.id) FROM OtherActivityLog o WHERE o.logDate = :targetDate GROUP BY function('HOUR', o.createdAt) ORDER BY function('HOUR', o.createdAt) ASC")
     java.util.List<Object[]> getHourlyBreakdownGlobal(@org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 }

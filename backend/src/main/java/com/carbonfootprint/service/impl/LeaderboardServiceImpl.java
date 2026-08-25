@@ -609,74 +609,100 @@ public class LeaderboardServiceImpl implements LeaderboardService {
     @Override
     public com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto getUserLeaderboardStats(String currentUserEmail) {
         if (currentUserEmail == null) return null;
-        User user = userRepository.findByEmail(currentUserEmail).orElse(null);
-        if (user == null) return null;
+        try {
+            User user = userRepository.findByEmail(currentUserEmail).orElse(null);
+            if (user == null) return null;
 
-        // Fetch Current Global Score and Rank
-        LeaderboardResponseDto global = getLeaderboard(currentUserEmail, null, null);
-        Integer currentRank = global.getCurrentUser() != null ? global.getCurrentUser().getRank() : null;
-        Long currentScore = global.getCurrentUser() != null ? global.getCurrentUser().getTotalSustainabilityScore() : 0L;
+            // Fetch Current Global Score and Rank
+            LeaderboardResponseDto global = getLeaderboard(currentUserEmail, null, null);
+            Integer currentRank = global != null && global.getCurrentUser() != null ? global.getCurrentUser().getRank() : null;
+            Long currentScore = global != null && global.getCurrentUser() != null ? global.getCurrentUser().getTotalSustainabilityScore() : 0L;
 
-        // Fetch Weekly
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
-        com.carbonfootprint.dto.leaderboard.WeeklyLeaderboardResponseDto weekly = getWeeklyLeaderboard(currentUserEmail, weekStart, today, null, null);
-        Long weeklyScore = weekly.getCurrentUser() != null ? weekly.getCurrentUser().getWeeklyScore() : 0L;
+            // Fetch Weekly
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate weekStart = today.minusDays(today.getDayOfWeek().getValue() - 1);
+            com.carbonfootprint.dto.leaderboard.WeeklyLeaderboardResponseDto weekly = getWeeklyLeaderboard(currentUserEmail, weekStart, today, null, null);
+            Long weeklyScore = weekly != null && weekly.getCurrentUser() != null ? weekly.getCurrentUser().getWeeklyScore() : 0L;
 
-        // Fetch Monthly
-        java.time.LocalDate monthStart = today.withDayOfMonth(1);
-        com.carbonfootprint.dto.leaderboard.MonthlyLeaderboardResponseDto monthly = getMonthlyLeaderboard(currentUserEmail, monthStart, today, null, null);
-        Long monthlyScore = monthly.getCurrentUser() != null ? monthly.getCurrentUser().getMonthlyScore() : 0L;
+            // Fetch Monthly
+            java.time.LocalDate monthStart = today.withDayOfMonth(1);
+            com.carbonfootprint.dto.leaderboard.MonthlyLeaderboardResponseDto monthly = getMonthlyLeaderboard(currentUserEmail, monthStart, today, null, null);
+            Long monthlyScore = monthly != null && monthly.getCurrentUser() != null ? monthly.getCurrentUser().getMonthlyScore() : 0L;
 
-        // Fetch Yearly
-        com.carbonfootprint.dto.leaderboard.YearlyLeaderboardResponseDto yearly = getYearlyLeaderboard(currentUserEmail, today.getYear(), null, null);
-        Long yearlyScore = yearly.getCurrentUser() != null ? yearly.getCurrentUser().getYearlyScore() : 0L;
+            // Fetch Yearly
+            com.carbonfootprint.dto.leaderboard.YearlyLeaderboardResponseDto yearly = getYearlyLeaderboard(currentUserEmail, today.getYear(), null, null);
+            Long yearlyScore = yearly != null && yearly.getCurrentUser() != null ? yearly.getCurrentUser().getYearlyScore() : 0L;
 
-        // Previous and Best Rank from History
-        Integer previousRank = null;
-        Integer bestRank = null;
-        String trend = "UNCHANGED";
+            // Previous and Best Rank from History
+            Integer previousRank = null;
+            Integer bestRank = null;
+            String trend = "UNCHANGED";
 
-        java.util.Optional<com.carbonfootprint.entity.WeeklyLeaderboardHistory> bestHistory = weeklyLeaderboardHistoryRepository.findTopByUserOrderByRankAsc(user);
-        if (bestHistory.isPresent()) {
-            bestRank = bestHistory.get().getRank();
-        }
+            try {
+                java.util.Optional<com.carbonfootprint.entity.WeeklyLeaderboardHistory> bestHistory = weeklyLeaderboardHistoryRepository.findTopByUserOrderByRankAsc(user);
+                if (bestHistory.isPresent()) {
+                    bestRank = bestHistory.get().getRank();
+                }
 
-        java.util.Optional<com.carbonfootprint.entity.WeeklyLeaderboardHistory> prevHistory = weeklyLeaderboardHistoryRepository.findTopByUserOrderByWeekEndDateDesc(user);
-        if (prevHistory.isPresent()) {
-            previousRank = prevHistory.get().getRank();
-        }
-
-        if (currentRank != null && previousRank != null) {
-            if (currentRank < previousRank) {
-                trend = "IMPROVED";
-            } else if (currentRank > previousRank) {
-                trend = "DROPPED";
+                java.util.Optional<com.carbonfootprint.entity.WeeklyLeaderboardHistory> prevHistory = weeklyLeaderboardHistoryRepository.findTopByUserOrderByWeekEndDateDesc(user);
+                if (prevHistory.isPresent()) {
+                    previousRank = prevHistory.get().getRank();
+                }
+            } catch (Exception e) {
+                log.warn("Could not query leaderboard history for user {}: {}", user.getId(), e.getMessage());
             }
-        } else if (currentRank != null) {
-            // No previous rank, but have current
-            trend = "IMPROVED"; // Or UNCHANGED
-            bestRank = bestRank == null || currentRank < bestRank ? currentRank : bestRank;
-            previousRank = currentRank;
-        }
 
-        return com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto.builder()
-                .currentRank(currentRank)
-                .previousRank(previousRank)
-                .bestRank(bestRank)
-                .currentScore(currentScore)
-                .weeklyScore(weeklyScore)
-                .monthlyScore(monthlyScore)
-                .yearlyScore(yearlyScore)
-                .trend(trend)
-                .build();
+            if (currentRank != null && previousRank != null) {
+                if (currentRank < previousRank) {
+                    trend = "IMPROVED";
+                } else if (currentRank > previousRank) {
+                    trend = "DROPPED";
+                }
+            } else if (currentRank != null) {
+                trend = "IMPROVED";
+                bestRank = bestRank == null || currentRank < bestRank ? currentRank : bestRank;
+                previousRank = currentRank;
+            }
+
+            return com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto.builder()
+                    .currentRank(currentRank != null ? currentRank : 1)
+                    .previousRank(previousRank != null ? previousRank : 1)
+                    .bestRank(bestRank != null ? bestRank : (currentRank != null ? currentRank : 1))
+                    .currentScore(currentScore != null ? currentScore : 0L)
+                    .weeklyScore(weeklyScore != null ? weeklyScore : 0L)
+                    .monthlyScore(monthlyScore != null ? monthlyScore : 0L)
+                    .yearlyScore(yearlyScore != null ? yearlyScore : 0L)
+                    .trend(trend)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error generating user leaderboard stats for {}: ", currentUserEmail, e);
+            return com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto.builder()
+                    .currentRank(1)
+                    .previousRank(1)
+                    .bestRank(1)
+                    .currentScore(0L)
+                    .weeklyScore(0L)
+                    .monthlyScore(0L)
+                    .yearlyScore(0L)
+                    .trend("UNCHANGED")
+                    .build();
+        }
     }
 
     private Map<Long, java.math.BigDecimal> extractEmissions(List<Object[]> results) {
         Map<Long, java.math.BigDecimal> map = new HashMap<>();
+        if (results == null) return map;
         for (Object[] row : results) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) continue;
             Long userId = ((Number) row[0]).longValue();
-            java.math.BigDecimal val = (java.math.BigDecimal) row[1];
+            java.math.BigDecimal val;
+            if (row[1] instanceof java.math.BigDecimal) {
+                val = (java.math.BigDecimal) row[1];
+            } else if (row[1] instanceof Number) {
+                val = java.math.BigDecimal.valueOf(((Number) row[1]).doubleValue());
+            } else {
+                val = java.math.BigDecimal.ZERO;
+            }
             map.put(userId, val);
         }
         return map;
@@ -684,7 +710,9 @@ public class LeaderboardServiceImpl implements LeaderboardService {
 
     private Map<Long, Long> extractCounts(List<Object[]> results) {
         Map<Long, Long> map = new HashMap<>();
+        if (results == null) return map;
         for (Object[] row : results) {
+            if (row == null || row.length < 2 || row[0] == null || row[1] == null) continue;
             Long userId = ((Number) row[0]).longValue();
             Long count = ((Number) row[1]).longValue();
             map.put(userId, count);
