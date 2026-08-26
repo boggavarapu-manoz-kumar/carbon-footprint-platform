@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -38,24 +37,33 @@ public class CustomErrorController implements ErrorController {
             }
         }
 
-        String errorMessage = message != null ? message.toString() : "An unexpected server error occurred";
-        if (exception != null && (errorMessage.isEmpty() || "No message available".equals(errorMessage))) {
-            if (exception instanceof Throwable) {
-                errorMessage = ((Throwable) exception).getMessage();
+        String rawMessage = message != null ? message.toString() : "";
+        String errorMessage = "Authentication or server request could not be completed. Please try again.";
+
+        if (exception instanceof Throwable) {
+            Throwable rootCause = (Throwable) exception;
+            while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+                rootCause = rootCause.getCause();
             }
+            if (rootCause.getMessage() != null && !rootCause.getMessage().isEmpty()) {
+                errorMessage = rootCause.getMessage();
+            }
+        } else if (!rawMessage.isEmpty() && !"No message available".equalsIgnoreCase(rawMessage) && !rawMessage.toLowerCase().contains("filter execution")) {
+            errorMessage = rawMessage;
         }
 
-        log.warn("CustomErrorController intercepted error: HTTP {} - {}", statusCode, errorMessage);
+        log.warn("CustomErrorController intercepted error: HTTP {} - {} (Raw: {})", statusCode, errorMessage, rawMessage);
 
         String acceptHeader = request.getHeader("Accept");
+        String uri = request.getRequestURI();
         boolean isApiOrJson = (acceptHeader != null && acceptHeader.contains("application/json")) ||
-                              request.getRequestURI().startsWith("/api/");
+                              (uri != null && uri.startsWith("/api/"));
 
         if (isApiOrJson) {
             return ResponseEntity.status(statusCode).body(ApiResponse.error(errorMessage));
         }
 
-        // For browser requests, gracefully redirect back to frontend application
+        // For browser requests, gracefully redirect back to frontend login with message
         String encodedMsg = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
         String targetUrl = frontendUrl.replaceAll("/+$", "") + "/login?error=" + encodedMsg;
         response.sendRedirect(targetUrl);

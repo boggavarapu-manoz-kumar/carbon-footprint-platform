@@ -45,7 +45,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
             return;
         }
 
-        addCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME, serialize(authorizationRequest), cookieExpireSeconds);
+        String serializedAuthRequest = serialize(authorizationRequest);
+        if (serializedAuthRequest != null) {
+            addCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME, serializedAuthRequest, cookieExpireSeconds);
+        }
+        
         String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_COOKIE_NAME);
         if (StringUtils.isNotBlank(redirectUriAfterLogin)) {
             addCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, cookieExpireSeconds);
@@ -56,7 +60,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request, HttpServletResponse response) {
         OAuth2AuthorizationRequest authRequest = loadAuthorizationRequest(request);
         deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
-        // We preserve redirect_uri cookie here because OAuth2AuthenticationSuccessHandler consumes it
         return authRequest;
     }
 
@@ -121,6 +124,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
     }
 
     public static String serialize(Object object) {
+        if (object == null) return null;
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -128,20 +132,20 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
             oos.flush();
             return Base64.getUrlEncoder().encodeToString(bos.toByteArray());
         } catch (Exception e) {
-            log.error("Failed to serialize OAuth2 object", e);
-            throw new RuntimeException("Failed to serialize object", e);
+            log.warn("Non-fatal: failed to serialize OAuth2 object: {}", e.getMessage());
+            return null;
         }
     }
 
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
         try {
-            if (cookie == null || cookie.getValue() == null) return null;
+            if (cookie == null || cookie.getValue() == null || cookie.getValue().trim().isEmpty()) return null;
             byte[] bytes = Base64.getUrlDecoder().decode(cookie.getValue());
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bis);
             return cls.cast(ois.readObject());
         } catch (Exception e) {
-            log.warn("Failed to deserialize OAuth2 authorization request cookie: {}", e.getMessage());
+            log.warn("Failed to deserialize OAuth2 cookie: {}", e.getMessage());
             return null;
         }
     }
