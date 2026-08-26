@@ -54,10 +54,16 @@ public class SupportTicketService {
     @Value("${app.admin.url:http://localhost:5174}")
     private String adminUrl;
 
+    private User getUserByIdentifier(String identifier) {
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for identifier: " + identifier))));
+    }
+
     @Transactional
     public TicketResponse createTicket(TicketCreateRequest request, MultipartFile file, String username) {
-        User author = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User author = getUserByIdentifier(username);
 
         String attachmentUrl = null;
         if (file != null && !file.isEmpty()) {
@@ -119,8 +125,7 @@ public class SupportTicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> getUserTickets(String username) {
-        User author = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User author = getUserByIdentifier(username);
 
         return supportTicketRepository.findByAuthorOrderByCreatedAtDesc(author)
                 .stream()
@@ -139,10 +144,8 @@ public class SupportTicketService {
     @Transactional(readOnly = true)
     public TicketResponse getTicket(Long id, String username) {
         SupportTicket ticket = getTicketEntity(id);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByIdentifier(username);
 
-        // If not admin/support, check ownership
         if (!user.getRole().name().equals("SUPER_ADMIN") && 
             !user.getRole().name().equals("ADMIN") && 
             !user.getRole().name().equals("SUPPORT_TEAM")) {
@@ -170,7 +173,6 @@ public class SupportTicketService {
         }
         SupportTicket saved = supportTicketRepository.save(ticket);
         
-        // Notify admin
         adminNotificationService.createNotification(
                 "Ticket Assigned",
                 "Ticket #" + saved.getTicketNumber() + " assigned to you",
@@ -201,7 +203,6 @@ public class SupportTicketService {
         ticket.setStatus(request.getStatus());
         SupportTicket saved = supportTicketRepository.save(ticket);
         
-        // Notify user
         User author = saved.getAuthor();
         notificationService.createSupportTicketNotification(
                 author,
@@ -229,10 +230,8 @@ public class SupportTicketService {
     @Transactional
     public TicketMessageResponse addMessage(Long ticketId, TicketMessageCreateRequest request, MultipartFile file, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByIdentifier(username);
 
-        // Only admins can post internal messages
         boolean isInternal = request.isInternal();
         if (isInternal && !user.getRole().name().equals("SUPER_ADMIN") && 
             !user.getRole().name().equals("ADMIN") && 
@@ -259,7 +258,6 @@ public class SupportTicketService {
 
         TicketMessage saved = ticketMessageRepository.save(message);
 
-        // Auto-update status if user replies and it was resolved
         if (!isInternal && user.getId().equals(ticket.getAuthor().getId())) {
             if (ticket.getStatus() == TicketStatus.RESOLVED || ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.WAITING_FOR_USER) {
                 ticket.setStatus(TicketStatus.REOPENED);
@@ -275,9 +273,7 @@ public class SupportTicketService {
     public TicketMessageResponse addMessageForAdmin(Long ticketId, TicketMessageCreateRequest request, MultipartFile file, String adminEmail) {
         SupportTicket ticket = getTicketEntity(ticketId);
         
-        // Ensure admin has a User record so they can author messages
-        User user = userRepository.findByEmail(adminEmail)
-                .orElseGet(() -> {
+        User user = userRepository.findByUsernameOrEmail(adminEmail, adminEmail).orElseGet(() -> {
                     AdminUser admin = adminUserRepository.findByEmail(adminEmail)
                             .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
                     User newUser = User.builder()
@@ -524,8 +520,7 @@ public class SupportTicketService {
     @Transactional
     public TicketFeedbackResponse submitFeedback(Long ticketId, TicketFeedbackCreateRequest request, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByIdentifier(username);
 
         if (!ticket.getAuthor().getId().equals(user.getId())) {
             throw new RuntimeException("Not authorized to submit feedback for this ticket");
@@ -554,8 +549,7 @@ public class SupportTicketService {
     @Transactional(readOnly = true)
     public TicketFeedbackResponse getFeedback(Long ticketId, String username) {
         SupportTicket ticket = getTicketEntity(ticketId);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByIdentifier(username);
                 
         // Just verify ownership
         if (!user.getRole().name().equals("SUPER_ADMIN") && 

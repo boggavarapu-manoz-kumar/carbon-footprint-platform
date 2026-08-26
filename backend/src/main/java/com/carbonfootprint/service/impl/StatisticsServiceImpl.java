@@ -34,8 +34,10 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Transactional(readOnly = true)
     public StatisticsDto getDashboardStatistics(String username) {
         log.info("Calculating dashboard statistics for user: {}", username);
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", username));
+        User user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseGet(() -> userRepository.findByEmail(username)
+                .orElseGet(() -> userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username/email", username))));
 
         Long userId = user.getId();
 

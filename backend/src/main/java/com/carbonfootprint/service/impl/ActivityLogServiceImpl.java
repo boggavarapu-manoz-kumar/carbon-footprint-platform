@@ -55,7 +55,10 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         log.info("Creating activity log for user: {}", userEmail);
         User user = getUserByEmail(userEmail);
         
-        ActivityType type = activityTypeRepository.findByCode(createDto.getActivityType())
+        String activityTypeCode = createDto.getActivityType() != null ? createDto.getActivityType().trim() : "";
+        ActivityType type = activityTypeRepository.findByCode(activityTypeCode)
+                .or(() -> activityTypeRepository.findByCode(activityTypeCode.toUpperCase()))
+                .or(() -> activityTypeRepository.findByCode(activityTypeCode.toLowerCase()))
                 .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", createDto.getActivityType()));
         
         ActivityLog activityLog = mapper.toEntity(createDto);
@@ -232,9 +235,11 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         goalService.evaluateUserGoals(user.getId());
     }
 
-    private User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+    private User getUserByEmail(String identifier) {
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for identifier: " + identifier))));
     }
 
     private ActivityLog findActivityLogOwnedByUser(Long logId, Long userId) {

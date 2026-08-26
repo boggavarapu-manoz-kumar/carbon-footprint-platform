@@ -54,8 +54,10 @@ public class UserServiceImpl implements UserService {
     @org.springframework.cache.annotation.Cacheable(value = "userProfile", key = "#email")
     public UserDto getUserByEmail(final String email) {
         log.debug("Fetching user by email: {}", email);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        User user = userRepository.findByUsernameOrEmail(email, email)
+                .orElseGet(() -> userRepository.findByEmail(email)
+                .orElseGet(() -> userRepository.findByUsername(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email/username", email))));
         return userMapper.toDto(user);
     }
 

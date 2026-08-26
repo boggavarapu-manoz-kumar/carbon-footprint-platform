@@ -96,8 +96,10 @@ public class UserController {
     public ResponseEntity<ApiResponse<com.carbonfootprint.dto.organization.OrganizationMembershipDto>> getMyOrganizationContext(
             @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails) {
         
-        com.carbonfootprint.entity.User user = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new com.carbonfootprint.exception.ResourceNotFoundException("User not found"));
+        com.carbonfootprint.entity.User user = userRepository.findByUsernameOrEmail(userDetails.getUsername(), userDetails.getUsername())
+            .orElseGet(() -> userRepository.findByEmail(userDetails.getUsername())
+            .orElseGet(() -> userRepository.findByUsername(userDetails.getUsername())
+            .orElseThrow(() -> new com.carbonfootprint.exception.ResourceNotFoundException("User not found"))));
             
         // Find the active membership for this user (assuming user can only have one active membership for now)
         return organizationMembershipRepository.findByUserId(user.getId()).stream()

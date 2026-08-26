@@ -33,8 +33,11 @@ public class GamificationController {
     private final UserRepository userRepository;
 
     private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        String identifier = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new RuntimeException("User not found: " + identifier))));
     }
 
     @GetMapping("/current")

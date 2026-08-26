@@ -41,8 +41,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     @Override
     public List<RecommendationResponseDto> getPersonalizedRecommendations(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        User user = userRepository.findByUsernameOrEmail(userEmail, userEmail)
+                .orElseGet(() -> userRepository.findByEmail(userEmail)
+                .orElseGet(() -> userRepository.findByUsername(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail))));
 
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysAgo = today.minusDays(30);
@@ -250,8 +252,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     public void adoptRecommendation(String userEmail, String recommendationText) {
         log.info("User {} adopting recommendation: {}", userEmail, recommendationText);
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        User user = userRepository.findByUsernameOrEmail(userEmail, userEmail)
+                .orElseGet(() -> userRepository.findByEmail(userEmail)
+                .orElseGet(() -> userRepository.findByUsername(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail))));
         
         com.carbonfootprint.entity.UserSustainabilityProfile profile = profileRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found for userId: " + user.getId()));
@@ -283,8 +287,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     @Override
     public List<RecommendationEffectivenessDto> trackRecommendationEffectiveness(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        User user = userRepository.findByUsernameOrEmail(userEmail, userEmail)
+                .orElseGet(() -> userRepository.findByEmail(userEmail)
+                .orElseGet(() -> userRepository.findByUsername(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail))));
 
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysAgo = today.minusDays(30);

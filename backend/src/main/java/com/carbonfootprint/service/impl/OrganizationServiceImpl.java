@@ -155,7 +155,10 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     private Long getCurrentUserId() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email).map(com.carbonfootprint.entity.User::getId).orElse(null);
+        String identifier = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .or(() -> userRepository.findByUsername(identifier))
+                .map(com.carbonfootprint.entity.User::getId).orElse(null);
     }
 }

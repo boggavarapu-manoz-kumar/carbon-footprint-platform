@@ -26,8 +26,10 @@ public class TopActivityDetectionServiceImpl implements TopActivityDetectionServ
 
     @Override
     public List<TopActivityDto> getTopEmissionActivities(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + userEmail));
+        User user = userRepository.findByUsernameOrEmail(userEmail, userEmail)
+                .orElseGet(() -> userRepository.findByEmail(userEmail)
+                .orElseGet(() -> userRepository.findByUsername(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with identifier: " + userEmail))));
 
         BigDecimal totalEmissions = activityLogRepository.sumEmissionsByUserId(user.getId());
         if (totalEmissions == null || totalEmissions.compareTo(BigDecimal.ZERO) == 0) {

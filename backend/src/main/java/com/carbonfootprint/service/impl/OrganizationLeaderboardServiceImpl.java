@@ -75,7 +75,9 @@ public class OrganizationLeaderboardServiceImpl implements OrganizationLeaderboa
         // 4. Resolve current user ID (for "You" highlighting)
         Long currentUserId = null;
         if (currentUserEmail != null) {
-            currentUserId = userRepository.findByEmail(currentUserEmail)
+            currentUserId = userRepository.findByUsernameOrEmail(currentUserEmail, currentUserEmail)
+                    .or(() -> userRepository.findByEmail(currentUserEmail))
+                    .or(() -> userRepository.findByUsername(currentUserEmail))
                     .map(User::getId).orElse(null);
         }
 

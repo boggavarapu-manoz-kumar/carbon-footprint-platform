@@ -13,15 +13,16 @@ import java.util.Optional;
 @Repository
 public interface OtherActivityLogRepository extends JpaRepository<OtherActivityLog, Long> {
     
-    Optional<OtherActivityLog> findByIdAndUserEmail(Long id, String email);
+    @Query("SELECT o FROM OtherActivityLog o WHERE o.id = :id AND (o.user.email = :identifier OR o.user.username = :identifier)")
+    Optional<OtherActivityLog> findByIdAndUserEmail(@org.springframework.data.repository.query.Param("id") Long id, @org.springframework.data.repository.query.Param("identifier") String identifier);
 
-    @Query("SELECT o FROM OtherActivityLog o WHERE o.user.email = :email AND " +
+    @Query("SELECT o FROM OtherActivityLog o WHERE (o.user.email = :identifier OR o.user.username = :identifier) AND " +
            "(:startDate IS NULL OR o.logDate >= :startDate) AND " +
            "(:endDate IS NULL OR o.logDate <= :endDate)")
     Page<OtherActivityLog> findByUserEmailAndDateRange(
-            String email, 
-            LocalDate startDate, 
-            LocalDate endDate, 
+            @org.springframework.data.repository.query.Param("identifier") String identifier, 
+            @org.springframework.data.repository.query.Param("startDate") LocalDate startDate, 
+            @org.springframework.data.repository.query.Param("endDate") LocalDate endDate, 
             Pageable pageable);
 
     @Query("SELECT o FROM OtherActivityLog o WHERE o.user.id = :userId")

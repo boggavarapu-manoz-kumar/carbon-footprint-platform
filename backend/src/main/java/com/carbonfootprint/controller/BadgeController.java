@@ -27,15 +27,21 @@ public class BadgeController {
 
     @GetMapping("/showcase")
     public ResponseEntity<BadgeShowcaseDto> getBadgeShowcase(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
+        String identifier = authentication.getName();
+        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new com.carbonfootprint.exception.ResourceNotFoundException("User not found: " + identifier))));
         return ResponseEntity.ok(badgeShowcaseService.getBadgeShowcaseForUser(user));
     }
 
     @GetMapping
     public ResponseEntity<List<BadgeDto>> getUserBadges(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
+        String identifier = authentication.getName();
+        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseGet(() -> userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new com.carbonfootprint.exception.ResourceNotFoundException("User not found: " + identifier))));
 
         List<BadgeDto> badges = userBadgeRepository.findByUserId(user.getId()).stream()
                 .map(ub -> {

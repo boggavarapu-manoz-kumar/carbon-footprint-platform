@@ -31,8 +31,10 @@ public class OtherActivityLogServiceImpl implements OtherActivityLogService {
     @Override
     @Transactional
     public OtherActivityLogDto createOtherActivityLog(String userEmail, OtherActivityLogCreateDto createDto) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail));
+        User user = userRepository.findByUsernameOrEmail(userEmail, userEmail)
+                .orElseGet(() -> userRepository.findByEmail(userEmail)
+                .orElseGet(() -> userRepository.findByUsername(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail))));
 
         OtherActivityLog logEntity = OtherActivityLog.builder()
                 .user(user)

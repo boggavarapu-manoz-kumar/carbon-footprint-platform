@@ -42,6 +42,13 @@ public class LeaderboardServiceImpl implements LeaderboardService {
 
     private static final String LEADERBOARD_CACHE = "leaderboardCache";
 
+    private Optional<User> findUserByIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) return Optional.empty();
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .or(() -> userRepository.findByUsername(identifier));
+    }
+
     @Override
     @Cacheable(value = LEADERBOARD_CACHE, key = "'global_' + (#category != null ? #category : 'all') + '_' + (#sortBy != null ? #sortBy : 'score')")
     public LeaderboardResponseDto getLeaderboard(String currentUserEmail, String category, String sortBy) {
@@ -102,13 +109,12 @@ public class LeaderboardServiceImpl implements LeaderboardService {
             entries.sort((a, b) -> Long.compare(b.getTotalSustainabilityScore() != null ? b.getTotalSustainabilityScore() : 0L, a.getTotalSustainabilityScore() != null ? a.getTotalSustainabilityScore() : 0L));
         }
 
-        // Assign ranks and find current user
         LeaderboardEntryDto currentUserEntry = null;
+        Optional<User> loggedInUser = findUserByIdentifier(currentUserEmail);
         for (int i = 0; i < entries.size(); i++) {
             LeaderboardEntryDto entry = entries.get(i);
             entry.setRank(i + 1);
-            if (currentUserEmail != null && userRepository.findByEmail(currentUserEmail).isPresent() &&
-                entry.getUserId().equals(userRepository.findByEmail(currentUserEmail).get().getId())) {
+            if (loggedInUser.isPresent() && entry.getUserId().equals(loggedInUser.get().getId())) {
                 currentUserEntry = entry;
             }
         }
@@ -238,11 +244,11 @@ public class LeaderboardServiceImpl implements LeaderboardService {
         }
 
         com.carbonfootprint.dto.leaderboard.WeeklyLeaderboardEntryDto currentUserEntry = null;
+        Optional<User> loggedInWeeklyUser = findUserByIdentifier(currentUserEmail);
         for (int i = 0; i < entries.size(); i++) {
             com.carbonfootprint.dto.leaderboard.WeeklyLeaderboardEntryDto entry = entries.get(i);
             entry.setRank(i + 1);
-            if (currentUserEmail != null && userRepository.findByEmail(currentUserEmail).isPresent() &&
-                entry.getUserId().equals(userRepository.findByEmail(currentUserEmail).get().getId())) {
+            if (loggedInWeeklyUser.isPresent() && entry.getUserId().equals(loggedInWeeklyUser.get().getId())) {
                 currentUserEntry = entry;
             }
         }
@@ -386,8 +392,8 @@ public class LeaderboardServiceImpl implements LeaderboardService {
                 entry.getAwards().add("Top Improver");
             }
 
-            if (currentUserEmail != null && userRepository.findByEmail(currentUserEmail).isPresent() &&
-                entry.getUserId().equals(userRepository.findByEmail(currentUserEmail).get().getId())) {
+            Optional<User> loggedInMonthlyUser = findUserByIdentifier(currentUserEmail);
+            if (loggedInMonthlyUser.isPresent() && entry.getUserId().equals(loggedInMonthlyUser.get().getId())) {
                 currentUserEntry = entry;
             }
         }
@@ -527,6 +533,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
         }
 
         com.carbonfootprint.dto.leaderboard.YearlyLeaderboardEntryDto currentUserEntry = null;
+        java.util.Optional<User> loggedInYearlyUser = findUserByIdentifier(currentUserEmail);
         for (int i = 0; i < entries.size(); i++) {
             com.carbonfootprint.dto.leaderboard.YearlyLeaderboardEntryDto entry = entries.get(i);
             entry.setRank(i + 1);
@@ -610,7 +617,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
     public com.carbonfootprint.dto.leaderboard.UserLeaderboardStatsDto getUserLeaderboardStats(String currentUserEmail) {
         if (currentUserEmail == null) return null;
         try {
-            User user = userRepository.findByEmail(currentUserEmail).orElse(null);
+            User user = findUserByIdentifier(currentUserEmail).orElse(null);
             if (user == null) return null;
 
             // Fetch Current Global Score and Rank

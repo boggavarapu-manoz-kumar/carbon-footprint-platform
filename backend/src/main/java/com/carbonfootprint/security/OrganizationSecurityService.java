@@ -55,8 +55,10 @@ public class OrganizationSecurityService {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
-        // Assuming principal is email or UserDetails implementation
-        String email = authentication.getName();
-        return userRepository.findByEmail(email).orElse(null);
+        String identifier = authentication.getName();
+        return userRepository.findByUsernameOrEmail(identifier, identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .or(() -> userRepository.findByUsername(identifier))
+                .orElse(null);
     }
 }
