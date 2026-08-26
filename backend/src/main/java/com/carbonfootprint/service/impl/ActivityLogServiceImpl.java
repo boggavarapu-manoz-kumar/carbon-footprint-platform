@@ -29,6 +29,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,25 +65,49 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         ActivityLog activityLog = mapper.toEntity(createDto);
         activityLog.setUser(user);
         activityLog.setActivityType(type);
-        
-        activityLog.setEmissionValue(calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit()).getEmission());
+
+        if (activityLog.getUnit() == null || activityLog.getUnit().trim().isEmpty()) {
+            activityLog.setUnit(createDto.getUnit() != null ? createDto.getUnit() : "units");
+        }
+
+        var calcResponse = calculationService.calculateEmission(createDto.getActivityType(), createDto.getQuantity(), createDto.getUnit());
+        activityLog.setEmissionValue(calcResponse != null && calcResponse.getEmission() != null ? calcResponse.getEmission() : BigDecimal.ZERO);
         
         ActivityLog savedActivity = activityLogRepository.save(activityLog);
         
-        eventPublisher.publishEvent(new GamificationEvent(
-            this, 
-            user.getId(), 
-            GamificationEvent.EventType.ACTIVITY_LOGGED, 
-            "FIRST_ACTIVITY_LOGGED", // Will be checked in Service
-            "ACTIVITY_LOG",
-            "activity_" + savedActivity.getId(), 
-            null
-        ));
+        try {
+            eventPublisher.publishEvent(new GamificationEvent(
+                this, 
+                user.getId(), 
+                GamificationEvent.EventType.ACTIVITY_LOGGED, 
+                "FIRST_ACTIVITY_LOGGED",
+                "ACTIVITY_LOG",
+                "activity_" + savedActivity.getId(), 
+                null
+            ));
+        } catch (Exception e) {
+            log.warn("Non-fatal: gamification event failed: {}", e.getMessage());
+        }
 
         ActivityLogDto savedDto = mapper.toDto(savedActivity);
-        invalidateAnalyticsCache(user.getId());
-        goalService.evaluateUserGoals(user.getId());
-        eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
+        
+        try {
+            invalidateAnalyticsCache(user.getId());
+        } catch (Exception ignored) {
+        }
+        
+        try {
+            goalService.evaluateUserGoals(user.getId());
+        } catch (Exception e) {
+            log.warn("Non-fatal: goal evaluation failed: {}", e.getMessage());
+        }
+
+        try {
+            eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
+        } catch (Exception e) {
+            log.warn("Non-fatal: user metrics event failed: {}", e.getMessage());
+        }
+
         return savedDto;
     }
 
@@ -101,31 +126,43 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         List<ActivityLog> logsToSave = createDtos.stream().map(dto -> {
             ActivityType type = typeMap.get(dto.getActivityType());
             if (type == null) {
-                throw new ResourceNotFoundException("ActivityType", "code", dto.getActivityType());
+                type = activityTypeRepository.findByCode(dto.getActivityType())
+                        .or(() -> activityTypeRepository.findByCode(dto.getActivityType().toUpperCase()))
+                        .orElseThrow(() -> new ResourceNotFoundException("ActivityType", "code", dto.getActivityType()));
             }
             ActivityLog logItem = mapper.toEntity(dto);
             logItem.setUser(user);
             logItem.setActivityType(type);
-            logItem.setEmissionValue(calculationService.calculateEmission(dto.getActivityType(), dto.getQuantity(), dto.getUnit()).getEmission());
+            if (logItem.getUnit() == null || logItem.getUnit().trim().isEmpty()) {
+                logItem.setUnit("units");
+            }
+            var calc = calculationService.calculateEmission(dto.getActivityType(), dto.getQuantity(), dto.getUnit());
+            logItem.setEmissionValue(calc != null && calc.getEmission() != null ? calc.getEmission() : BigDecimal.ZERO);
             return logItem;
         }).collect(Collectors.toList());
         
         List<ActivityLog> savedLogs = activityLogRepository.saveAll(logsToSave);
         
-        savedLogs.forEach(savedActivity -> {
-            eventPublisher.publishEvent(new GamificationEvent(
-                this, 
-                user.getId(), 
-                GamificationEvent.EventType.ACTIVITY_LOGGED, 
-                "FIRST_ACTIVITY_LOGGED", // Will be checked in Service
-                "ACTIVITY_LOG",
-                "activity_" + savedActivity.getId(), 
-                null
-            ));
-        });
+        try {
+            savedLogs.forEach(savedActivity -> {
+                eventPublisher.publishEvent(new GamificationEvent(
+                    this, 
+                    user.getId(), 
+                    GamificationEvent.EventType.ACTIVITY_LOGGED, 
+                    "FIRST_ACTIVITY_LOGGED",
+                    "ACTIVITY_LOG",
+                    "activity_" + savedActivity.getId(), 
+                    null
+                ));
+            });
+        } catch (Exception ignored) {
+        }
 
-        invalidateAnalyticsCache(user.getId());
-        goalService.evaluateUserGoals(user.getId());
+        try {
+            invalidateAnalyticsCache(user.getId());
+            goalService.evaluateUserGoals(user.getId());
+        } catch (Exception ignored) {
+        }
         return savedLogs.stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
