@@ -72,11 +72,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
                 
-                var isTokenValid = tokenRepository.findFirstByToken(jwt)
-                        .map(t -> !t.isExpired() && !t.isRevoked())
+                boolean isRevoked = tokenRepository.findFirstByToken(jwt)
+                        .map(t -> t.isExpired() || t.isRevoked())
                         .orElse(false);
 
-                if (jwtService.isTokenValid(jwt, userDetails) && isTokenValid && userDetails.isAccountNonLocked()) {
+                if (jwtService.isTokenValid(jwt, userDetails) && !isRevoked && userDetails.isAccountNonLocked()) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
