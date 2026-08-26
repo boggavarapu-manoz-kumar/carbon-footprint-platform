@@ -64,7 +64,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         } catch (Exception e) {
             log.error("Critical error during OAuth2 authentication success processing: ", e);
             String errorMsg = URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "OAuth authentication failed", StandardCharsets.UTF_8);
-            String fallbackUrl = frontendUrl + "/login?error=" + errorMsg;
+            String fallbackUrl = frontendUrl.replaceAll("/+$", "") + "/login?error=" + errorMsg;
             clearAuthenticationAttributes(request, response);
             getRedirectStrategy().sendRedirect(request, response, fallbackUrl);
         }

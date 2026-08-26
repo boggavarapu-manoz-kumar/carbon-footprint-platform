@@ -45,10 +45,10 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
             return;
         }
 
-        addCookie(response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME, serialize(authorizationRequest), cookieExpireSeconds);
+        addCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME, serialize(authorizationRequest), cookieExpireSeconds);
         String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_COOKIE_NAME);
         if (StringUtils.isNotBlank(redirectUriAfterLogin)) {
-            addCookie(response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, cookieExpireSeconds);
+            addCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, cookieExpireSeconds);
         }
     }
 
@@ -68,6 +68,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
     // --- Cookie Utilities (RFC 6265 / HTTPS / Cross-Site SameSite=None) ---
 
     public static Cookie getCookie(HttpServletRequest request, String name) {
+        if (request == null) return null;
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
             for (Cookie cookie : cookies) {
@@ -79,27 +80,44 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
         return null;
     }
 
-    public static void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
-        // Use ResponseCookie with SameSite=None and Secure=true to prevent Chrome/Safari dropping OAuth cookies
-        ResponseCookie cookie = ResponseCookie.from(name, value)
+    public static void addCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAge) {
+        boolean isSecure = (request != null && request.isSecure()) || 
+                           (request != null && "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto")));
+        
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .path("/")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .maxAge(maxAge)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                .maxAge(maxAge);
+
+        if (isSecure) {
+            builder.secure(true).sameSite("None");
+        } else {
+            builder.secure(false).sameSite("Lax");
+        }
+
+        response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
+    }
+
+    public static void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
+        addCookie(null, response, name, value, maxAge);
     }
 
     public static void deleteCookie(HttpServletRequest request, HttpServletResponse response, String name) {
-        ResponseCookie cookie = ResponseCookie.from(name, "")
+        boolean isSecure = (request != null && request.isSecure()) || 
+                           (request != null && "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto")));
+        
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, "")
                 .path("/")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .maxAge(0)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                .maxAge(0);
+
+        if (isSecure) {
+            builder.secure(true).sameSite("None");
+        } else {
+            builder.secure(false).sameSite("Lax");
+        }
+
+        response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
     }
 
     public static String serialize(Object object) {
@@ -117,6 +135,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository implements Authoriza
 
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
         try {
+            if (cookie == null || cookie.getValue() == null) return null;
             byte[] bytes = Base64.getUrlDecoder().decode(cookie.getValue());
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream ois = new ObjectInputStream(bis);

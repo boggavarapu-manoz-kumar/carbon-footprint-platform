@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 // Use current hostname to support network access
-const hostname = window.location.hostname;
+const hostname = typeof window !== 'undefined' && window.location ? window.location.hostname : 'localhost';
 const defaultApiUrl = `http://${hostname}:8081/api/v1/admin`;
-const BASE_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const BASE_URL = rawApiUrl 
+  ? (rawApiUrl.endsWith('/v1/admin') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/v1/admin`) 
+  : defaultApiUrl;
 
 let inMemoryToken = null;
 

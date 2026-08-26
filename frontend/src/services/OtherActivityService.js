@@ -1,32 +1,18 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
-
-const apiClient = axios.create({
-  baseURL: `${API_URL}/api/v1/other-activities`,
-});
-
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import api from '../api/axiosConfig';
 
 const OtherActivityService = {
   createLog: async (data) => {
-    const response = await apiClient.post('', data);
+    const response = await api.post('/v1/other-activities', data);
     return response.data;
   },
 
   getLogs: async (params = {}) => {
-    const response = await apiClient.get('', { params });
+    const response = await api.get('/v1/other-activities', { params });
     return response.data;
   },
 
   deleteLog: async (id) => {
-    const response = await apiClient.delete(`/${id}`);
+    const response = await api.delete(`/v1/other-activities/${id}`);
     return response.data;
   }
 };

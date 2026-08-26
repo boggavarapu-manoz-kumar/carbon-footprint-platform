@@ -1,4 +1,4 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate, NetworkOnly } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
@@ -83,21 +83,20 @@ registerRoute(
   })
 );
 
-// SPA Navigation fallback — NetworkFirst ensures we serve the latest app shell
-registerRoute(
-  new NavigationRoute(
-    new NetworkFirst({
-      cacheName: 'navigations',
-      plugins: [
-        new ExpirationPlugin({
-          maxEntries: 10,
-          maxAgeSeconds: 24 * 60 * 60,
-        }),
-      ],
-      networkTimeoutSeconds: 3,
-    })
-  )
-);
+// SPA Navigation fallback — guaranteed index.html delivery for any route
+try {
+  registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+} catch (e) {
+  // Fallback in case precache manifest URL indexing differs
+  registerRoute(
+    new NavigationRoute(
+      new NetworkFirst({
+        cacheName: 'navigations',
+        networkTimeoutSeconds: 3,
+      })
+    )
+  );
+}
 
 // Listen for messages to completely wipe the cache on logout
 self.addEventListener('message', (event) => {
