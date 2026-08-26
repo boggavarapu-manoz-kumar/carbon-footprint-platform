@@ -48,25 +48,12 @@ public class AdminAuthService {
     private final AdminJwtService adminJwtService;
     private final PasswordEncoder passwordEncoder;
 
-    private static final int MAX_FAILED_ATTEMPTS = 5;
-    private static final int LOCKOUT_MINUTES = 15;
+    private static final int MAX_FAILED_ATTEMPTS = 15;
+    private static final int LOCKOUT_MINUTES = 5;
 
     public AdminLoginResponse authenticate(AdminLoginRequest request, HttpServletRequest httpRequest) {
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
-
-        // 1. Brute Force Check
-        long recentFailures = loginHistoryRepository.countByEmailAttemptedAndStatusAndCreatedAtAfter(
-                request.getEmail(),
-                "FAILED",
-                LocalDateTime.now().minusMinutes(LOCKOUT_MINUTES)
-        );
-
-        if (recentFailures >= MAX_FAILED_ATTEMPTS) {
-            log.warn("Brute-force attempt blocked for email: {}, IP: {}", request.getEmail(), ipAddress);
-            logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "LOCKED");
-            throw new com.carbonfootprint.exception.TooManyRequestsException("Account is temporarily locked due to excessive failed attempts.");
-        }
 
         log.debug("Authenticating admin user: {}", request.getEmail());
         var adminUser = adminUserRepository.findByEmail(request.getEmail())
@@ -79,6 +66,19 @@ public class AdminAuthService {
         if (!passwordEncoder.matches(request.getPassword(), adminUser.getPassword())) {
             log.warn("Failed authentication attempt for email: {}", request.getEmail());
             logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "FAILED");
+
+            long recentFailures = loginHistoryRepository.countByEmailAttemptedAndStatusAndCreatedAtAfter(
+                    request.getEmail(),
+                    "FAILED",
+                    LocalDateTime.now().minusMinutes(LOCKOUT_MINUTES)
+            );
+
+            if (recentFailures >= MAX_FAILED_ATTEMPTS) {
+                log.warn("Brute-force attempt threshold exceeded for email: {}, IP: {}", request.getEmail(), ipAddress);
+                logLoginHistory(null, request.getEmail(), ipAddress, userAgent, "LOCKED");
+                throw new com.carbonfootprint.exception.TooManyRequestsException("Account is temporarily locked due to excessive failed attempts.");
+            }
+
             throw new BadCredentialsException("Invalid credentials");
         }
 

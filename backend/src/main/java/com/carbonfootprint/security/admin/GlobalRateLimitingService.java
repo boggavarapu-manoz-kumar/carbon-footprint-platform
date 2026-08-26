@@ -32,7 +32,7 @@ public class GlobalRateLimitingService {
 
     public Bucket resolveLoginBucket(String ipAddress) {
         return loginBuckets.get(ipAddress, key -> Bucket.builder()
-                .addLimit(Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(30, Refill.intervally(30, Duration.ofMinutes(1))))
                 .build());
     }
 

@@ -18,14 +18,19 @@ import java.util.UUID;
 public class AdminUserSeeder implements CommandLineRunner {
 
     private final AdminUserRepository adminUserRepository;
+    private final com.carbonfootprint.repository.admin.AdminLoginHistoryRepository adminLoginHistoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     public static final String DEFAULT_ADMIN_EMAIL = "superadmin@carbonfootprint.com";
     public static final String DEFAULT_ADMIN_PASSWORD = "admin123";
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void run(String... args) {
         try {
+            // Clear any locked out status / stale failed attempts for the super admin
+            adminLoginHistoryRepository.deleteByEmailAttempted(DEFAULT_ADMIN_EMAIL);
+
             var existingAdminOpt = adminUserRepository.findByEmail(DEFAULT_ADMIN_EMAIL);
             if (existingAdminOpt.isEmpty()) {
                 AdminUser superAdmin = AdminUser.builder()

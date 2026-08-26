@@ -9,4 +9,5 @@ import java.time.LocalDateTime;
 @Repository
 public interface AdminLoginHistoryRepository extends JpaRepository<AdminLoginHistory, Long> {
     long countByEmailAttemptedAndStatusAndCreatedAtAfter(String emailAttempted, String status, LocalDateTime createdAtAfter);
+    void deleteByEmailAttempted(String emailAttempted);
 }
