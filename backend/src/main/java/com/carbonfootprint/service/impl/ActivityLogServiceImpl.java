@@ -74,51 +74,19 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         activityLog.setEmissionValue(calcResponse != null && calcResponse.getEmission() != null ? calcResponse.getEmission() : BigDecimal.ZERO);
         
         ActivityLog savedActivity = activityLogRepository.save(activityLog);
-        
-        try {
-            eventPublisher.publishEvent(new GamificationEvent(
-                this, 
-                user.getId(), 
-                GamificationEvent.EventType.ACTIVITY_LOGGED, 
-                "FIRST_ACTIVITY_LOGGED",
-                "ACTIVITY_LOG",
-                "activity_" + savedActivity.getId(), 
-                null
-            ));
-        } catch (Exception e) {
-            log.warn("Non-fatal: gamification event failed: {}", e.getMessage());
-        }
-
         ActivityLogDto savedDto = mapper.toDto(savedActivity);
-        
-        try {
-            invalidateAnalyticsCache(user.getId());
-        } catch (Exception ignored) {
-        }
-        
-        try {
-            goalService.evaluateUserGoals(user.getId());
-        } catch (Exception e) {
-            log.warn("Non-fatal: goal evaluation failed: {}", e.getMessage());
-        }
 
-        try {
-            eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
-        } catch (Exception e) {
-            log.warn("Non-fatal: user metrics event failed: {}", e.getMessage());
-        }
+        executeAfterCommit(() -> triggerPostActivityEvents(user, savedActivity));
 
         return savedDto;
     }
 
     @Override
     @Transactional
-    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public List<ActivityLogDto> createActivityLogsBulk(final String userEmail, final List<ActivityLogCreateDto> createDtos) {
         log.info("Bulk creating {} activity logs for user: {}", createDtos.size(), userEmail);
         User user = getUserByEmail(userEmail);
         
-        // Optimize: Prevent N+1 queries by pre-fetching all required ActivityTypes
         java.util.Set<String> typeCodes = createDtos.stream().map(ActivityLogCreateDto::getActivityType).collect(Collectors.toSet());
         java.util.Map<String, ActivityType> typeMap = activityTypeRepository.findByCodeIn(typeCodes).stream()
                 .collect(Collectors.toMap(ActivityType::getCode, type -> type));
@@ -134,7 +102,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
             logItem.setUser(user);
             logItem.setActivityType(type);
             if (logItem.getUnit() == null || logItem.getUnit().trim().isEmpty()) {
-                logItem.setUnit("units");
+                logItem.setUnit(dto.getUnit() != null ? dto.getUnit() : "units");
             }
             var calc = calculationService.calculateEmission(dto.getActivityType(), dto.getQuantity(), dto.getUnit());
             logItem.setEmissionValue(calc != null && calc.getEmission() != null ? calc.getEmission() : BigDecimal.ZERO);
@@ -143,26 +111,12 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         
         List<ActivityLog> savedLogs = activityLogRepository.saveAll(logsToSave);
         
-        try {
-            savedLogs.forEach(savedActivity -> {
-                eventPublisher.publishEvent(new GamificationEvent(
-                    this, 
-                    user.getId(), 
-                    GamificationEvent.EventType.ACTIVITY_LOGGED, 
-                    "FIRST_ACTIVITY_LOGGED",
-                    "ACTIVITY_LOG",
-                    "activity_" + savedActivity.getId(), 
-                    null
-                ));
-            });
-        } catch (Exception ignored) {
-        }
+        executeAfterCommit(() -> {
+            for (ActivityLog savedActivity : savedLogs) {
+                triggerPostActivityEvents(user, savedActivity);
+            }
+        });
 
-        try {
-            invalidateAnalyticsCache(user.getId());
-            goalService.evaluateUserGoals(user.getId());
-        } catch (Exception ignored) {
-        }
         return savedLogs.stream().map(mapper::toDto).collect(Collectors.toList());
     }
 
@@ -207,7 +161,6 @@ public class ActivityLogServiceImpl implements ActivityLogService {
 
     @Override
     @Transactional
-    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public ActivityLogDto updateActivityLog(final Long id, final String userEmail, final ActivityLogUpdateDto updateDto) {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());
@@ -243,33 +196,95 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         }
 
         if (updated) {
-            activityLog = activityLogRepository.save(activityLog);
-            invalidateAnalyticsCache(user.getId());
-            goalService.evaluateUserGoals(user.getId());
+            ActivityLog saved = activityLogRepository.save(activityLog);
+            executeAfterCommit(() -> {
+                invalidateAnalyticsCache(user.getId());
+                try { goalService.evaluateUserGoals(user.getId()); } catch (Exception ignored) {}
+            });
+            return mapper.toDto(saved);
         }
         return mapper.toDto(activityLog);
     }
 
     @Override
     @Transactional
-    @org.springframework.cache.annotation.CacheEvict(value = { "dashboardMetrics", "analyticsCache", "emissionTrends" }, allEntries = true)
     public void deleteActivityLog(final Long id, final String userEmail) {
         User user = getUserByEmail(userEmail);
         ActivityLog activityLog = findActivityLogOwnedByUser(id, user.getId());
         activityLogRepository.delete(activityLog);
         
-        eventPublisher.publishEvent(new GamificationEvent(
-            this, 
-            user.getId(), 
-            GamificationEvent.EventType.ACTIVITY_DELETED, 
-            "ACTIVITY_DELETED", 
-            "ACTIVITY_LOG",
-            "activity_" + id, 
-            null
-        ));
+        executeAfterCommit(() -> {
+            try {
+                eventPublisher.publishEvent(new GamificationEvent(
+                    this, 
+                    user.getId(), 
+                    GamificationEvent.EventType.ACTIVITY_DELETED, 
+                    "ACTIVITY_DELETED", 
+                    "ACTIVITY_LOG",
+                    "activity_" + id, 
+                    null
+                ));
+            } catch (Exception ignored) {}
 
-        invalidateAnalyticsCache(user.getId());
-        goalService.evaluateUserGoals(user.getId());
+            invalidateAnalyticsCache(user.getId());
+            try { goalService.evaluateUserGoals(user.getId()); } catch (Exception ignored) {}
+        });
+    }
+
+    private void executeAfterCommit(Runnable task) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            task.run();
+                        } catch (Exception e) {
+                            log.warn("Non-fatal error in post-commit task: {}", e.getMessage());
+                        }
+                    }
+                }
+            );
+        } else {
+            try {
+                task.run();
+            } catch (Exception e) {
+                log.warn("Non-fatal error in task: {}", e.getMessage());
+            }
+        }
+    }
+
+    private void triggerPostActivityEvents(User user, ActivityLog savedActivity) {
+        try {
+            eventPublisher.publishEvent(new GamificationEvent(
+                this, 
+                user.getId(), 
+                GamificationEvent.EventType.ACTIVITY_LOGGED, 
+                "FIRST_ACTIVITY_LOGGED",
+                "ACTIVITY_LOG",
+                "activity_" + savedActivity.getId(), 
+                null
+            ));
+        } catch (Exception e) {
+            log.warn("Non-fatal: gamification event failed: {}", e.getMessage());
+        }
+
+        try {
+            invalidateAnalyticsCache(user.getId());
+        } catch (Exception ignored) {
+        }
+        
+        try {
+            goalService.evaluateUserGoals(user.getId());
+        } catch (Exception e) {
+            log.warn("Non-fatal: goal evaluation failed: {}", e.getMessage());
+        }
+
+        try {
+            eventPublisher.publishEvent(new UserMetricsUpdatedEvent(this, user.getId()));
+        } catch (Exception e) {
+            log.warn("Non-fatal: user metrics event failed: {}", e.getMessage());
+        }
     }
 
     private User getUserByEmail(String identifier) {

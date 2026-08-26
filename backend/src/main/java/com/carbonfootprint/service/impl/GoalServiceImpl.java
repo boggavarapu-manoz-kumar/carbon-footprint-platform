@@ -265,7 +265,7 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void evaluateUserGoals(Long userId) {
         List<Goal> activeGoals = goalRepository.findByUserIdAndStatus(userId, GoalStatus.IN_PROGRESS);
         LocalDate today = LocalDate.now();
@@ -329,7 +329,7 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void evaluateGoals() {
         // Find all in-progress goals
         List<Goal> activeGoals = goalRepository.findByStatus(GoalStatus.IN_PROGRESS);
